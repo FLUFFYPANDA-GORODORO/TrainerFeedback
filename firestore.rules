@@ -1,9 +1,187 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow all operations for development
-    match /{document=**} {
-      allow read, write: if true;
+    
+    // ========================================================================
+    // HELPER FUNCTIONS
+    // ========================================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserData().role == 'superAdmin';
+    }
+    
+    function isCollegeAdmin(collegeId) {
+      let user = getUserData();
+      return isAuthenticated() && user.role == 'admin' && user.collegeId == collegeId;
+    }
+    
+    function isHOD(departmentId) {
+      let user = getUserData();
+      return isAuthenticated() && user.role == 'hod' && user.departmentId == departmentId;
+    }
+    
+    function isFacultyInCollege(collegeId) {
+      let user = getUserData();
+      return isAuthenticated() && user.role == 'faculty' && user.collegeId == collegeId;
+    }
+    
+    function belongsToCollege(collegeId) {
+      let user = getUserData();
+      return isAuthenticated() && user.collegeId == collegeId;
+    }
+    
+    // ========================================================================
+    // COLLEGES COLLECTION
+    // SuperAdmin only for write, authenticated for read
+    // ========================================================================
+    match /colleges/{collegeId} {
+      allow read: if isAuthenticated();
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() || isCollegeAdmin(collegeId);
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ========================================================================
+    // USERS COLLECTION
+    // Document ID = Firebase Auth UID for security
+    // ========================================================================
+    match /users/{userId} {
+      allow read: if isUser(userId) || isSuperAdmin() || 
+                    (isAuthenticated() && belongsToCollege(resource.data.collegeId));
+      allow create: if isSuperAdmin() || 
+                      (isAuthenticated() && request.auth.uid == userId);
+      allow update: if isUser(userId) || isSuperAdmin() || 
+                      isCollegeAdmin(resource.data.collegeId);
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ========================================================================
+    // DEPARTMENTS COLLECTION
+    // College-scoped access
+    // ========================================================================
+    match /departments/{deptId} {
+      allow read: if isAuthenticated();
+      allow create: if isSuperAdmin() || isCollegeAdmin(request.resource.data.collegeId);
+      allow update: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
+      allow delete: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
+    }
+    
+    // ========================================================================
+    // FACULTY COLLECTION
+    // College-scoped access
+    // ========================================================================
+    match /faculty/{facultyId} {
+      allow read: if isAuthenticated();
+      allow create: if isSuperAdmin() || isCollegeAdmin(request.resource.data.collegeId);
+      allow update: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId) ||
+                      (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow delete: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
+    }
+    
+    // ========================================================================
+    // FEEDBACK SESSIONS COLLECTION
+    // Public read for anonymous feedback, authenticated write
+    // ========================================================================
+    match /feedbackSessions/{sessionId} {
+      // Public read - needed for anonymous feedback form
+      allow read: if true;
+      allow create: if isAuthenticated() && 
+                     (isSuperAdmin() || isCollegeAdmin(request.resource.data.collegeId));
+      allow update: if isAuthenticated() && 
+                     (isSuperAdmin() || isCollegeAdmin(resource.data.collegeId));
+      allow delete: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
+    }
+    
+    // ========================================================================
+    // QUESTIONS COLLECTION
+    // Public read for feedback form, authenticated write
+    // ========================================================================
+    match /questions/{questionId} {
+      // Public read - needed for feedback form
+      allow read: if true;
+      allow create: if isAuthenticated() && 
+                     (isSuperAdmin() || isCollegeAdmin(request.resource.data.collegeId));
+      allow update: if isAuthenticated() && 
+                     (isSuperAdmin() || isCollegeAdmin(resource.data.collegeId));
+      allow delete: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
+    }
+    
+    // ========================================================================
+    // FEEDBACK SUBMISSIONS COLLECTION
+    // Public write (anonymous), restricted read
+    // ========================================================================
+    match /feedbackSubmissions/{submissionId} {
+      // Anyone can submit feedback (anonymous)
+      allow create: if true;
+      
+      // Only authorized users can read submissions
+      allow read: if isAuthenticated() && 
+                    (isSuperAdmin() || 
+                     isCollegeAdmin(resource.data.collegeId) ||
+                     isHOD(resource.data.departmentId) ||
+                     (resource.data.facultyId != null && 
+                      exists(/databases/$(database)/documents/faculty/$(resource.data.facultyId)) &&
+                      get(/databases/$(database)/documents/faculty/$(resource.data.facultyId)).data.userId == request.auth.uid));
+      
+      // Submissions are immutable - no updates or deletes
+      allow update, delete: if false;
+    }
+    
+    // ========================================================================
+    // FEEDBACK STATS COLLECTION
+    // Read for authenticated, write only via system/functions
+    // ========================================================================
+    match /feedbackStats/{statsId} {
+      allow read: if isAuthenticated();
+      // In production, use Cloud Functions for writes
+      // For now, allow writes from authenticated users (will be restricted later)
+      allow write: if isAuthenticated();
+    }
+    
+    // ========================================================================
+    // ACADEMIC CONFIGS COLLECTION
+    // College-scoped access
+    // ========================================================================
+    match /academicConfigs/{configId} {
+      allow read: if isAuthenticated();
+      allow create: if isSuperAdmin() || isCollegeAdmin(request.resource.data.collegeId);
+      allow update: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ========================================================================
+    // ACCESS CODES COLLECTION
+    // Public read for code validation, authenticated create
+    // ========================================================================
+    match /accessCodes/{codeId} {
+      // Public read for code validation
+      allow read: if true;
+      allow create: if isAuthenticated();
+      // Only allow marking as used if not already used
+      allow update: if resource.data.used == false && 
+                      request.resource.data.used == true;
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ========================================================================
+    // LEGACY: FEEDBACK CYCLES COLLECTION
+    // For backward compatibility
+    // ========================================================================
+    match /feedbackCycles/{cycleId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
     }
   }
 }

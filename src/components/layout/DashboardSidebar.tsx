@@ -27,7 +27,7 @@ interface SidebarLink {
 const adminLinks: SidebarLink[] = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/sessions', icon: RefreshCw, label: 'Feedback Sessions' },
-  { to: '/admin/departments', icon: Building2, label: 'Departments' },
+  { to: '/admin/departments', icon: GraduationCap, label: 'Academic Config' },
   { to: '/admin/faculty', icon: Users, label: 'Faculty' },
   { to: '/admin/questions', icon: FileQuestion, label: 'Question Bank' },
   { to: '/admin/reports', icon: BarChart3, label: 'Reports' },

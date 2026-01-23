@@ -1,0 +1,753 @@
+# Firestore Database Schema - Faculty Insights Hub
+
+## Architecture Overview
+
+```mermaid
+erDiagram
+    COLLEGES ||--o{ USERS : "has admins"
+    COLLEGES ||--o{ DEPARTMENTS : has
+    COLLEGES ||--o{ QUESTIONS : has
+    COLLEGES ||--o{ ACADEMIC_CONFIGS : has
+    
+    DEPARTMENTS ||--o{ FACULTY : contains
+    DEPARTMENTS ||--o{ FEEDBACK_SESSIONS : has
+    
+    FACULTY ||--o{ FEEDBACK_SESSIONS : teaches
+    FACULTY ||--o{ FEEDBACK_STATS : "aggregated in"
+    
+    FEEDBACK_SESSIONS ||--o{ FEEDBACK_SUBMISSIONS : receives
+    
+    USERS ||--|| FACULTY : "linked as"
+```
+
+---
+
+## Collections Overview
+
+| Collection | Purpose | Document Count (Est.) |
+|------------|---------|----------------------|
+| `colleges` | Multi-tenant college data | 2-10 |
+| `users` | Authentication & roles | 50-500 |
+| `departments` | Academic departments | 10-50 |
+| `faculty` | Faculty member profiles | 50-200 |
+| `feedbackSessions` | Active feedback links | 100-1,000 |
+| `questions` | Question bank per college | 20-100 |
+| `feedbackSubmissions` | Student responses | 1,000-100,000+ |
+| `feedbackStats` | Pre-computed analytics | 100-500 |
+| `academicConfigs` | Course/subject structure | 2-10 |
+| `accessCodes` | One-time access codes | 100-1,000 |
+
+---
+
+## Collection Schemas
+
+### 1. `colleges`
+Root collection for multi-tenant isolation.
+
+```typescript
+// Collection: colleges
+// Document ID: Auto-generated
+{
+  id: string;                    // Same as document ID
+  name: string;                  // "Indira College of Engineering"
+  code: string;                  // "ICEM" (unique)
+  logo?: string;                 // URL to logo image
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  
+  // Settings
+  settings: {
+    allowAnonymousFeedback: boolean;
+    feedbackReminderDays: number;    // Auto-reminder after N days
+    defaultSessionDuration: number;  // Days until session expires
+  };
+  
+  // Metadata
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  isActive: boolean;
+}
+```
+
+**Indexes Required:**
+- `code` (unique constraint via code logic)
+
+---
+
+### 2. `users`
+Authentication-linked user profiles.
+
+```typescript
+// Collection: users
+// Document ID: Firebase Auth UID (important for security rules!)
+{
+  id: string;                    // Same as Firebase Auth UID
+  email: string;                 // Login email (unique)
+  name: string;                  // Display name
+  phone?: string;
+  avatar?: string;               // URL to profile image
+  
+  // Role-based access
+  role: 'superAdmin' | 'admin' | 'hod' | 'faculty';
+  
+  // Tenant isolation
+  collegeId?: string;            // null for superAdmin
+  departmentId?: string;         // Only for HOD/Faculty roles
+  
+  // Status
+  isActive: boolean;
+  lastLoginAt?: Timestamp;
+  
+  // Metadata
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+**Indexes Required:**
+- `email` (unique)
+- `collegeId` + `role` (compound)
+
+---
+
+### 3. `departments`
+Academic departments within colleges.
+
+```typescript
+// Collection: departments
+// Document ID: Auto-generated
+{
+  id: string;
+  collegeId: string;             // Reference to colleges
+  
+  name: string;                  // "Computer Science & Engineering"
+  code: string;                  // "CSE"
+  description?: string;
+  
+  hodId?: string;                // Reference to users (HOD)
+  
+  // Stats (denormalized for quick reads)
+  facultyCount: number;          // Updated on faculty add/remove
+  activeSessionCount: number;    // Updated on session create/deactivate
+  
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  isActive: boolean;
+}
+```
+
+**Indexes Required:**
+- `collegeId`
+- `collegeId` + `isActive` (compound)
+
+---
+
+### 4. `faculty`
+Faculty member profiles (separate from users for flexibility).
+
+```typescript
+// Collection: faculty
+// Document ID: Auto-generated
+{
+  id: string;
+  userId: string;                // Reference to users (1:1)
+  collegeId: string;             // Reference to colleges
+  departmentId: string;          // Reference to departments
+  
+  // Profile
+  employeeId: string;            // College-specific ID
+  name: string;                  // Full name
+  email: string;                 // May differ from user email
+  phone?: string;
+  avatar?: string;
+  
+  // Academic details
+  designation: string;           // "Assistant Professor"
+  specialization: string;        // "Machine Learning"
+  qualifications: string;        // "Ph.D. in Computer Science"
+  experience: number;            // Years
+  
+  // Teaching
+  subjects: string[];            // ["Data Structures", "Algorithms"]
+  teachingSubjects: string[];    // Current semester subjects
+  
+  // Research (optional)
+  researchInterests: string[];
+  publications: number;
+  achievements: string[];
+  
+  // Denormalized stats (updated by Cloud Functions or transactions)
+  stats: {
+    totalSessions: number;
+    totalSubmissions: number;
+    averageRating: number;       // Cached average (1-5)
+    lastFeedbackAt?: Timestamp;
+  };
+  
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  isActive: boolean;
+}
+```
+
+**Indexes Required:**
+- `collegeId`
+- `departmentId`
+- `userId` (unique)
+- `collegeId` + `departmentId` (compound)
+
+---
+
+### 5. `feedbackSessions`
+Individual feedback collection sessions.
+
+```typescript
+// Collection: feedbackSessions
+// Document ID: Auto-generated
+{
+  id: string;
+  collegeId: string;
+  departmentId: string;
+  facultyId: string;             // Reference to faculty
+  
+  // Academic context
+  course: string;                // "Engineering"
+  academicYear: string;          // "2nd Year"
+  subject: string;               // "Data Structures"
+  batch: string;                 // "A"
+  semester?: string;             // "Odd 2024-25"
+  
+  // Access
+  accessMode: 'anonymous' | 'authenticated' | 'mixed';
+  uniqueUrl: string;             // URL-safe unique identifier
+  qrCodeUrl?: string;            // Generated QR code image URL
+  
+  // Status
+  isActive: boolean;
+  status: 'draft' | 'active' | 'paused' | 'completed' | 'expired';
+  
+  // Denormalized stats (updated on each submission)
+  stats: {
+    submissionCount: number;
+    averageRating: number;
+    lastSubmissionAt?: Timestamp;
+  };
+  
+  // Time bounds
+  startDate: Timestamp;          // When session becomes active
+  expiresAt: Timestamp;          // Auto-expire date
+  
+  createdAt: Timestamp;
+  createdBy: string;             // User ID who created
+  updatedAt: Timestamp;
+}
+```
+
+**Indexes Required:**
+- `uniqueUrl` (unique)
+- `collegeId` + `isActive` (compound)
+- `facultyId` + `isActive` (compound)
+- `departmentId` + `isActive` (compound)
+- `collegeId` + `status` + `createdAt` (compound for pagination)
+- `expiresAt` (for cleanup queries)
+
+---
+
+### 6. `questions`
+Question bank for feedback forms.
+
+```typescript
+// Collection: questions
+// Document ID: Auto-generated
+{
+  id: string;
+  collegeId: string;             // College-specific questions
+  
+  // Content
+  category: string;              // "Teaching Quality", "Communication"
+  text: string;                  // Question text
+  helpText?: string;             // Optional clarification
+  
+  // Response configuration
+  responseType: 'rating' | 'text' | 'both' | 'select' | 'boolean';
+  options?: string[];            // For 'select' type
+  
+  // Validation
+  required: boolean;
+  minLength?: number;            // For text responses
+  maxLength?: number;
+  
+  // Ordering
+  order: number;                 // Display order within category
+  categoryOrder: number;         // Category display order
+  
+  // Status
+  isActive: boolean;
+  
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+**Indexes Required:**
+- `collegeId` + `order` (compound, for ordered retrieval)
+- `collegeId` + `isActive` + `categoryOrder` + `order` (compound)
+
+---
+
+### 7. `feedbackSubmissions`
+Individual student feedback responses.
+
+```typescript
+// Collection: feedbackSubmissions
+// Document ID: Auto-generated
+{
+  id: string;
+  sessionId: string;             // Reference to feedbackSessions
+  facultyId: string;             // Denormalized for faster queries
+  collegeId: string;             // Denormalized for tenant filtering
+  departmentId: string;          // Denormalized for department reports
+  
+  // Response data
+  responses: Array<{
+    questionId: string;
+    questionCategory: string;    // Denormalized for analytics
+    rating?: number;             // 1-5
+    comment?: string;
+    selectValue?: string;
+    booleanValue?: boolean;
+  }>;
+  
+  // Computed metrics (calculated at submission time)
+  metrics: {
+    overallRating: number;       // Average of all ratings
+    categoryRatings: {
+      [category: string]: number; // Average per category
+    };
+    hasComments: boolean;
+    commentCount: number;
+  };
+  
+  // Metadata
+  submittedAt: Timestamp;
+  
+  // Optional analytics
+  clientInfo?: {
+    userAgent?: string;
+    platform?: string;
+  };
+}
+```
+
+**Indexes Required:**
+- `sessionId`
+- `facultyId`
+- `collegeId` + `submittedAt` (compound, for time-range queries)
+- `departmentId` + `submittedAt` (compound)
+- `facultyId` + `submittedAt` (compound)
+
+> [!CAUTION]
+> **No PII Storage**: Submissions are fully anonymous - no student identifiers stored.
+
+---
+
+### 8. `feedbackStats` (NEW - Aggregation Collection)
+Pre-computed statistics for optimized reads.
+
+```typescript
+// Collection: feedbackStats
+// Document ID: {type}_{entityId} (e.g., "college_abc123", "faculty_xyz789")
+{
+  id: string;
+  
+  // Scope identifier
+  type: 'college' | 'department' | 'faculty' | 'session';
+  entityId: string;              // ID of college/dept/faculty/session
+  
+  // Parent references (for filtering)
+  collegeId: string;
+  departmentId?: string;
+  facultyId?: string;
+  
+  // Aggregate metrics
+  totalSubmissions: number;
+  averageRating: number;
+  
+  // Category breakdown
+  categoryScores: {
+    [category: string]: {
+      average: number;
+      count: number;
+    };
+  };
+  
+  // Time series (monthly aggregates)
+  monthly: {
+    [monthKey: string]: {        // Format: "2025-01"
+      submissions: number;
+      averageRating: number;
+    };
+  };
+  
+  // Rating distribution
+  ratingDistribution: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+  };
+  
+  // Trend data
+  trend: {
+    last7Days: number;
+    last30Days: number;
+    last90Days: number;
+  };
+  
+  // Top comments (sample for display)
+  recentComments: Array<{
+    text: string;
+    rating: number;
+    submittedAt: Timestamp;
+  }>;  // Keep last 10
+  
+  lastUpdated: Timestamp;
+}
+```
+
+**Indexes Required:**
+- `type` + `collegeId` (compound)
+- `type` + `departmentId` (compound)
+- `facultyId` (for faculty-specific stats)
+
+---
+
+### 9. `academicConfigs`
+Course and subject structure per college.
+
+```typescript
+// Collection: academicConfigs
+// Document ID: collegeId (one config per college)
+{
+  id: string;
+  collegeId: string;
+  
+  // Course structure
+  courseData: {
+    [courseName: string]: {      // e.g., "Engineering"
+      years: string[];           // ["1st Year", "2nd Year", ...]
+      departments: string[];     // ["CSE", "IT", ...]
+      semesters?: string[];      // Optional semester list
+    };
+  };
+  
+  // Subject mapping
+  subjectsData: {
+    [courseName: string]: {
+      [yearName: string]: {
+        [departmentName: string]: string[];  // Subject list
+      };
+    };
+  };
+  
+  // Batch configuration
+  batches: string[];             // ["A", "B", "C", "D"]
+  
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+**Indexes Required:**
+- `collegeId` (unique, 1:1 relationship)
+
+---
+
+### 10. `accessCodes`
+One-time access codes for authenticated feedback.
+
+```typescript
+// Collection: accessCodes
+// Document ID: Auto-generated
+{
+  id: string;
+  code: string;                  // 6-digit alphanumeric
+  
+  // Links
+  sessionId: string;             // Which session this unlocks
+  facultyId: string;             // Target faculty
+  collegeId: string;
+  
+  // Status
+  used: boolean;
+  usedAt?: Timestamp;
+  
+  // Expiry
+  expiresAt: Timestamp;
+  
+  createdAt: Timestamp;
+}
+```
+
+**Indexes Required:**
+- `code` (unique)
+- `sessionId` + `used` (compound)
+- `expiresAt` (for cleanup)
+
+---
+
+## Security Rules
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserData().role == 'superAdmin';
+    }
+    
+    function isCollegeAdmin(collegeId) {
+      let user = getUserData();
+      return user.role == 'admin' && user.collegeId == collegeId;
+    }
+    
+    function isHOD(departmentId) {
+      let user = getUserData();
+      return user.role == 'hod' && user.departmentId == departmentId;
+    }
+    
+    function isFacultyMember(facultyId) {
+      let user = getUserData();
+      return user.role == 'faculty' && 
+             exists(/databases/$(database)/documents/faculty/$(facultyId)) &&
+             get(/databases/$(database)/documents/faculty/$(facultyId)).data.userId == request.auth.uid;
+    }
+    
+    // Colleges - SuperAdmin only for write
+    match /colleges/{collegeId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+    
+    // Users - Own profile or admin
+    match /users/{userId} {
+      allow read: if isUser(userId) || isSuperAdmin() || 
+                    isCollegeAdmin(resource.data.collegeId);
+      allow create: if isSuperAdmin();
+      allow update: if isUser(userId) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+    
+    // Departments - College scoped
+    match /departments/{deptId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
+    }
+    
+    // Faculty - College scoped
+    match /faculty/{facultyId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
+    }
+    
+    // Sessions - College scoped + public read for feedback
+    match /feedbackSessions/{sessionId} {
+      allow read: if true;  // Public for anonymous feedback
+      allow write: if isAuthenticated() && 
+                     (isSuperAdmin() || isCollegeAdmin(resource.data.collegeId));
+    }
+    
+    // Questions - College scoped
+    match /questions/{questionId} {
+      allow read: if true;  // Public for feedback form
+      allow write: if isAuthenticated() && 
+                     (isSuperAdmin() || isCollegeAdmin(resource.data.collegeId));
+    }
+    
+    // Submissions - Write public, read restricted
+    match /feedbackSubmissions/{submissionId} {
+      allow create: if true;  // Anonymous submission allowed
+      allow read: if isAuthenticated() && 
+                    (isSuperAdmin() || 
+                     isCollegeAdmin(resource.data.collegeId) ||
+                     isHOD(resource.data.departmentId) ||
+                     isFacultyMember(resource.data.facultyId));
+      allow update, delete: if false;  // Immutable
+    }
+    
+    // Stats - Read for authenticated users
+    match /feedbackStats/{statsId} {
+      allow read: if isAuthenticated();
+      allow write: if false;  // Only via Cloud Functions
+    }
+    
+    // Academic Configs - College scoped
+    match /academicConfigs/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isCollegeAdmin(resource.data.collegeId);
+    }
+    
+    // Access Codes
+    match /accessCodes/{codeId} {
+      allow read: if true;  // For code validation
+      allow create: if isAuthenticated();
+      allow update: if resource.data.used == false;  // Can only mark as used
+      allow delete: if isSuperAdmin();
+    }
+  }
+}
+```
+
+---
+
+## Composite Indexes (firestore.indexes.json)
+
+```json
+{
+  "indexes": [
+    {
+      "collectionGroup": "feedbackSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "collegeId", "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "feedbackSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facultyId", "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "feedbackSubmissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "collegeId", "order": "ASCENDING" },
+        { "fieldPath": "submittedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "feedbackSubmissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "facultyId", "order": "ASCENDING" },
+        { "fieldPath": "submittedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "feedbackSubmissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "departmentId", "order": "ASCENDING" },
+        { "fieldPath": "submittedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "questions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "collegeId", "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "categoryOrder", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "feedbackStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "collegeId", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
+```
+
+---
+
+## Data Flow Diagram
+
+```mermaid
+flowchart TB
+    subgraph Write["Write Operations"]
+        A[Student Opens Feedback Link] --> B{Session Valid?}
+        B -->|Yes| C[Load Questions]
+        C --> D[Submit Feedback]
+        D --> E[Create Submission Doc]
+        E --> F[Update Session Stats]
+        E --> G[Update Faculty Stats]
+        E --> H[Update Dept Stats]
+        E --> I[Update College Stats]
+    end
+    
+    subgraph Read["Read Operations - Optimized"]
+        J[Admin Dashboard] --> K[Read feedbackStats/college]
+        J --> L[Read departments - Cached]
+        J --> M[Read sessions - Paginated]
+        
+        N[Faculty Dashboard] --> O[Read feedbackStats/faculty]
+        N --> P[Read questions - Cached]
+        
+        Q[HOD Dashboard] --> R[Read feedbackStats/department]
+    end
+```
+
+---
+
+## Migration Strategy
+
+### From Current Schema
+
+1. **No breaking changes** - All existing collections remain compatible
+2. **New additions:**
+   - `feedbackStats` collection (new)
+   - `stats` field in `faculty` documents
+   - `stats` field in `feedbackSessions` documents
+   - `metrics` field in `feedbackSubmissions` documents
+
+### Migration Script Required
+
+```typescript
+// Run once to populate feedbackStats from existing submissions
+async function migrateToStatsCollection() {
+  const submissions = await submissionsApi.getAll();
+  
+  // Group by faculty, department, college
+  // Calculate aggregates
+  // Write to feedbackStats collection
+}
+```
+
+---
+
+## Questions for You
+
+> [!IMPORTANT]
+> 1. **Real-time updates**: Should dashboards use Firestore real-time listeners for live updates, or is polling every 1-5 minutes acceptable?
+>
+> 2. **Comment moderation**: Should we add a `flagged` or `moderated` field to submissions for inappropriate content filtering?
+>
+> 3. **Historical data**: How long should submissions be retained? Should we archive old data to reduce collection size?

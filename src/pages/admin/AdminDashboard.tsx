@@ -24,10 +24,16 @@ import {
   collegesApi,
 } from '@/lib/storage';
 import { SessionForm } from '@/components/admin/SessionForm';
+import DepartmentForm from '@/components/admin/DepartmentForm';
+import FacultyForm from '@/components/admin/FacultyForm';
+import QuestionForm from '@/components/admin/QuestionForm';
+import FacultyReport from '@/components/admin/FacultyReport';
+import AcademicConfig from '@/components/admin/AcademicConfig';
 import { SessionTable } from '@/components/admin/SessionTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getAcademicConfig } from '@/lib/academicConfig';
+import { BarChart3, RefreshCw, Building2, Calendar, Users, FileText, User, TrendingUp, MessageSquare, Plus, Edit, Download, Upload, Trash2, ClipboardCheck, GraduationCap } from 'lucide-react';
 import { format, subDays, isAfter } from 'date-fns';
-import { BarChart3, RefreshCw, Building2, Calendar, Users, FileText, User, TrendingUp, MessageSquare, Plus, Edit, Download, Upload, Trash2, ClipboardCheck } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -47,290 +53,6 @@ import {
 
 const CHART_COLORS = ['hsl(213, 96%, 16%)', 'hsl(213, 80%, 25%)', 'hsl(213, 60%, 35%)', 'hsl(160, 84%, 39%)'];
 
-// Course/Program data structure
-const courseData = {
-  'Engineering': {
-    years: ['1st Year', '2nd Year', '3rd Year', '4th Year'],
-    departments: ['Computer Science & Engineering', 'Information Technology', 'Mechanical Engineering']
-  },
-  'MBA': {
-    years: ['1st Year', '2nd Year'],
-    departments: ['Business Administration', 'Finance & Accounting', 'Marketing & Sales']
-  },
-  'MCA': {
-    years: ['1st Year', '2nd Year'],
-    departments: ['Computer Applications', 'Software Development']
-  },
-  'BBA+MBA': {
-    years: ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'],
-    departments: ['Business Administration', 'Finance & Accounting', 'Marketing & Sales']
-  },
-  'BCA+MCA': {
-    years: ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'],
-    departments: ['Computer Applications', 'Software Development']
-  },
-  'BBA': {
-    years: ['1st Year', '2nd Year', '3rd Year'],
-    departments: ['Business Administration', 'Finance & Accounting', 'Marketing & Sales']
-  },
-  'BCA': {
-    years: ['1st Year', '2nd Year', '3rd Year'],
-    departments: ['Computer Applications', 'Software Development']
-  }
-};
-
-// Subjects data structure organized by course, year, and department
-const subjectsData = {
-  'Engineering': {
-    '1st Year': {
-      'Computer Science & Engineering': [
-        'Mathematics I', 'Physics', 'Chemistry', 'Engineering Drawing', 'Basic Programming', 'Communication Skills'
-      ],
-      'Information Technology': [
-        'Mathematics I', 'Physics', 'Chemistry', 'Engineering Drawing', 'Basic Programming', 'Digital Logic'
-      ],
-      'Mechanical Engineering': [
-        'Mathematics I', 'Physics', 'Chemistry', 'Engineering Drawing', 'Workshop Practice', 'Thermodynamics'
-      ]
-    },
-    '2nd Year': {
-      'Computer Science & Engineering': [
-        'Data Structures', 'Discrete Mathematics', 'Computer Organization', 'Object Oriented Programming', 'Database Management', 'Operating Systems'
-      ],
-      'Information Technology': [
-        'Data Structures', 'Discrete Mathematics', 'Computer Networks', 'Web Technologies', 'Software Engineering', 'System Programming'
-      ],
-      'Mechanical Engineering': [
-        'Strength of Materials', 'Fluid Mechanics', 'Manufacturing Processes', 'Machine Design', 'Heat Transfer', 'Dynamics of Machinery'
-      ]
-    },
-    '3rd Year': {
-      'Computer Science & Engineering': [
-        'Algorithm Design', 'Computer Networks', 'Software Engineering', 'Theory of Computation', 'Compiler Design', 'Artificial Intelligence'
-      ],
-      'Information Technology': [
-        'Advanced Web Technologies', 'Mobile Computing', 'Cloud Computing', 'Information Security', 'Data Mining', 'Machine Learning'
-      ],
-      'Mechanical Engineering': [
-        'CAD/CAM', 'Refrigeration & Air Conditioning', 'Automobile Engineering', 'Production Engineering', 'Quality Control', 'Industrial Engineering'
-      ]
-    },
-    '4th Year': {
-      'Computer Science & Engineering': [
-        'Advanced Algorithms', 'Distributed Systems', 'Machine Learning', 'Cyber Security', 'Project Management', 'Final Year Project'
-      ],
-      'Information Technology': [
-        'Big Data Analytics', 'Internet of Things', 'Blockchain Technology', 'Advanced Security', 'Enterprise Systems', 'Final Year Project'
-      ],
-      'Mechanical Engineering': [
-        'Robotics', 'Advanced Manufacturing', 'Energy Systems', 'Maintenance Engineering', 'Project Management', 'Final Year Project'
-      ]
-    }
-  },
-  'MBA': {
-    '1st Year': {
-      'Business Administration': [
-        'Principles of Management', 'Business Economics', 'Financial Accounting', 'Marketing Management', 'Organizational Behavior', 'Business Statistics'
-      ],
-      'Finance & Accounting': [
-        'Financial Accounting', 'Cost Accounting', 'Business Mathematics', 'Micro Economics', 'Business Law', 'Management Principles'
-      ],
-      'Marketing & Sales': [
-        'Marketing Management', 'Consumer Behavior', 'Advertising & Sales Promotion', 'Business Communication', 'Market Research', 'Retail Management'
-      ]
-    },
-    '2nd Year': {
-      'Business Administration': [
-        'Strategic Management', 'International Business', 'Entrepreneurship', 'Business Ethics', 'Project Management', 'Final Project'
-      ],
-      'Finance & Accounting': [
-        'Financial Management', 'Corporate Finance', 'Taxation', 'Auditing', 'Investment Analysis', 'Financial Planning'
-      ],
-      'Marketing & Sales': [
-        'Brand Management', 'Digital Marketing', 'Sales Management', 'International Marketing', 'Services Marketing', 'Strategic Marketing'
-      ]
-    }
-  },
-  'MCA': {
-    '1st Year': {
-      'Computer Applications': [
-        'Programming in C', 'Data Structures', 'Computer Organization', 'Database Management', 'Mathematics', 'Communication Skills'
-      ],
-      'Software Development': [
-        'Object Oriented Programming', 'Web Technologies', 'Software Engineering', 'Database Design', 'Mathematics', 'System Analysis'
-      ]
-    },
-    '2nd Year': {
-      'Computer Applications': [
-        'Java Programming', 'Web Development', 'Software Testing', 'Network Security', 'Mobile Computing', 'Project Work'
-      ],
-      'Software Development': [
-        'Advanced Java', 'Cloud Computing', 'DevOps', 'Agile Methodology', 'Quality Assurance', 'Project Management'
-      ]
-    }
-  },
-  'BBA+MBA': {
-    '1st Year': {
-      'Business Administration': [
-        'Business Mathematics', 'Principles of Management', 'Financial Accounting', 'Business Economics', 'Business Communication', 'Computer Applications'
-      ],
-      'Finance & Accounting': [
-        'Financial Accounting', 'Business Mathematics', 'Micro Economics', 'Business Law', 'Computer Applications', 'English Communication'
-      ],
-      'Marketing & Sales': [
-        'Principles of Marketing', 'Business Communication', 'Business Mathematics', 'Micro Economics', 'Computer Applications', 'English Literature'
-      ]
-    },
-    '2nd Year': {
-      'Business Administration': [
-        'Macro Economics', 'Cost Accounting', 'Marketing Management', 'Human Resource Management', 'Business Statistics', 'Operations Management'
-      ],
-      'Finance & Accounting': [
-        'Cost Accounting', 'Corporate Law', 'Marketing Management', 'Human Resource Management', 'Business Statistics', 'Financial Management'
-      ],
-      'Marketing & Sales': [
-        'Consumer Behavior', 'Advertising', 'Sales Management', 'Human Resource Management', 'Business Statistics', 'Financial Accounting'
-      ]
-    },
-    '3rd Year': {
-      'Business Administration': [
-        'Business Research', 'Strategic Management', 'International Business', 'Entrepreneurship', 'Project Management', 'Summer Internship'
-      ],
-      'Finance & Accounting': [
-        'Financial Management', 'Investment Analysis', 'Taxation', 'Auditing', 'International Finance', 'Summer Internship'
-      ],
-      'Marketing & Sales': [
-        'Brand Management', 'Digital Marketing', 'Services Marketing', 'Retail Management', 'Market Research', 'Summer Internship'
-      ]
-    },
-    '4th Year': {
-      'Business Administration': [
-        'Advanced Strategic Management', 'Global Business Environment', 'Leadership', 'Business Ethics', 'Advanced Project Management', 'Thesis Work'
-      ],
-      'Finance & Accounting': [
-        'Advanced Financial Management', 'Risk Management', 'Mergers & Acquisitions', 'Financial Modeling', 'Portfolio Management', 'Thesis Work'
-      ],
-      'Marketing & Sales': [
-        'Advanced Marketing Strategy', 'Customer Relationship Management', 'E-commerce', 'International Marketing', 'Brand Strategy', 'Thesis Work'
-      ]
-    },
-    '5th Year': {
-      'Business Administration': [
-        'Executive Leadership', 'Innovation Management', 'Corporate Governance', 'Advanced Entrepreneurship', 'Capstone Project', 'Industry Internship'
-      ],
-      'Finance & Accounting': [
-        'Advanced Investment Banking', 'Financial Risk Management', 'Corporate Valuation', 'Forensic Accounting', 'Capstone Project', 'Industry Internship'
-      ],
-      'Marketing & Sales': [
-        'Advanced Digital Strategy', 'Luxury Brand Management', 'Marketing Analytics', 'Sales Leadership', 'Capstone Project', 'Industry Internship'
-      ]
-    }
-  },
-  'BCA+MCA': {
-    '1st Year': {
-      'Computer Applications': [
-        'Computer Fundamentals', 'Programming in C', 'Mathematics', 'Digital Electronics', 'Communication Skills', 'Office Automation'
-      ],
-      'Software Development': [
-        'Computer Fundamentals', 'Programming Logic', 'Mathematics', 'Digital Electronics', 'Communication Skills', 'System Analysis'
-      ]
-    },
-    '2nd Year': {
-      'Computer Applications': [
-        'Data Structures', 'Object Oriented Programming', 'Database Management', 'Web Technologies', 'Software Engineering', 'Computer Networks'
-      ],
-      'Software Development': [
-        'Data Structures', 'Object Oriented Programming', 'Database Design', 'Web Development', 'Software Testing', 'Network Programming'
-      ]
-    },
-    '3rd Year': {
-      'Computer Applications': [
-        'Java Programming', 'Mobile Computing', 'Cloud Computing', 'Information Security', 'Project Management', 'Summer Project'
-      ],
-      'Software Development': [
-        'Advanced Java', 'Mobile App Development', 'Cloud Architecture', 'Cyber Security', 'Agile Development', 'Summer Project'
-      ]
-    },
-    '4th Year': {
-      'Computer Applications': [
-        'Advanced Web Technologies', 'Big Data Analytics', 'Machine Learning', 'Blockchain', 'Advanced Security', 'Major Project'
-      ],
-      'Software Development': [
-        'Microservices Architecture', 'DevOps', 'AI & ML', 'Blockchain Development', 'Advanced Security', 'Major Project'
-      ]
-    },
-    '5th Year': {
-      'Computer Applications': [
-        'Enterprise Architecture', 'Digital Transformation', 'Advanced Analytics', 'IoT', 'Research Methodology', 'Final Project'
-      ],
-      'Software Development': [
-        'Scalable Systems Design', 'Emerging Technologies', 'Research in Computing', 'Innovation Lab', 'Industry Collaboration', 'Final Project'
-      ]
-    }
-  },
-  'BBA': {
-    '1st Year': {
-      'Business Administration': [
-        'Business Mathematics', 'Principles of Management', 'Financial Accounting', 'Business Economics', 'Business Communication', 'Computer Applications'
-      ],
-      'Finance & Accounting': [
-        'Financial Accounting', 'Business Mathematics', 'Micro Economics', 'Business Law', 'Computer Applications', 'English Communication'
-      ],
-      'Marketing & Sales': [
-        'Principles of Marketing', 'Business Communication', 'Business Mathematics', 'Micro Economics', 'Computer Applications', 'English Literature'
-      ]
-    },
-    '2nd Year': {
-      'Business Administration': [
-        'Macro Economics', 'Cost Accounting', 'Marketing Management', 'Human Resource Management', 'Business Statistics', 'Operations Management'
-      ],
-      'Finance & Accounting': [
-        'Cost Accounting', 'Corporate Law', 'Marketing Management', 'Human Resource Management', 'Business Statistics', 'Financial Management'
-      ],
-      'Marketing & Sales': [
-        'Consumer Behavior', 'Advertising', 'Sales Management', 'Human Resource Management', 'Business Statistics', 'Financial Accounting'
-      ]
-    },
-    '3rd Year': {
-      'Business Administration': [
-        'Business Research', 'Strategic Management', 'International Business', 'Entrepreneurship', 'Project Management', 'Final Project'
-      ],
-      'Finance & Accounting': [
-        'Financial Management', 'Investment Analysis', 'Taxation', 'Auditing', 'International Finance', 'Final Project'
-      ],
-      'Marketing & Sales': [
-        'Brand Management', 'Digital Marketing', 'Services Marketing', 'Retail Management', 'Market Research', 'Final Project'
-      ]
-    }
-  },
-  'BCA': {
-    '1st Year': {
-      'Computer Applications': [
-        'Computer Fundamentals', 'Programming in C', 'Mathematics', 'Digital Electronics', 'Communication Skills', 'Office Automation'
-      ],
-      'Software Development': [
-        'Computer Fundamentals', 'Programming Logic', 'Mathematics', 'Digital Electronics', 'Communication Skills', 'System Analysis'
-      ]
-    },
-    '2nd Year': {
-      'Computer Applications': [
-        'Data Structures', 'Object Oriented Programming', 'Database Management', 'Web Technologies', 'Software Engineering', 'Computer Networks'
-      ],
-      'Software Development': [
-        'Data Structures', 'Object Oriented Programming', 'Database Design', 'Web Development', 'Software Testing', 'Network Programming'
-      ]
-    },
-    '3rd Year': {
-      'Computer Applications': [
-        'Java Programming', 'Mobile Computing', 'Cloud Computing', 'Information Security', 'Project Management', 'Final Project'
-      ],
-      'Software Development': [
-        'Advanced Java', 'Mobile App Development', 'Cloud Architecture', 'Cyber Security', 'Agile Development', 'Final Project'
-      ]
-    }
-  }
-};
-
 const AdminDashboard = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -344,6 +66,22 @@ const AdminDashboard = () => {
 
   // Session form state
   const [sessionFormOpen, setSessionFormOpen] = useState(false);
+
+  // Department form state
+  const [departmentFormOpen, setDepartmentFormOpen] = useState(false);
+
+  // Faculty form state
+  const [facultyFormOpen, setFacultyFormOpen] = useState(false);
+
+  // Question form state
+  const [questionFormOpen, setQuestionFormOpen] = useState(false);
+
+  // Faculty report state
+  const [facultyReportOpen, setFacultyReportOpen] = useState(false);
+
+  // Academic config data state
+  const [courseData, setCourseData] = useState({});
+  const [subjectsData, setSubjectsData] = useState({});
 
   // Filtering state
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
@@ -370,7 +108,7 @@ const AdminDashboard = () => {
 
     const departmentSubjects = yearSubjects[selectedDepartment as keyof typeof yearSubjects];
     return departmentSubjects || [];
-  }, [selectedCourse, selectedYear, selectedDepartment]);
+  }, [selectedCourse, selectedYear, selectedDepartment, subjectsData]);
 
   const batches = ['A', 'B', 'C', 'D'];
 
@@ -380,18 +118,21 @@ const AdminDashboard = () => {
   // Load data function
   const loadData = useCallback(async () => {
     try {
-      const [depts, fac, sess, subs, colleges] = await Promise.all([
+      const [depts, fac, sess, subs, colleges, config] = await Promise.all([
         departmentsApi.getAll(),
         facultyApi.getAll(),
         feedbackSessionsApi.getAll(),
         submissionsApi.getAll(),
         collegesApi.getAll(),
+        user?.collegeId ? getAcademicConfig(user.collegeId) : Promise.resolve({ courseData: {}, subjectsData: {} }),
       ]);
 
       setDepartments(depts);
       setFaculty(fac);
       setSessions(sess);
       setSubmissions(subs);
+      setCourseData(config.courseData);
+      setSubjectsData(config.subjectsData);
 
       // Find user's college
       if (user?.collegeId) {
@@ -1206,10 +947,7 @@ const AdminDashboard = () => {
               <div className="glass-card rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-display text-lg font-semibold text-foreground">Faculty Members</h3>
-                  <Button className="bg-primary hover:bg-primary/90" onClick={() => {
-                    // TODO: Implement add faculty functionality
-                    alert('Add faculty functionality coming soon!');
-                  }}>
+                  <Button className="bg-primary hover:bg-primary/90" onClick={() => setFacultyFormOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Faculty
                   </Button>
@@ -1305,41 +1043,30 @@ const AdminDashboard = () => {
         return (
           <div className="min-h-screen">
             <DashboardHeader
-              title="Departments"
-              subtitle="Manage academic departments"
+              title="Academic Config"
+              subtitle="Configure academic structure and manage departments"
               college={college}
             />
 
             <div className="p-6">
               <div className="glass-card rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-display text-lg font-semibold text-foreground">Departments</h3>
-                  <Button className="bg-primary hover:bg-primary/90" onClick={() => {
-                    // TODO: Implement add department functionality
-                    alert('Add department functionality coming soon!');
-                  }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Department
+                  <h3 className="font-display text-lg font-semibold text-foreground">Academic Structure Configuration</h3>
+                  <Button className="bg-primary hover:bg-primary/90" onClick={() => setAcademicConfigOpen(true)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Configure Structure
                   </Button>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {departments.map((dept) => (
-                    <div key={dept.id} className="p-4 border border-border rounded-lg">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Building2 className="h-5 w-5 text-primary" />
-                        <h4 className="font-medium text-foreground">{dept.name}</h4>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          {faculty.filter(f => f.departmentId === dept.id).length} faculty
-                        </span>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                <div className="text-center py-12">
+                  <GraduationCap className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-foreground mb-2">Academic Structure Management</h4>
+                  <p className="text-muted-foreground mb-4">
+                    Configure courses, years, departments, subjects, and batches for your institution.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Click "Configure Structure" to build and manage the academic hierarchy.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1358,10 +1085,7 @@ const AdminDashboard = () => {
               <div className="glass-card rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-display text-lg font-semibold text-foreground">Questions</h3>
-                  <Button className="bg-primary hover:bg-primary/90" onClick={() => {
-                    // TODO: Implement add question functionality
-                    alert('Add question functionality coming soon!');
-                  }}>
+                  <Button className="bg-primary hover:bg-primary/90" onClick={() => setQuestionFormOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Question
                   </Button>
@@ -1413,10 +1137,7 @@ const AdminDashboard = () => {
                       <p className="text-sm text-muted-foreground">Individual faculty performance</p>
                     </div>
                   </div>
-                  <Button className="w-full" onClick={() => {
-                    // TODO: Generate faculty report
-                    alert('Faculty report generation coming soon!');
-                  }}>Generate Report</Button>
+                  <Button className="w-full" onClick={() => setFacultyReportOpen(true)}>Generate Report</Button>
                 </div>
 
                 <div className="glass-card rounded-xl p-6">
@@ -1542,6 +1263,30 @@ const AdminDashboard = () => {
         open={sessionFormOpen}
         onOpenChange={setSessionFormOpen}
         onSuccess={loadData}
+      />
+      <DepartmentForm
+        open={departmentFormOpen}
+        onOpenChange={setDepartmentFormOpen}
+        onSuccess={loadData}
+      />
+      <FacultyForm
+        open={facultyFormOpen}
+        onOpenChange={setFacultyFormOpen}
+        onSuccess={loadData}
+      />
+      <QuestionForm
+        open={questionFormOpen}
+        onOpenChange={setQuestionFormOpen}
+        onSuccess={loadData}
+      />
+      <FacultyReport
+        open={facultyReportOpen}
+        onOpenChange={setFacultyReportOpen}
+      />
+      <AcademicConfig
+        open={academicConfigOpen}
+        onOpenChange={setAcademicConfigOpen}
+        onSuccess={() => loadData()}
       />
     </>
   );
