@@ -60,7 +60,6 @@ const App = () => {
               <Route path="/admin/faculty-details" element={<FacultyDetails />} />
               <Route path="/admin/questions" element={<AdminDashboard />} />
               <Route path="/admin/reports" element={<AdminDashboard />} />
-              <Route path="/admin/settings" element={<AdminDashboard />} />
             </Route>
 
             {/* HOD Routes */}

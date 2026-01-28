@@ -30,14 +30,12 @@ const adminLinks: SidebarLink[] = [
   { to: '/admin/departments', icon: GraduationCap, label: 'Academic Config' },
   { to: '/admin/faculty', icon: Users, label: 'Faculty' },
   { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
-  { to: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 
 const superAdminLinks: SidebarLink[] = [
   { to: '/super-admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/super-admin/questions', icon: FileQuestion, label: 'Question Bank' },
   { to: '/super-admin/colleges', icon: Building2, label: 'Colleges' },
-  { to: '/super-admin/settings', icon: Settings, label: 'Settings' },
 ];
 
 const hodLinks: SidebarLink[] = [
