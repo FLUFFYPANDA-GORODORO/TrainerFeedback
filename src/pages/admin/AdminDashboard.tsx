@@ -15,6 +15,7 @@ import {
   departmentsApi,
   facultyApi,
   questionGroupsApi,
+  questionsApi,
   feedbackSessionsApi,
   submissionsApi,
   resetDemoData,
@@ -24,6 +25,7 @@ import {
   FeedbackSubmission,
   College,
   QuestionGroup,
+  Question,
   collegesApi,
 } from '@/lib/storage';
 import { SessionForm } from '@/components/admin/SessionForm';
@@ -66,6 +68,7 @@ const AdminDashboard = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [sessions, setSessions] = useState<FeedbackSession[]>([]);
   const [submissions, setSubmissions] = useState<FeedbackSubmission[]>([]);
   const [college, setCollege] = useState<College | null>(null);
@@ -146,7 +149,24 @@ const AdminDashboard = () => {
     return Object.keys(departmentSubjects || {});
   }, [selectedCourse, selectedYear, selectedDepartment, subjectsData]);
 
-  const batches = ['A', 'B', 'C', 'D'];
+  // Get available batches based on current selections
+  const availableBatches = useMemo(() => {
+    if (selectedCourse === 'all' || selectedYear === 'all' || selectedDepartment === 'all' || selectedSubject === 'all') {
+      return [];
+    }
+
+    const courseSubjects = subjectsData[selectedCourse as keyof typeof subjectsData];
+    if (!courseSubjects) return [];
+
+    const yearSubjects = courseSubjects[selectedYear as keyof typeof courseSubjects];
+    if (!yearSubjects) return [];
+
+    const departmentSubjects = yearSubjects[selectedDepartment as keyof typeof yearSubjects];
+    if (!departmentSubjects) return [];
+
+    const subjectBatches = departmentSubjects[selectedSubject as keyof typeof departmentSubjects];
+    return subjectBatches || [];
+  }, [selectedCourse, selectedYear, selectedDepartment, selectedSubject, subjectsData]);
 
   // Get current section from URL
   const currentSection = location.pathname.split('/').pop() || 'dashboard';
@@ -154,10 +174,11 @@ const AdminDashboard = () => {
   // Load data function
   const loadData = useCallback(async () => {
     try {
-      const [depts, fac, qGroups, sess, subs, colleges, config] = await Promise.all([
-        departmentsApi.getAll(),
-        facultyApi.getAll(),
+      const [depts, fac, qGroups, qsts, sess, subs, colleges, config] = await Promise.all([
+        departmentsApi.getByCollege(user!.collegeId!),
+        facultyApi.getByCollege(user!.collegeId!),
         questionGroupsApi.getByCollege(user!.collegeId!),
+        questionsApi.getByCollege(user!.collegeId!),
         feedbackSessionsApi.getAll(),
         submissionsApi.getAll(),
         collegesApi.getAll(),
@@ -167,8 +188,16 @@ const AdminDashboard = () => {
       setDepartments(depts);
       setFaculty(fac);
       setQuestionGroups(qGroups);
-      setSessions(sess);
-      setSubmissions(subs);
+      setQuestions(qsts);
+      
+      // Filter sessions and submissions by college departments
+      const collegeDepartmentIds = depts.map(d => d.id);
+      const filteredSessions = sess.filter(s => collegeDepartmentIds.includes(s.departmentId));
+      const sessionIds = filteredSessions.map(s => s.id);
+      const filteredSubmissions = subs.filter(sub => sessionIds.includes(sub.sessionId));
+      
+      setSessions(filteredSessions);
+      setSubmissions(filteredSubmissions);
       setCourseData(config.courseData);
       setSubjectsData(config.subjectsData);
 
@@ -218,11 +247,21 @@ const AdminDashboard = () => {
       filteredSubs = filteredSubs.filter(sub => filteredFac.some(f => f.id === sub.facultyId));
     }
 
-    // Filter by subject (this would require subject data in submissions)
-    // For now, we'll skip subject filtering
+    // Filter by subject
+    if (selectedSubject !== 'all') {
+      const subjectSessions = sessions.filter(s => s.subject === selectedSubject);
+      const subjectSessionIds = subjectSessions.map(s => s.id);
+      filteredSubs = filteredSubs.filter(sub => subjectSessionIds.includes(sub.sessionId));
+      // Don't filter faculty by subject - show all faculty in the department
+    }
 
-    // Filter by batch (this would require batch data in submissions)
-    // For now, we'll skip batch filtering
+    // Filter by batch
+    if (selectedBatch !== 'all') {
+      const batchSessions = sessions.filter(s => s.batch === selectedBatch);
+      const batchSessionIds = batchSessions.map(s => s.id);
+      filteredSubs = filteredSubs.filter(sub => batchSessionIds.includes(sub.sessionId));
+      // Don't filter faculty by batch - show all faculty in the department
+    }
 
     // Filter by date range
     if (dateRange.from || dateRange.to) {
@@ -248,7 +287,7 @@ const AdminDashboard = () => {
       faculty: filteredFac,
       departments: filteredDepts
     };
-  }, [submissions, faculty, departments, selectedCourse, selectedDepartment, dateRange, courseData]);
+  }, [submissions, faculty, departments, selectedCourse, selectedDepartment, selectedSubject, selectedBatch, dateRange, courseData, sessions]);
 
   // Calculate metrics
   const activeSessions = sessions.filter(s => s.isActive);
@@ -266,6 +305,20 @@ const AdminDashboard = () => {
         return acc + (ratings.reduce((sum, r) => sum + r, 0) / ratings.length || 0);
       }, 0) / filteredData.submissions.length
     : 0;
+
+  // Calculate trend (compare with previous week)
+  const previousWeekSubmissions = submissions.filter(s =>
+    s.submittedAt && isAfter(s.submittedAt.toDate(), subDays(new Date(), 14)) && !isAfter(s.submittedAt.toDate(), subDays(new Date(), 7))
+  );
+  const previousAvgRating = previousWeekSubmissions.length > 0
+    ? previousWeekSubmissions.reduce((acc, sub) => {
+        const ratings = sub.responses.filter(r => r.rating).map(r => r.rating || 0);
+        return acc + (ratings.reduce((sum, r) => sum + r, 0) / ratings.length || 0);
+      }, 0) / previousWeekSubmissions.length
+    : 0;
+  
+  const trendValue = previousAvgRating > 0 ? ((avgRating - previousAvgRating) / previousAvgRating) * 100 : 0;
+  const isPositive = trendValue >= 0;
 
   // Department performance data
   const deptPerformance = filteredData.departments.map(dept => {
@@ -307,28 +360,51 @@ const AdminDashboard = () => {
   ].filter(d => d.value > 0);
 
   // Performance Trend data (last 6 months)
-  const performanceTrendData = [
-    { month: 'Aug', responses: 0 },
-    { month: 'Sep', responses: 2 },
-    { month: 'Oct', responses: 5 },
-    { month: 'Nov', responses: 0 },
-    { month: 'Dec', responses: 2 },
-    { month: 'Jan', responses: 5 },
-  ];
+  const performanceTrendData = useMemo(() => {
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      
+      const monthSubs = filteredData.submissions.filter(sub => {
+        if (!sub.submittedAt) return false;
+        const subDate = sub.submittedAt.toDate();
+        return subDate >= monthStart && subDate <= monthEnd;
+      });
+      
+      months.push({
+        month: format(date, 'MMM'),
+        responses: monthSubs.length,
+      });
+    }
+    return months;
+  }, [filteredData.submissions]);
 
   // Category Breakdown data
-  const categoryBreakdownData = [
-    { category: 'Student Information', score: 4.2 },
-    { category: 'Teaching Quality', score: 4.5 },
-    { category: 'Class Engagement', score: 3.8 },
-    { category: 'Class Environment', score: 4.1 },
-    { category: 'Teaching Aids', score: 4.3 },
-    { category: 'Relevance', score: 4.0 },
-    { category: 'Query Handling', score: 4.4 },
-    { category: 'Project Learning', score: 3.9 },
-    { category: 'Assignments', score: 4.2 },
-    { category: 'Additional Comments', score: 3.7 },
-  ];
+  const categoryBreakdownData = useMemo(() => {
+    const categoryMap = new Map<string, { total: number; count: number }>();
+    
+    filteredData.submissions.forEach(sub => {
+      sub.responses.forEach(response => {
+        if (response.rating) {
+          const category = response.questionCategory;
+          if (!categoryMap.has(category)) {
+            categoryMap.set(category, { total: 0, count: 0 });
+          }
+          const current = categoryMap.get(category)!;
+          current.total += response.rating;
+          current.count += 1;
+        }
+      });
+    });
+    
+    return Array.from(categoryMap.entries()).map(([category, data]) => ({
+      category,
+      score: data.count > 0 ? Math.round((data.total / data.count) * 10) / 10 : 0,
+    })).filter(item => item.score > 0);
+  }, [filteredData.submissions]);
 
   if (isLoading) {
     return (
@@ -546,13 +622,17 @@ const AdminDashboard = () => {
                       <User className="h-4 w-4 text-primary" />
                       <Label htmlFor="batch-select" className="text-sm font-medium">Batch</Label>
                     </div>
-                    <Select value={selectedBatch} onValueChange={setSelectedBatch}>
-                      <SelectTrigger id="batch-select" className="bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary">
+                    <Select 
+                      value={selectedBatch} 
+                      onValueChange={setSelectedBatch}
+                      disabled={selectedCourse === 'all' || selectedYear === 'all' || selectedDepartment === 'all' || selectedSubject === 'all'}
+                    >
+                      <SelectTrigger id="batch-select" className={`bg-background/80 backdrop-blur-sm ${selectedCourse === 'all' || selectedYear === 'all' || selectedDepartment === 'all' || selectedSubject === 'all' ? 'opacity-50' : 'border-primary/20 focus:border-primary'}`}>
                         <SelectValue placeholder="Select Batch" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Batches</SelectItem>
-                        {batches.map(batch => (
+                        {availableBatches.map(batch => (
                           <SelectItem key={batch} value={batch}>{batch}</SelectItem>
                         ))}
                       </SelectContent>
@@ -637,7 +717,7 @@ const AdminDashboard = () => {
                   value={avgRating.toFixed(1)}
                   subtitle="Out of 5.0"
                   icon={TrendingUp}
-                  trend={{ value: 5, isPositive: true }}
+                  trend={{ value: Math.abs(trendValue), isPositive }}
                 />
                 <StatsCard
                   title="Departments"
@@ -665,21 +745,30 @@ const AdminDashboard = () => {
                     <Building2 className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={deptPerformance} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
-                        <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis dataKey="department" type="category" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} width={80} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--card))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px',
-                          }}
-                        />
-                        <Bar dataKey="average" fill="hsl(213, 96%, 16%)" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {deptPerformance.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={deptPerformance} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                          <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                          <YAxis dataKey="department" type="category" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} width={80} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                            }}
+                          />
+                          <Bar dataKey="average" fill="hsl(213, 96%, 16%)" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No department data available</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -766,38 +855,47 @@ const AdminDashboard = () => {
                     <BarChart3 className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={categoryBreakdownData}>
-                        <PolarGrid stroke="hsl(var(--border))" />
-                        <PolarAngleAxis
-                          dataKey="category"
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                          className="text-xs"
-                        />
-                        <PolarRadiusAxis
-                          domain={[0, 5]}
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
-                          tickCount={6}
-                        />
-                        <Radar
-                          name="Average Score"
-                          dataKey="score"
-                          stroke="hsl(221, 83%, 53%)"
-                          fill="hsl(221, 83%, 53%)"
-                          fillOpacity={0.2}
-                          strokeWidth={2}
-                          dot={{ fill: 'hsl(221, 83%, 53%)', strokeWidth: 2, r: 3 }}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--card))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px',
-                          }}
-                          formatter={(value) => [value, 'Average Score']}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
+                    {categoryBreakdownData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={categoryBreakdownData}>
+                          <PolarGrid stroke="hsl(var(--border))" />
+                          <PolarAngleAxis
+                            dataKey="category"
+                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                            className="text-xs"
+                          />
+                          <PolarRadiusAxis
+                            domain={[0, 5]}
+                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                            tickCount={6}
+                          />
+                          <Radar
+                            name="Average Score"
+                            dataKey="score"
+                            stroke="hsl(221, 83%, 53%)"
+                            fill="hsl(221, 83%, 53%)"
+                            fillOpacity={0.2}
+                            strokeWidth={2}
+                            dot={{ fill: 'hsl(221, 83%, 53%)', strokeWidth: 2, r: 3 }}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                            }}
+                            formatter={(value) => [value, 'Average Score']}
+                          />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No category data available</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   collegesApi,
@@ -58,11 +58,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import QRCode from 'react-qr-code';
+import SessionResponses from '../admin/SessionResponses';
 
 export const SuperAdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { sessionId } = useParams<{ sessionId: string }>();
 
   const [colleges, setColleges] = useState<College[]>([]);
   const [admins, setAdmins] = useState<User[]>([]);
@@ -569,6 +571,10 @@ export const SuperAdminDashboard: React.FC = () => {
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
+  }
+
+  if (sessionId) {
+    return <SessionResponses />;
   }
 
   return (
@@ -1085,7 +1091,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => window.open(`/admin/sessions/${session.id}/responses`, '_blank')}
+                                    onClick={() => navigate(`/super-admin/sessions/${session.id}/responses`)}
                                     className="flex-1 text-xs"
                                   >
                                     <Eye className="h-3 w-3 mr-1" />
@@ -1177,7 +1183,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => window.open(`/admin/sessions/${session.id}/responses`, '_blank')}
+                                    onClick={() => navigate(`/super-admin/sessions/${session.id}/responses`)}
                                     className="flex-1 text-xs"
                                   >
                                     <Eye className="h-3 w-3 mr-1" />
@@ -1267,7 +1273,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => window.open(`/admin/sessions/${session.id}/responses`, '_blank')}
+                                    onClick={() => navigate(`/super-admin/sessions/${session.id}/responses`)}
                                     className="flex-1 text-xs"
                                   >
                                     <Eye className="h-3 w-3 mr-1" />

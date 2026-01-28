@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Download, Star } from 'lucide-react';
 import { feedbackSessionsApi, submissionsApi, questionsApi, FeedbackSubmission, Question, FeedbackSession } from '@/lib/storage';
 import { format } from 'date-fns';
@@ -12,6 +13,8 @@ import { toast } from 'sonner';
 const SessionResponses: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backPath = location.pathname.includes('super-admin') ? '/super-admin/sessions' : '/admin/sessions';
   const [session, setSession] = useState<FeedbackSession | null>(null);
   const [submissions, setSubmissions] = useState<FeedbackSubmission[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -116,7 +119,7 @@ const SessionResponses: React.FC = () => {
       <div className="flex items-center justify-center  min-h-[400px]">
         <div className="text-center">
           <h3 className="text-lg font-medium text-muted-foreground mb-2">Session Not Found</h3>
-          <Button onClick={() => navigate('/admin/sessions')}>
+          <Button onClick={() => navigate(backPath)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Sessions
           </Button>
@@ -131,7 +134,7 @@ const SessionResponses: React.FC = () => {
       <div className="relative py-4">
         {/* Back Button - Left */}
         <div className="absolute left-0 top-1/2 -translate-y-1/2">
-          <Button variant="ghost" onClick={() => navigate('/admin/sessions')}>
+          <Button variant="ghost" onClick={() => navigate(backPath)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Sessions
           </Button>
@@ -162,42 +165,85 @@ const SessionResponses: React.FC = () => {
         </div>
       </div>
 
-      {/* Session Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{submissions.length}</div>
-              <p className="text-sm text-muted-foreground">Total Responses</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
-                <Star className="h-5 w-5 fill-current" />
-                {calculateAverageRating()}
-              </div>
-              <p className="text-sm text-muted-foreground">Average Rating</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{questions.length}</div>
-              <p className="text-sm text-muted-foreground">Questions</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Tabs for Super Admin View */}
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="responses">Responses</TabsTrigger>
+        </TabsList>
 
-      {/* Responses Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Student Responses</CardTitle>
-        </CardHeader>
+        <TabsContent value="summary" className="space-y-6 mt-6">
+          {/* Session Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{submissions.length}</div>
+                  <p className="text-sm text-muted-foreground">Total Responses</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
+                    <Star className="h-5 w-5 fill-current" />
+                    {calculateAverageRating()}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Average Rating</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{questions.length}</div>
+                  <p className="text-sm text-muted-foreground">Questions</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Session Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Session Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="font-medium">Course:</span>
+                  <span>{session.course}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Subject:</span>
+                  <span>{session.subject}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Batch:</span>
+                  <span>{session.batch}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Academic Year:</span>
+                  <span>{session.academicYear}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Status:</span>
+                  <Badge variant={session.isActive ? "default" : "secondary"}>
+                    {session.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="responses" className="space-y-6 mt-6">
+          {/* Responses Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Responses</CardTitle>
+            </CardHeader>
         <CardContent>
           {submissions.length === 0 ? (
             <div className="text-center py-8">
@@ -287,6 +333,8 @@ const SessionResponses: React.FC = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

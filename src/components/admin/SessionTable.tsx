@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { feedbackSessionsApi, facultyApi, departmentsApi, FeedbackSession, Faculty, Department } from '@/lib/storage';
 import { Edit, ExternalLink, Copy, Trash2, Eye } from 'lucide-react';
@@ -111,11 +110,14 @@ export const SessionTable: React.FC<SessionTableProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-4">
-                <Switch
-                  checked={session.isActive}
-                  onCheckedChange={() => handleToggleActive(session)}
+                <Button
+                  variant={session.isActive ? "destructive" : "default"}
+                  size="sm"
+                  onClick={() => handleToggleActive(session)}
                   disabled={updatingIds.has(session.id)}
-                />
+                >
+                  {updatingIds.has(session.id) ? 'Updating...' : session.isActive ? 'Deactivate' : 'Activate'}
+                </Button>
               </div>
             </div>
           </CardHeader>

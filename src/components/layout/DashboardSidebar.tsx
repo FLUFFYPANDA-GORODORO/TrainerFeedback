@@ -69,9 +69,9 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const isCollapsed = externalIsCollapsed !== undefined ? externalIsCollapsed : internalIsCollapsed;
   const setIsCollapsed = onToggleCollapse || setInternalIsCollapsed;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     logout();
-    navigate('/');
+    navigate(-1);
   };
 
   const getLinks = (): SidebarLink[] => {
@@ -125,7 +125,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   return (
     <aside className={cn(
       "fixed left-0 top-0 z-40 h-screen gradient-hero transition-all duration-300 ease-in-out",
-      isCollapsed ? "w-16" : "w-64"
+      isCollapsed ? "w-16" : "w-56"
     )}>
       <div className="flex h-full flex-col">
         {/* Logo and Toggle */}

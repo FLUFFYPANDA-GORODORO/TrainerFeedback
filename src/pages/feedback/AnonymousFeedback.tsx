@@ -14,12 +14,14 @@ import {
   FeedbackSession,
   Faculty,
   Question,
+  FeedbackResponse,
 } from '@/lib/storage';
 
 type Step = 'feedback' | 'success';
 
-interface FeedbackResponse {
+interface CleanResponse {
   questionId: string;
+  questionCategory: string;
   rating?: number;
   comment?: string;
   selectValue?: string;
@@ -142,6 +144,14 @@ export const AnonymousFeedback: React.FC = () => {
         setFaculty(facultyMember);
         setQuestions(sortedQuestions);
         setResponses(sortedQuestions.map(q => ({ questionId: q.id, questionCategory: q.category })));
+
+        // Check if already submitted
+        if (localStorage.getItem(`ffs_submitted_${session.id}`) === 'true') {
+          setStep('success');
+          setIsValidating(false);
+          return;
+        }
+
         setStep('feedback');
       } catch (error) {
         setSessionError('An error occurred while loading the session. Please try again later.');
@@ -196,6 +206,11 @@ export const AnonymousFeedback: React.FC = () => {
   const handleSubmit = async () => {
     if (!validatedSession || !faculty) return;
 
+    // Prevent resubmission
+    if (localStorage.getItem(`ffs_submitted_${validatedSession.id}`) === 'true') {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -203,12 +218,11 @@ export const AnonymousFeedback: React.FC = () => {
       const cleanResponses = responses
         .filter(r => r.rating !== undefined || r.selectValue || r.booleanValue !== undefined || (r.comment && r.comment.trim()))
         .map(r => {
-          const cleanResponse: any = { questionId: r.questionId };
+          const cleanResponse: CleanResponse = { questionId: r.questionId, questionCategory: r.questionCategory! };
           if (r.rating !== undefined) cleanResponse.rating = r.rating;
           if (r.comment && r.comment.trim()) cleanResponse.comment = r.comment.trim();
           if (r.selectValue && r.selectValue.trim()) cleanResponse.selectValue = r.selectValue.trim();
           if (r.booleanValue !== undefined) cleanResponse.booleanValue = r.booleanValue;
-          if (r.questionCategory) cleanResponse.questionCategory = r.questionCategory;
           return cleanResponse;
         });
 
@@ -221,6 +235,7 @@ export const AnonymousFeedback: React.FC = () => {
       });
 
       localStorage.removeItem('ffs_draft_feedback');
+      localStorage.setItem(`ffs_submitted_${validatedSession.id}`, 'true');
       setStep('success');
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -275,13 +290,6 @@ export const AnonymousFeedback: React.FC = () => {
               <p className="text-muted-foreground">
                 {sessionError}
               </p>
-            </div>
-
-            <div className="text-center">
-              <Link to="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors">
-                <ChevronLeft className="h-4 w-4" />
-                Return to Home
-              </Link>
             </div>
           </div>
         )}
@@ -465,15 +473,9 @@ export const AnonymousFeedback: React.FC = () => {
             <h1 className="font-display text-2xl font-bold text-foreground mb-2">
               Thank You!
             </h1>
-            <p className="text-muted-foreground mb-8">
+            <p className="text-muted-foreground">
               Your feedback has been submitted successfully. Your input helps improve teaching quality.
             </p>
-            <Link to="/">
-              <Button variant="outline" className="gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Return to Home
-              </Button>
-            </Link>
           </div>
         )}
       </main>

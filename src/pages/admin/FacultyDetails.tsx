@@ -58,16 +58,23 @@ const FacultyDetails: React.FC = () => {
     const loadData = async () => {
       try {
         const [depts, fac, subs, sess] = await Promise.all([
-          departmentsApi.getAll(),
-          facultyApi.getAll(),
+          departmentsApi.getByCollege(user!.collegeId!),
+          facultyApi.getByCollege(user!.collegeId!),
           submissionsApi.getAll(),
           feedbackSessionsApi.getAll(),
         ]);
 
         setDepartments(depts);
         setFaculty(fac);
-        setSubmissions(subs);
-        setSessions(sess);
+        
+        // Filter submissions and sessions by college departments
+        const collegeDepartmentIds = depts.map(d => d.id);
+        const filteredSessions = sess.filter(s => collegeDepartmentIds.includes(s.departmentId));
+        const sessionIds = filteredSessions.map(s => s.id);
+        const filteredSubmissions = subs.filter(sub => sessionIds.includes(sub.sessionId));
+        
+        setSessions(filteredSessions);
+        setSubmissions(filteredSubmissions);
       } catch (error) {
         console.error('Error loading faculty details data:', error);
       } finally {
@@ -76,7 +83,7 @@ const FacultyDetails: React.FC = () => {
     };
 
     loadData();
-  }, []);
+  }, [user?.collegeId]);
 
   // Filter submissions based on selected time range
   const filteredSubmissions = useMemo(() => {
@@ -207,12 +214,59 @@ const FacultyDetails: React.FC = () => {
       sub.responses.filter(r => r.comment && r.comment.trim() !== '').length
     ).reduce((sum, count) => sum + count, 0);
 
+    // Calculate trend (compare with previous period)
+    const now = new Date();
+    let previousStartDate: Date;
+    let currentStartDate: Date;
+
+    switch (selectedTimeRange) {
+      case 'week':
+        currentStartDate = subDays(now, 7);
+        previousStartDate = subDays(now, 14);
+        break;
+      case 'month':
+        currentStartDate = subDays(now, 30);
+        previousStartDate = subDays(now, 60);
+        break;
+      case 'quarter':
+        currentStartDate = subDays(now, 90);
+        previousStartDate = subDays(now, 180);
+        break;
+      default:
+        currentStartDate = new Date(0); // All time
+        previousStartDate = new Date(0);
+    }
+
+    const currentPeriodSubs = selectedTimeRange === 'all' 
+      ? submissions 
+      : submissions.filter(sub => sub.submittedAt && sub.submittedAt.toDate() >= currentStartDate);
+    
+    const previousPeriodSubs = selectedTimeRange === 'all'
+      ? [] // No previous period for all time
+      : submissions.filter(sub => {
+          if (!sub.submittedAt) return false;
+          const subDate = sub.submittedAt.toDate();
+          return subDate >= previousStartDate && subDate < currentStartDate;
+        });
+
+    const previousAvgRating = previousPeriodSubs.length > 0
+      ? previousPeriodSubs.reduce((acc, sub) => {
+          const ratings = sub.responses.filter(r => r.rating).map(r => r.rating || 0);
+          return acc + (ratings.reduce((sum, r) => sum + r, 0) / ratings.length || 0);
+        }, 0) / previousPeriodSubs.length
+      : 0;
+    
+    const trendValue = previousAvgRating > 0 ? ((avgRating - previousAvgRating) / previousAvgRating) * 100 : 0;
+    const isPositive = trendValue >= 0;
+
     return {
       totalResponses,
       avgRating: Math.round(avgRating * 10) / 10,
-      totalComments
+      totalComments,
+      trendValue: Math.abs(trendValue),
+      isPositive
     };
-  }, [filteredAllSubmissions]);
+  }, [filteredAllSubmissions, submissions, selectedTimeRange]);
 
   // Top comments for current faculty
   const topComments = useMemo(() => {
@@ -327,7 +381,7 @@ const FacultyDetails: React.FC = () => {
               value={overallStats.avgRating.toFixed(1)}
               subtitle="Out of 5.0"
               icon={TrendingUp}
-              trend={{ value: 5, isPositive: true }}
+              trend={{ value: overallStats.trendValue, isPositive: overallStats.isPositive }}
             />
             <StatsCard
               title="Total Comments"

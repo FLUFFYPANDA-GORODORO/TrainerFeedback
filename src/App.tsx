@@ -46,11 +46,12 @@ const App = () => {
             <Route path="/super-admin/colleges" element={<SuperAdminDashboard />} />
             <Route path="/super-admin/admins" element={<SuperAdminDashboard />} />
             <Route path="/super-admin/sessions" element={<SuperAdminDashboard />} />
+            <Route path="/super-admin/sessions/:sessionId/responses" element={<SuperAdminDashboard />} />
             <Route path="/super-admin/question-bank" element={<SuperAdminDashboard />} />
 
             {/* Admin Routes */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-            <Route element={<DashboardLayout allowedRoles={['admin']} />}>
+            <Route element={<DashboardLayout allowedRoles={['admin', 'superAdmin']} />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/sessions" element={<AdminDashboard />} />
               <Route path="/admin/sessions/:sessionId/responses" element={<SessionResponses />} />

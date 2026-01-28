@@ -110,7 +110,7 @@ export interface Faculty {
 export interface FeedbackSession {
   id: string;
   collegeId: string;
-  departmentId: string;
+  departmentId?: string;
   facultyId: string;
   questionGroupId: string;
   course: string;
@@ -178,7 +178,7 @@ export interface FeedbackSubmission {
   sessionId: string;
   facultyId: string;
   collegeId: string;
-  departmentId: string;
+  departmentId?: string;
   responses: FeedbackResponse[];
   metrics: {
     overallRating: number;
@@ -864,6 +864,14 @@ export const submissionsApi = {
 // FEEDBACK STATS API
 // ============================================================================
 
+interface StatsUpdate {
+  type: string;
+  entityId: string;
+  collegeId: string;
+  departmentId?: string;
+  facultyId?: string;
+}
+
 async function updateFeedbackStats(
   collegeId: string,
   departmentId: string,
@@ -877,7 +885,7 @@ async function updateFeedbackStats(
   const monthKey = new Date().toISOString().slice(0, 7); // "2025-01"
   const ratingBucket = Math.round(rating);
   
-  const statsUpdates = [
+  const statsUpdates: StatsUpdate[] = [
     { type: 'college', entityId: collegeId, collegeId },
   ];
   
@@ -980,8 +988,8 @@ async function updateFeedbackStats(
         type: update.type,
         entityId: update.entityId,
         collegeId: update.collegeId,
-        departmentId: update.departmentId,
-        facultyId: update.facultyId,
+        ...(update.departmentId && { departmentId: update.departmentId }),
+        ...(update.facultyId && { facultyId: update.facultyId }),
         totalSubmissions: 1,
         averageRating: rating,
         categoryScores: initialCategoryScores,

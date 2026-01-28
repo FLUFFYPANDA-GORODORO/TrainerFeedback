@@ -48,7 +48,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ allowedRoles }
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={setIsSidebarCollapsed}
       />
-      <main className={`transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'pl-16' : 'pl-64'}`}>
+      <main className={`transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'pl-16' : 'pl-56'}`}>
         <Outlet />
       </main>
     </div>
