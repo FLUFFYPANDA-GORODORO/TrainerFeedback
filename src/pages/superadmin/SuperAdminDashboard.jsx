@@ -17,7 +17,9 @@ import {
   GraduationCap,
   UserPlus,
   RefreshCw,
-  BookOpen
+  BookOpen,
+  Users,
+  FileText
 } from 'lucide-react';
 
 // Import Tab Components
@@ -26,6 +28,8 @@ import CollegesTab from './components/CollegesTab';
 import AdminsTab from './components/AdminsTab';
 import SessionsTab from './components/SessionsTab';
 import AcademicConfigTab from './components/AcademicConfigTab';
+import TrainersTab from './components/TrainersTab';
+import TemplatesTab from './components/TemplatesTab';
 import SessionResponses from '../admin/SessionResponses';
 
 export const SuperAdminDashboard = () => {
@@ -50,7 +54,9 @@ export const SuperAdminDashboard = () => {
       case 'dashboard': return 'overview';
       case 'colleges': return 'colleges';
       case 'admins': return 'admins';
+      case 'trainers': return 'trainers';
       case 'sessions': return 'sessions';
+      case 'templates': return 'templates';
       case 'academic-config': return 'config';
       case 'analytics': return 'analytics';
       default: return 'overview';
@@ -201,6 +207,18 @@ export const SuperAdminDashboard = () => {
               Admins ({admins.length})
             </Button>
             <Button
+              variant={activeTab === 'trainers' ? 'default' : 'ghost'}
+              className={`w-full justify-start gap-3 h-10 px-3 text-sm ${
+                activeTab === 'trainers' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-primary/10'
+              }`}
+              onClick={() => navigate('/super-admin/trainers')}
+            >
+              <Users className="h-4 w-4" />
+              Trainers
+            </Button>
+            <Button
               variant={activeTab === 'sessions' ? 'default' : 'ghost'}
               className={`w-full justify-start gap-3 h-10 px-3 text-sm ${
                 activeTab === 'sessions' 
@@ -211,6 +229,18 @@ export const SuperAdminDashboard = () => {
             >
               <Shield className="h-4 w-4" />
               Sessions ({sessions.length})
+            </Button>
+            <Button
+              variant={activeTab === 'templates' ? 'default' : 'ghost'}
+              className={`w-full justify-start gap-3 h-10 px-3 text-sm ${
+                activeTab === 'templates' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-primary/10'
+              }`}
+              onClick={() => navigate('/super-admin/templates')}
+            >
+              <FileText className="h-4 w-4" />
+              Templates
             </Button>
           </div>
         </nav>
@@ -262,6 +292,10 @@ export const SuperAdminDashboard = () => {
             />
           )}
 
+          {activeTab === 'trainers' && (
+            <TrainersTab />
+          )}
+
           {activeTab === 'sessions' && (
             <SessionsTab 
               sessions={sessions} 
@@ -270,6 +304,10 @@ export const SuperAdminDashboard = () => {
               academicConfig={academicConfig} 
               onRefresh={loadData} 
             />
+          )}
+
+          {activeTab === 'templates' && (
+            <TemplatesTab />
           )}
         </main>
       </div>

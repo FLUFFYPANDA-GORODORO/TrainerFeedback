@@ -41,8 +41,10 @@ const App = () => {
                 <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
                 <Route path="/super-admin/colleges" element={<SuperAdminDashboard />} />
                 <Route path="/super-admin/admins" element={<SuperAdminDashboard />} />
+                <Route path="/super-admin/trainers" element={<SuperAdminDashboard />} />
                 <Route path="/super-admin/sessions" element={<SuperAdminDashboard />} />
                 <Route path="/super-admin/sessions/:sessionId/responses" element={<SuperAdminDashboard />} />
+                <Route path="/super-admin/templates" element={<SuperAdminDashboard />} />
                 <Route path="/super-admin/academic-config" element={<SuperAdminDashboard />} />
 
                 {/* College Admin Routes - has its own built-in layout */}

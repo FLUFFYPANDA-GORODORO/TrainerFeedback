@@ -1,0 +1,26 @@
+[
+  {
+    "trainer_id": "TR-1001",
+    "name": "Jane Smith",
+    "email": "jane.smith@example.com",
+    "domain": "Computer Science",
+    "specialisation": "Web Development",
+    "topics": [
+      "React",
+      "Node.js",
+      "JavaScript"
+    ]
+  },
+  {
+    "trainer_id": "TR-1002",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "domain": "Data Science",
+    "specialisation": "Machine Learning",
+    "topics": [
+      "Python",
+      "TensorFlow",
+      "Data Analysis"
+    ]
+  }
+]
