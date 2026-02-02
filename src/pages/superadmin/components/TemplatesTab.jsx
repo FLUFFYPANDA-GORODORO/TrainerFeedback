@@ -46,6 +46,7 @@ import {
   deleteTemplate,
   seedDefaultTemplate 
 } from '@/services/superadmin/templateService';
+import { QUESTION_CATEGORIES, DEFAULT_CATEGORY } from '@/constants/questionCategories';
 
 const QUESTION_TYPES = [
   { value: 'rating', label: 'Star Rating (1-5)' },
@@ -168,6 +169,7 @@ const TemplatesTab = () => {
       id: Date.now().toString(),
       text: '',
       type: 'rating',
+      category: DEFAULT_CATEGORY,
       required: true,
       options: []
     });
@@ -296,6 +298,21 @@ const TemplatesTab = () => {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
+                                            {q.type === 'rating' && (
+                                                <Select 
+                                                    value={q.category || DEFAULT_CATEGORY} 
+                                                    onValueChange={v => updateQuestion(sIdx, qIdx, 'category', v)}
+                                                >
+                                                    <SelectTrigger className="w-[160px]">
+                                                        <SelectValue placeholder="Category" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {QUESTION_CATEGORIES.map(cat => (
+                                                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
                                         </div>
 
                                         {/* MCQ Options */}

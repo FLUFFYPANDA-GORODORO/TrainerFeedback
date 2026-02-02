@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
   Plus, 
@@ -26,17 +26,14 @@ import {
   addTrainer, 
   updateTrainer, 
   deleteTrainer, 
-  getAllTrainers,
   addTrainersBatch
 } from '@/services/superadmin/trainerService';
+import { useSuperAdminData } from '@/contexts/SuperAdminDataContext';
 
 const TrainersTab = () => {
-  // Data states
-  const [trainers, setTrainers] = useState([]);
-  const [lastDoc, setLastDoc] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  // Get trainers from context (cached, no re-fetch on tab switch)
+  const { trainers, loadTrainers, updateTrainersList, loading: contextLoading } = useSuperAdminData();
+  const loading = contextLoading.trainers;
 
   // Dialog states
   const [trainerDialogOpen, setTrainerDialogOpen] = useState(false);
@@ -58,36 +55,8 @@ const TrainersTab = () => {
   const [batchFile, setBatchFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {
-    loadTrainers(true);
-  }, []);
-
-  const loadTrainers = async (reset = false) => {
-    if (reset) {
-        setLoading(true);
-    } else {
-        setLoadingMore(true);
-    }
-    
-    try {
-      const result = await getAllTrainers(10, reset ? null : lastDoc);
-      
-      if (reset) {
-        setTrainers(result.trainers);
-      } else {
-        setTrainers(prev => [...prev, ...result.trainers]);
-      }
-      
-      setLastDoc(result.lastDoc);
-      setHasMore(result.hasMore);
-    } catch (error) {
-      toast.error('Failed to load trainers');
-      console.error(error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+  // Force refresh trainers from context
+  const refreshTrainers = () => loadTrainers(true);
 
   // Handlers
   const openCreateDialog = () => {
@@ -140,12 +109,12 @@ const TrainersTab = () => {
         await updateTrainer(editingId, updates);
         toast.success('Trainer updated successfully');
         
-        // Update local state to reflect change without full reload
-        setTrainers(trainers.map(t => t.id === editingId ? { ...t, ...updates } : t));
+        // Update context state to reflect change without full reload
+        updateTrainersList(prev => prev.map(t => t.id === editingId ? { ...t, ...updates } : t));
       } else {
         await addTrainer(trainerData);
         toast.success('Trainer created successfully');
-        loadTrainers(true); // Reload to get fresh list
+        refreshTrainers(); // Reload to get fresh list
       }
       setTrainerDialogOpen(false);
     } catch (error) {
@@ -158,7 +127,7 @@ const TrainersTab = () => {
       try {
         await deleteTrainer(id);
         toast.success('Trainer deleted');
-        setTrainers(trainers.filter(t => t.id !== id));
+        updateTrainersList(prev => prev.filter(t => t.id !== id));
       } catch (error) {
         toast.error('Failed to delete trainer');
       }
@@ -200,7 +169,7 @@ const TrainersTab = () => {
             
             setBatchDialogOpen(false);
             setBatchFile(null);
-            loadTrainers(true);
+            refreshTrainers();
         } catch (error) {
             toast.error("Error parsing or uploading JSON: " + error.message);
         } finally {
@@ -443,18 +412,7 @@ const TrainersTab = () => {
         )}
       </div>
       
-      {hasMore && trainers.length > 0 && (
-        <div className="flex justify-center pt-4">
-            <Button 
-                variant="outline" 
-                onClick={() => loadTrainers(false)}
-                disabled={loadingMore}
-            >
-                {loadingMore ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : null}
-                Load More
-            </Button>
-        </div>
-      )}
+      {/* Load more button removed - all trainers loaded via context */}
     </div>
   );
 };

@@ -61,13 +61,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
-import { createSession, deleteSession, updateSession, getAllSessions, closeSessionWithStats, subscribeToSessions } from '@/services/superadmin/sessionService';
+import { createSession, deleteSession, updateSession, closeSessionWithStats } from '@/services/superadmin/sessionService';
 import { getAcademicConfig } from '@/services/superadmin/academicService';
-import { getAllTrainers } from '@/services/superadmin/trainerService';
-import { getAllTemplates } from '@/services/superadmin/templateService';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import SessionAnalytics from './SessionAnalytics';
+import { useSuperAdminData } from '@/contexts/SuperAdminDataContext';
 
 // Define domain options configuration
 const DOMAIN_OPTIONS = [
@@ -80,10 +79,9 @@ const DOMAIN_OPTIONS = [
   "Other"
 ];
 
-const SessionsTab = ({ sessions: initialSessions, colleges, academicConfig: globalConfig, onRefresh }) => {
-  const [sessions, setSessions] = useState([]);
-  const [trainers, setTrainers] = useState([]);
-  const [templates, setTemplates] = useState([]);
+const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
+  // Get data from context (cached, real-time subscribed)
+  const { sessions, trainers, templates, loadSessions } = useSuperAdminData();
   const [loading, setLoading] = useState(false);
   
   // Filters State
@@ -132,35 +130,20 @@ const SessionsTab = ({ sessions: initialSessions, colleges, academicConfig: glob
   const [academicOptions, setAcademicOptions] = useState(null); 
   const [filteredTrainers, setFilteredTrainers] = useState([]);
 
+  // Removed useEffect - data comes from context with real-time subscription
+  // useEffect for domain-based trainer filtering still needed
   useEffect(() => {
-    loadInitialData();
-    
-    // Subscribe to real-time session updates
-    const unsubscribe = subscribeToSessions((updatedSessions) => {
-      setSessions(updatedSessions);
-    });
-    
-    return () => unsubscribe && unsubscribe();
-  }, []);
-
-  const loadInitialData = async () => {
-    setLoading(true);
-    try {
-      const allSessions = await getAllSessions();
-      setSessions(allSessions);
-      
-      const allTrainers = await getAllTrainers(100); 
-      setTrainers(allTrainers.trainers || []);
-
-      const allTemplates = await getAllTemplates();
-      setTemplates(allTemplates);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load sessions data");
-    } finally {
-      setLoading(false);
+    let filtered = trainers;
+    if (formData.domain) {
+      filtered = filtered.filter(t => 
+        t.domain?.toLowerCase().includes(formData.domain.toLowerCase()) ||
+        t.specialisation?.toLowerCase().includes(formData.domain.toLowerCase())
+      );
     }
-  };
+    setFilteredTrainers(filtered);
+  }, [formData.domain, trainers]);
+
+  // loadInitialData removed - data comes from context
 
   // Filter Logic
   const filteredSessions = sessions.filter(session => {
@@ -188,14 +171,14 @@ const SessionsTab = ({ sessions: initialSessions, colleges, academicConfig: glob
 
   useEffect(() => {
     if (step === 2) {
-        let filtered = trainers;
-        if (formData.domain) {
-            filtered = filtered.filter(t => 
-                t.domain?.toLowerCase().includes(formData.domain.toLowerCase()) ||
-                t.specialisation?.toLowerCase().includes(formData.domain.toLowerCase())
-            );
-        }
-        setFilteredTrainers(filtered);
+      let filtered = trainers;
+      if (formData.domain) {
+        filtered = filtered.filter(t => 
+          t.domain?.toLowerCase().includes(formData.domain.toLowerCase()) ||
+          t.specialisation?.toLowerCase().includes(formData.domain.toLowerCase())
+        );
+      }
+      setFilteredTrainers(filtered);
     }
   }, [formData.domain, step, trainers]);
 
@@ -227,8 +210,7 @@ const SessionsTab = ({ sessions: initialSessions, colleges, academicConfig: glob
       }
       setSessionDialogOpen(false);
       resetForm();
-      loadInitialData(); 
-      onRefresh && onRefresh();
+      onRefresh && onRefresh(); // Use the context refresh
     } catch (error) {
       toast.error(editingSessionId ? 'Failed to update session' : 'Failed to create session');
     } finally {
@@ -247,10 +229,9 @@ const SessionsTab = ({ sessions: initialSessions, colleges, academicConfig: glob
             toast.success('Session closed and statistics compiled');
         } else {
             // Reactivating
-            await updateSession(session.id, { status: 'active' });
+        await updateSession(session.id, { status: 'active' });
             toast.success('Session activated');
         }
-        loadInitialData();
     } catch (error) {
         toast.dismiss();
         toast.error('Failed to update status');
@@ -262,7 +243,6 @@ const SessionsTab = ({ sessions: initialSessions, colleges, academicConfig: glob
     try {
         await deleteSession(sessionId);
         toast.success('Session deleted');
-        loadInitialData();
     } catch (error) {
         toast.error('Failed to delete session');
     }

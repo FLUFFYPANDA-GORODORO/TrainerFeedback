@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAllColleges } from '@/services/superadmin/collegeService';
+import { SuperAdminDataProvider, useSuperAdminData } from '@/contexts/SuperAdminDataContext';
 import { 
   usersApi, 
-  sessionsApi, 
   academicConfigApi, 
   analyticsApi 
 } from '@/lib/dataService';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import {
   Building2,
   Shield,
@@ -32,20 +30,28 @@ import TrainersTab from './components/TrainersTab';
 import TemplatesTab from './components/TemplatesTab';
 import SessionResponses from '../admin/SessionResponses';
 
-export const SuperAdminDashboard = () => {
+// Inner dashboard component that consumes context
+const SuperAdminDashboardInner = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { sessionId } = useParams();
   
-  // Data states
-  const [colleges, setColleges] = useState([]);
-  const [admins, setAdmins] = useState([]);
-  const [sessions, setSessions] = useState([]);
-  const [trainers, setTrainers] = useState([]);
-  const [globalStats, setGlobalStats] = useState({});
-  const [academicConfig, setAcademicConfig] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
+  // Get data from context
+  const { 
+    colleges, 
+    trainers, 
+    sessions, 
+    templates,
+    isInitialLoading,
+    refreshAll 
+  } = useSuperAdminData();
+
+  // Legacy data from mock/local storage (admins, academicConfig, globalStats)
+  const admins = usersApi.getAll().filter(u => u.role === 'collegeAdmin');
+  const academicConfig = academicConfigApi.getActive() || {};
+  const stats = analyticsApi.getGlobalStats();
+  const globalStats = { ...stats, totalColleges: colleges.length };
 
   // Get active tab from URL
   const currentSection = location.pathname.split('/').pop() || 'dashboard';
@@ -63,37 +69,6 @@ export const SuperAdminDashboard = () => {
     }
   };
   const activeTab = getActiveTab(currentSection);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // Load Colleges from Firebase
-      const allColleges = await getAllColleges();
-      setColleges(allColleges);
-
-      // Other data still from mock/local storage for now
-      const allUsers = usersApi.getAll();
-      const allSessions = sessionsApi.getAll();
-      const config = academicConfigApi.getActive();
-      const stats = analyticsApi.getGlobalStats();
-      
-      setAdmins(allUsers.filter(u => u.role === 'collegeAdmin'));
-      setTrainers(allUsers.filter(u => u.role === 'trainer'));
-      setSessions(allSessions);
-      setAcademicConfig(config || {});
-      // Recalculate stats based on real college count if needed
-      setGlobalStats({ ...stats, totalColleges: allColleges.length });
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Failed to load dashboard data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -117,7 +92,7 @@ export const SuperAdminDashboard = () => {
     );
   }
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -250,7 +225,7 @@ export const SuperAdminDashboard = () => {
       <div className="flex-1 flex flex-col">
         {/* Top Header with Sign Out */}
         <header className="border-b border-border bg-card p-4 flex justify-end gap-4">
-          <Button variant="outline" onClick={loadData} className="gap-2">
+          <Button variant="outline" onClick={refreshAll} className="gap-2">
             <RefreshCw className="h-4 w-4" />
             Refresh
           </Button>
@@ -274,7 +249,7 @@ export const SuperAdminDashboard = () => {
             <CollegesTab 
               colleges={colleges} 
               admins={admins} 
-              onRefresh={loadData} 
+              onRefresh={refreshAll} 
             />
           )}
 
@@ -288,7 +263,7 @@ export const SuperAdminDashboard = () => {
             <AdminsTab 
               admins={admins} 
               colleges={colleges} 
-              onRefresh={loadData} 
+              onRefresh={refreshAll} 
             />
           )}
 
@@ -302,7 +277,7 @@ export const SuperAdminDashboard = () => {
               colleges={colleges} 
               trainers={trainers} 
               academicConfig={academicConfig} 
-              onRefresh={loadData} 
+              onRefresh={refreshAll} 
             />
           )}
 
@@ -312,5 +287,14 @@ export const SuperAdminDashboard = () => {
         </main>
       </div>
     </div>
+  );
+};
+
+// Wrapper component that provides the context
+export const SuperAdminDashboard = () => {
+  return (
+    <SuperAdminDataProvider>
+      <SuperAdminDashboardInner />
+    </SuperAdminDataProvider>
   );
 };

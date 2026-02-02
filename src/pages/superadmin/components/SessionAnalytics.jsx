@@ -25,7 +25,12 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend
+  Legend,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis
 } from 'recharts';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -78,6 +83,22 @@ const SessionAnalytics = ({ session, onBack }) => {
     name: `${rating} Star`,
     value: count,
     rating: parseInt(rating)
+  }));
+
+  // Prepare radar chart data from category averages
+  const categoryLabels = {
+    knowledge: 'Knowledge',
+    communication: 'Communication',
+    engagement: 'Engagement',
+    content: 'Content',
+    delivery: 'Delivery',
+    overall: 'Overall'
+  };
+  
+  const radarData = Object.entries(stats.categoryAverages || {}).map(([key, value]) => ({
+    category: categoryLabels[key] || key,
+    score: value,
+    fullMark: 5
   }));
 
   return (
@@ -297,6 +318,56 @@ const SessionAnalytics = ({ session, onBack }) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Radar Chart - Category Performance */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Category Performance</CardTitle>
+          <CardDescription>Average scores across different evaluation categories (spider/radar chart)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            {radarData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                  <PolarGrid stroke="hsl(var(--border))" />
+                  <PolarAngleAxis 
+                    dataKey="category" 
+                    tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                  />
+                  <PolarRadiusAxis 
+                    angle={90} 
+                    domain={[0, 5]} 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    tickCount={6}
+                  />
+                  <Radar
+                    name="Score"
+                    dataKey="score"
+                    stroke="hsl(var(--primary))"
+                    fill="hsl(var(--primary))"
+                    fillOpacity={0.4}
+                    strokeWidth={2}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value) => [value.toFixed(2), 'Score']}
+                  />
+                  <Legend />
+                </RadarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                No category data available. Assign categories to rating questions in templates.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

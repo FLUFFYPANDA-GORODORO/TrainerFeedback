@@ -227,6 +227,44 @@ export const compileSessionStats = async (sessionId) => {
       delete stat.values;
     });
 
+    // Calculate category averages for radar chart
+    // We need to get the session to look up question categories
+    const { getSessionById } = await import('./sessionService');
+    const session = await getSessionById(sessionId);
+    const sessionQuestions = session?.questions || [];
+    
+    // Build a map of questionId -> category
+    const questionCategoryMap = {};
+    sessionQuestions.forEach(q => {
+      if (q.category) {
+        questionCategoryMap[q.id] = q.category;
+      }
+    });
+    
+    // Aggregate ratings by category
+    const categoryTotals = {};
+    const categoryCounts = {};
+    
+    responseStats.forEach(resp => {
+      resp.answers.filter(a => a.type === 'rating').forEach(a => {
+        const category = questionCategoryMap[a.questionId] || 'overall';
+        const value = Number(a.value) || 0;
+        
+        if (!categoryTotals[category]) {
+          categoryTotals[category] = 0;
+          categoryCounts[category] = 0;
+        }
+        categoryTotals[category] += value;
+        categoryCounts[category]++;
+      });
+    });
+    
+    // Calculate averages per category
+    const categoryAverages = {};
+    Object.keys(categoryTotals).forEach(cat => {
+      categoryAverages[cat] = Math.round((categoryTotals[cat] / categoryCounts[cat]) * 100) / 100;
+    });
+
     return {
       totalResponses: responses.length,
       avgRating: Math.round(avgRating * 100) / 100,
@@ -237,6 +275,7 @@ export const compileSessionStats = async (sessionId) => {
       leastRatedComments,
       avgComments,
       questionStats,
+      categoryAverages,
       compiledAt: new Date().toISOString()
     };
   } catch (error) {
