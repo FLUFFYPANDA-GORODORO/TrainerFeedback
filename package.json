@@ -1,7 +1,8 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "trainer-feedback-system",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Comprehensive trainer feedback and insights management system",
   "type": "module",
   "scripts": {
     "dev": "vite",

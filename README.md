@@ -1,20 +1,12 @@
-# Faculty Insights Hub
+# Trainer Feedback System
 
 ## Overview
 
-**Faculty Insights Hub** is a **multi-college, role-based Faculty Feedback System** built entirely as a **frontend-only React application** using **localStorage** as its data store.
+**Trainer Feedback System** is a **multi-organization, role-based Trainer Feedback System** built entirely as a **frontend-only React application** using **localStorage** as its data store.
 
-The system is designed for **academic institutions** to collect **anonymous and authenticated student feedback**, analyze faculty performance, and generate rich analytics — **without any backend dependency**.
+The system is designed for **training institutions** to collect **anonymous and authenticated student/trainee feedback**, analyze trainer performance, and generate rich analytics — **without any backend dependency**.
 
-This updated architecture replaces the concept of rigid **Feedback Cycles** with a more **open, flexible, and academic-friendly concept called `Feedback Sessions`**.
-
-A **Feedback Session** represents a real classroom context:
-
-> **One Faculty + One Subject + One Batch + One Academic Context**
-
-Each session generates a **unique feedback link**, allowing students to submit feedback seamlessly.
-
----
+This updated architecture replaces the concept of rigid **Feedback Cycles** with a more **open, flexible, and learner-friendly concept called `Feedback Sessions`**.
 
 ## Key Architectural Shift (IMPORTANT)
 
@@ -28,12 +20,10 @@ Each session generates a **unique feedback link**, allowing students to submit f
 
 ### A Feedback Session is created by selecting:
 
-* **Course / Program** (Engineering, MBA, MCA, etc.)
-* **Academic Year** (1st Year, 2nd Year, etc.)
-* **Department** (CSE, IT, Finance, etc.)
-* **Subject**
-* **Batch** (A, B, C, D)
-* **Faculty**
+* **Course / Program**
+* **Batch / Cohort**
+* **Subject / Module**
+* **Trainer**
 
 Once created:
 
@@ -43,7 +33,7 @@ Once created:
 
 This makes the system:
 
-* More intuitive for colleges
+* More intuitive for organizations
 * Easier to scale
 * Easier to analyze at micro & macro levels
 
@@ -68,11 +58,11 @@ This makes the system:
 ## Core Design Principles
 
 * **Frontend-only (No Backend)**
-* **Academic-first data model**
+* **Trainer-first data model**
 * **Role-based access control**
-* **Multi-college isolation**
+* **Multi-org isolation**
 * **Accessible & keyboard-friendly UI**
-* **Professional academic look**
+* **Professional look**
 
 ---
 
@@ -101,36 +91,31 @@ This makes the system:
 ### Role-Based Dashboards
 
 * `/super-admin` – System Owner
-* `/admin/dashboard` – College Admin
+* `/admin/dashboard` – Org Admin
 * `/admin/sessions` – Feedback Session Management
-* `/admin/faculty` – Faculty Management
-* `/admin/departments` – Department Management
+* `/admin/trainers` – Trainer Management
+* `/admin/departments` – Department/Track Management
 * `/admin/questions` – Question Bank
 * `/admin/reports` – Reports & Analytics
-* `/admin/settings` – College Settings
-* `/hod/dashboard` – Department-Level View
-* `/faculty/dashboard` – Faculty Personal Dashboard
+* `/admin/settings` – Settings
+* `/trainer/dashboard` – Trainer Personal Dashboard
 
 ---
 
 ## Feedback Session Lifecycle
 
-1. **College Admin creates a Session**
-2. Selects academic context:
-
+1. **Admin creates a Session**
+2. Selects context:
    * Course / Program
-   * Academic Year
-   * Department
-   * Subject
    * Batch
-   * Faculty
+   * Subject / Module
+   * Trainer
 3. System generates:
-
    * `uniqueSessionId`
    * `anonymousFeedbackURL`
 4. Session is activated
-5. Students submit feedback anonymously
-6. Faculty & Admin view analytics
+5. Trainees submit feedback anonymously
+6. Trainer & Admin view analytics
 
 ---
 
@@ -138,25 +123,19 @@ This makes the system:
 
 ### Super Admin
 
-* Manage colleges
-* Create college admins
+* Manage organizations
+* Create admins
 * Reset demo data
 * View system-wide analytics
 
-### College Admin
+### Admin
 
-* Manage departments & faculty
+* Manage departments & trainers
 * Create feedback sessions
 * Manage question bank
-* View full college reports
+* View full reports
 
-### HOD
-
-* Department-only access
-* View faculty performance
-* Department analytics
-
-### Faculty
+### Trainer
 
 * View own feedback only
 * Trend analysis
@@ -194,39 +173,34 @@ This makes the system:
 
 ## Updated localStorage Data Model
 
-### Colleges
-
+### Organizations
 ```js
 ffs_colleges
 ```
 
 ### Users
-
 ```js
 ffs_users
 ```
 
 ### Departments
-
 ```js
 ffs_departments
 ```
 
-### Faculty
-
+### Trainers
 ```js
 ffs_faculty
 ```
 
 ### Feedback Sessions (NEW CORE ENTITY)
-
 ```js
 ffs_feedback_sessions: [
   {
     id: 'session-1',
     collegeId: '1',
     departmentId: '1',
-    facultyId: '1',
+    facultyId: '1', // Refers to trainerId
 
     course: 'Engineering',
     academicYear: '2nd Year',
@@ -244,13 +218,11 @@ ffs_feedback_sessions: [
 ```
 
 ### Questions
-
 ```js
 ffs_questions
 ```
 
 ### Feedback Submissions
-
 ```js
 ffs_feedback_submissions: [
   {
@@ -271,89 +243,27 @@ ffs_feedback_submissions: [
 
 ## Reports & Analytics
 
-### Admin / HOD
+### Admin
 
 * Department-wise averages
-* Faculty comparisons
+* Trainer comparisons
 * Subject-wise performance
 * Batch-wise trends
 * Response rates
 
-### Faculty
+### Trainer
 
 * Personal score trends
 * Category radar chart
-* Anonymous student comments
+* Anonymous trainee comments
 * Percentile comparison
-
-### Charts Used
-
-* Bar Chart
-* Line Chart
-* Pie Chart
-* Radar Chart
-
----
-
-## UX & Accessibility
-
-* WCAG AA color contrast
-* Keyboard navigation
-* ARIA labels
-* Screen-reader friendly tables
-* Focus indicators
-* Skip-to-content link
-
----
-
-## Demo & Mock Data
-
-Includes:
-
-* 2 Colleges (ICEM, IGSB)
-* 10–15 Faculty
-* Multiple departments
-* 20+ questions
-* 100+ feedback submissions
-
----
-
-## Utilities & Helpers
-
-* `localStorageService.js`
-* `authService.js`
-* `sessionService.js`
-* `reportService.js`
-* Simulated API delay (200–500ms)
-
----
-
-## Reset Demo Data
-
-Available for:
-
-* Super Admin
-* College Admin
-
-Resets all localStorage keys safely.
-
----
-
-## Success Criteria
-
-✔ Multi-college support
-✔ Session-based architecture
-✔ Fully frontend-only
-✔ Professional academic UI
-✔ Accessible & responsive
-✔ Realistic demo-ready system
 
 ---
 
 ## Branding
 
-**Gryphon Academy Pvt Ltd**
+**Trainer Feedback System**
 
 ---
 
-> This README represents the **final, production-grade architecture** for the Faculty Insights Hub using a **Session-first academic model**.
+> This README represents the **production-grade architecture** for the Trainer Feedback System using a **Session-first model**.

@@ -180,7 +180,7 @@ export const SuperAdminDashboard = () => {
               onClick={() => navigate('/super-admin/colleges')}
             >
               <GraduationCap className="h-4 w-4" />
-              Colleges ({colleges.length})
+              Colleges 
             </Button>
             <Button
               variant={activeTab === 'config' ? 'default' : 'ghost'}
@@ -204,7 +204,7 @@ export const SuperAdminDashboard = () => {
               onClick={() => navigate('/super-admin/admins')}
             >
               <UserPlus className="h-4 w-4" />
-              Admins ({admins.length})
+              Admins
             </Button>
             <Button
               variant={activeTab === 'trainers' ? 'default' : 'ghost'}
@@ -228,7 +228,7 @@ export const SuperAdminDashboard = () => {
               onClick={() => navigate('/super-admin/sessions')}
             >
               <Shield className="h-4 w-4" />
-              Sessions ({sessions.length})
+              Sessions 
             </Button>
             <Button
               variant={activeTab === 'templates' ? 'default' : 'ghost'}
