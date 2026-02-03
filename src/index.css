@@ -1,0 +1,212 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 213 47% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 213 47% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 213 47% 15%;
+
+    --primary: 213 96% 16%; /* #01224E - Deep Navy Blue */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%; /* #f5f5f5 - Light Gray */
+    --secondary-foreground: 213 47% 15%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 213 80% 25%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 160 84% 39%; /* #10b981 - Success Green */
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%; /* #f59e0b - Warning Orange */
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%; /* #ef4444 - Error Red */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 213 96% 16%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 213 96% 16%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 213 96% 16%;
+    --sidebar-accent: 213 80% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 213 80% 25%;
+    --sidebar-ring: 0 0% 100%;
+
+    /* Custom tokens */
+    --gradient-hero: linear-gradient(135deg, hsl(213, 96%, 16%) 0%, hsl(213, 80%, 25%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(210, 20%, 98%) 100%);
+    --shadow-card: 0 4px 6px -1px hsl(213, 47%, 15%, 0.05), 0 2px 4px -2px hsl(213, 47%, 15%, 0.05);
+    --shadow-card-hover: 0 10px 15px -3px hsl(213, 47%, 15%, 0.08), 0 4px 6px -4px hsl(213, 47%, 15%, 0.05);
+    --shadow-elevated: 0 20px 25px -5px hsl(213, 47%, 15%, 0.1), 0 8px 10px -6px hsl(213, 47%, 15%, 0.05);
+  }
+
+  .dark {
+    --background: 213 47% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 213 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 213 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 213 96% 16%;
+
+    --secondary: 213 40% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 213 40% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 213 60% 30%;
+    --accent-foreground: 210 40% 98%;
+
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 213 40% 17%;
+    --input: 213 40% 17%;
+    --ring: 212 27% 84%;
+
+    --sidebar-background: 213 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 213 96% 16%;
+    --sidebar-accent: 213 40% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 213 40% 15%;
+    --sidebar-ring: 210 40% 98%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-[var(--shadow-card)] transition-shadow duration-300 hover:shadow-[var(--shadow-card-hover)];
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background: var(--gradient-hero);
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.4s ease-out forwards;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted/50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/20 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/30;
+}

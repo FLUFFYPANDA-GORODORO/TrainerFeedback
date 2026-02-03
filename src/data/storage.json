@@ -1,0 +1,464 @@
+{
+    "users": [
+        {
+            "id": "superadmin-1",
+            "email": "superadmin@test.com",
+            "name": "Super Admin",
+            "role": "superAdmin",
+            "password": "password123",
+            "isActive": true,
+            "createdAt": "2025-01-01T00:00:00Z"
+        },
+        {
+            "id": "admin-icem-1",
+            "email": "admin@icem.com",
+            "name": "ICEM Admin",
+            "role": "collegeAdmin",
+            "collegeId": "college-1",
+            "password": "password123",
+            "isActive": true,
+            "createdAt": "2025-01-01T00:00:00Z"
+        },
+        {
+            "id": "admin-igsb-1",
+            "email": "admin@igsb.com",
+            "name": "IGSB Admin",
+            "role": "collegeAdmin",
+            "collegeId": "college-2",
+            "password": "password123",
+            "isActive": true,
+            "createdAt": "2025-01-01T00:00:00Z"
+        },
+        {
+            "id": "trainer-1",
+            "email": "john.trainer@test.com",
+            "name": "John Smith",
+            "role": "trainer",
+            "collegeId": "college-1",
+            "password": "password123",
+            "isActive": true,
+            "specialization": "Data Science",
+            "createdAt": "2025-01-01T00:00:00Z"
+        },
+        {
+            "id": "trainer-2",
+            "email": "jane.trainer@test.com",
+            "name": "Jane Doe",
+            "role": "trainer",
+            "collegeId": "college-1",
+            "password": "password123",
+            "isActive": true,
+            "specialization": "Web Development",
+            "createdAt": "2025-01-01T00:00:00Z"
+        },
+        {
+            "id": "trainer-3",
+            "email": "mike.trainer@test.com",
+            "name": "Mike Johnson",
+            "role": "trainer",
+            "collegeId": "college-2",
+            "password": "password123",
+            "isActive": true,
+            "specialization": "Machine Learning",
+            "createdAt": "2025-01-01T00:00:00Z"
+        },
+        {
+            "id": "trainer-4",
+            "email": "sarah.trainer@test.com",
+            "name": "Sarah Williams",
+            "role": "trainer",
+            "collegeId": "college-2",
+            "password": "password123",
+            "isActive": true,
+            "specialization": "Cloud Computing",
+            "createdAt": "2025-01-01T00:00:00Z"
+        },
+        {
+            "id": "trainer-5",
+            "email": "david.trainer@test.com",
+            "name": "David Brown",
+            "role": "trainer",
+            "collegeId": "college-1",
+            "password": "password123",
+            "isActive": true,
+            "specialization": "Cybersecurity",
+            "createdAt": "2025-01-01T00:00:00Z"
+        }
+    ],
+    "colleges": [
+        {
+            "id": "college-1",
+            "name": "Indira College of Engineering & Management",
+            "code": "ICEM",
+            "logo": "",
+            "address": "Pune, Maharashtra",
+            "phone": "+91-20-12345678",
+            "email": "info@icem.edu.in",
+            "isActive": true,
+            "createdAt": "2025-01-01T00:00:00Z",
+            "adminCount": 1,
+            "trainerCount": 3,
+            "sessionCount": 5
+        },
+        {
+            "id": "college-2",
+            "name": "Indira Global Studies Business School",
+            "code": "IGSB",
+            "logo": "",
+            "address": "Pune, Maharashtra",
+            "phone": "+91-20-87654321",
+            "email": "info@igsb.edu.in",
+            "isActive": true,
+            "createdAt": "2025-01-01T00:00:00Z",
+            "adminCount": 1,
+            "trainerCount": 2,
+            "sessionCount": 3
+        }
+    ],
+    "sessions": [
+        {
+            "id": "session-1",
+            "collegeId": "college-1",
+            "trainerId": "trainer-1",
+            "course": "B.Tech",
+            "specialization": "Computer Science",
+            "topic": "Introduction to Python",
+            "batch": "Batch A",
+            "shift": "Morning",
+            "status": "active",
+            "uniqueUrl": "feedback-abc123",
+            "submissionCount": 25,
+            "averageRating": 4.2,
+            "createdAt": "2025-01-15T09:00:00Z",
+            "startDate": "2025-01-15T09:00:00Z",
+            "endDate": "2025-01-15T11:00:00Z"
+        },
+        {
+            "id": "session-2",
+            "collegeId": "college-1",
+            "trainerId": "trainer-2",
+            "course": "B.Tech",
+            "specialization": "Information Technology",
+            "topic": "React Fundamentals",
+            "batch": "Batch B",
+            "shift": "Afternoon",
+            "status": "active",
+            "uniqueUrl": "feedback-def456",
+            "submissionCount": 30,
+            "averageRating": 4.5,
+            "createdAt": "2025-01-16T14:00:00Z",
+            "startDate": "2025-01-16T14:00:00Z",
+            "endDate": "2025-01-16T16:00:00Z"
+        },
+        {
+            "id": "session-3",
+            "collegeId": "college-1",
+            "trainerId": "trainer-1",
+            "course": "MCA",
+            "specialization": "Data Science",
+            "topic": "Machine Learning Basics",
+            "batch": "Batch A",
+            "shift": "Morning",
+            "status": "completed",
+            "uniqueUrl": "feedback-ghi789",
+            "submissionCount": 22,
+            "averageRating": 4.0,
+            "createdAt": "2025-01-10T09:00:00Z",
+            "startDate": "2025-01-10T09:00:00Z",
+            "endDate": "2025-01-10T11:00:00Z"
+        },
+        {
+            "id": "session-4",
+            "collegeId": "college-2",
+            "trainerId": "trainer-3",
+            "course": "MBA",
+            "specialization": "Finance",
+            "topic": "Financial Analytics",
+            "batch": "Batch A",
+            "shift": "Morning",
+            "status": "active",
+            "uniqueUrl": "feedback-jkl012",
+            "submissionCount": 18,
+            "averageRating": 4.3,
+            "createdAt": "2025-01-17T09:00:00Z",
+            "startDate": "2025-01-17T09:00:00Z",
+            "endDate": "2025-01-17T11:00:00Z"
+        },
+        {
+            "id": "session-5",
+            "collegeId": "college-2",
+            "trainerId": "trainer-4",
+            "course": "MBA",
+            "specialization": "Marketing",
+            "topic": "Digital Marketing Strategy",
+            "batch": "Batch B",
+            "shift": "Afternoon",
+            "status": "active",
+            "uniqueUrl": "feedback-mno345",
+            "submissionCount": 20,
+            "averageRating": 4.6,
+            "createdAt": "2025-01-18T14:00:00Z",
+            "startDate": "2025-01-18T14:00:00Z",
+            "endDate": "2025-01-18T16:00:00Z"
+        }
+    ],
+    "feedbackSubmissions": [
+        {
+            "id": "feedback-1",
+            "sessionId": "session-1",
+            "trainerId": "trainer-1",
+            "collegeId": "college-1",
+            "responses": [
+                {
+                    "questionId": "q1",
+                    "rating": 5,
+                    "category": "Teaching Quality"
+                },
+                {
+                    "questionId": "q2",
+                    "rating": 4,
+                    "category": "Communication"
+                },
+                {
+                    "questionId": "q3",
+                    "rating": 4,
+                    "category": "Subject Knowledge"
+                },
+                {
+                    "questionId": "q4",
+                    "comment": "Very engaging session!",
+                    "category": "Overall"
+                }
+            ],
+            "overallRating": 4.3,
+            "submittedAt": "2025-01-15T11:30:00Z"
+        },
+        {
+            "id": "feedback-2",
+            "sessionId": "session-1",
+            "trainerId": "trainer-1",
+            "collegeId": "college-1",
+            "responses": [
+                {
+                    "questionId": "q1",
+                    "rating": 4,
+                    "category": "Teaching Quality"
+                },
+                {
+                    "questionId": "q2",
+                    "rating": 5,
+                    "category": "Communication"
+                },
+                {
+                    "questionId": "q3",
+                    "rating": 4,
+                    "category": "Subject Knowledge"
+                },
+                {
+                    "questionId": "q4",
+                    "comment": "Good explanation of concepts",
+                    "category": "Overall"
+                }
+            ],
+            "overallRating": 4.3,
+            "submittedAt": "2025-01-15T11:35:00Z"
+        },
+        {
+            "id": "feedback-3",
+            "sessionId": "session-2",
+            "trainerId": "trainer-2",
+            "collegeId": "college-1",
+            "responses": [
+                {
+                    "questionId": "q1",
+                    "rating": 5,
+                    "category": "Teaching Quality"
+                },
+                {
+                    "questionId": "q2",
+                    "rating": 5,
+                    "category": "Communication"
+                },
+                {
+                    "questionId": "q3",
+                    "rating": 4,
+                    "category": "Subject Knowledge"
+                },
+                {
+                    "questionId": "q4",
+                    "comment": "Excellent React tutorial!",
+                    "category": "Overall"
+                }
+            ],
+            "overallRating": 4.7,
+            "submittedAt": "2025-01-16T16:30:00Z"
+        }
+    ],
+    "academicConfigs": [
+        {
+            "id": "config-1",
+            "collegeId": "college-1",
+            "courses": [
+                "B.Tech",
+                "M.Tech",
+                "MCA",
+                "BCA"
+            ],
+            "specializations": {
+                "B.Tech": [
+                    "Computer Science",
+                    "Information Technology",
+                    "Electronics",
+                    "Mechanical"
+                ],
+                "M.Tech": [
+                    "Computer Science",
+                    "Data Science",
+                    "AI/ML"
+                ],
+                "MCA": [
+                    "Data Science",
+                    "Software Engineering"
+                ],
+                "BCA": [
+                    "General",
+                    "Cloud Computing"
+                ]
+            },
+            "topics": {
+                "Computer Science": [
+                    "Introduction to Python",
+                    "Data Structures",
+                    "Algorithms",
+                    "Database Systems",
+                    "Operating Systems"
+                ],
+                "Information Technology": [
+                    "Web Development",
+                    "React Fundamentals",
+                    "Node.js",
+                    "Cloud Computing"
+                ],
+                "Data Science": [
+                    "Machine Learning Basics",
+                    "Deep Learning",
+                    "Statistics",
+                    "Data Visualization"
+                ]
+            },
+            "batches": [
+                "Batch A",
+                "Batch B",
+                "Batch C",
+                "Batch D"
+            ],
+            "shifts": [
+                "Morning",
+                "Afternoon"
+            ]
+        },
+        {
+            "id": "config-2",
+            "collegeId": "college-2",
+            "courses": [
+                "MBA",
+                "BBA",
+                "PGDM"
+            ],
+            "specializations": {
+                "MBA": [
+                    "Finance",
+                    "Marketing",
+                    "HR",
+                    "Operations"
+                ],
+                "BBA": [
+                    "General Management",
+                    "Finance",
+                    "Marketing"
+                ],
+                "PGDM": [
+                    "Business Analytics",
+                    "International Business"
+                ]
+            },
+            "topics": {
+                "Finance": [
+                    "Financial Analytics",
+                    "Investment Banking",
+                    "Risk Management",
+                    "Corporate Finance"
+                ],
+                "Marketing": [
+                    "Digital Marketing Strategy",
+                    "Brand Management",
+                    "Consumer Behavior"
+                ],
+                "HR": [
+                    "Talent Management",
+                    "Organizational Behavior",
+                    "Compensation Management"
+                ]
+            },
+            "batches": [
+                "Batch A",
+                "Batch B",
+                "Batch C"
+            ],
+            "shifts": [
+                "Morning",
+                "Afternoon"
+            ]
+        }
+    ],
+    "questions": [
+        {
+            "id": "q1",
+            "text": "How would you rate the trainer's teaching quality?",
+            "category": "Teaching Quality",
+            "responseType": "rating",
+            "required": true,
+            "order": 1
+        },
+        {
+            "id": "q2",
+            "text": "How effective was the trainer's communication?",
+            "category": "Communication",
+            "responseType": "rating",
+            "required": true,
+            "order": 2
+        },
+        {
+            "id": "q3",
+            "text": "How would you rate the trainer's subject knowledge?",
+            "category": "Subject Knowledge",
+            "responseType": "rating",
+            "required": true,
+            "order": 3
+        },
+        {
+            "id": "q4",
+            "text": "Were the course materials helpful?",
+            "category": "Course Materials",
+            "responseType": "rating",
+            "required": true,
+            "order": 4
+        },
+        {
+            "id": "q5",
+            "text": "Was the session interactive and engaging?",
+            "category": "Engagement",
+            "responseType": "rating",
+            "required": true,
+            "order": 5
+        },
+        {
+            "id": "q6",
+            "text": "Any additional comments or suggestions?",
+            "category": "Overall",
+            "responseType": "text",
+            "required": false,
+            "order": 6
+        }
+    ]
+}

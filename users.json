@@ -1,0 +1,91 @@
+{"users": [
+{
+  "localId": "3YJoluCIrkaqv3xB5gv5cPZMRxG2",
+  "email": "faculty1@icem.edu",
+  "emailVerified": false,
+  "passwordHash": "3gSThKu/FZvH95ZEpnnKF2MgDhkqskTuGdJi0LhJS6o3vlfvJKbEtr7zHIcaRXtSXST2UKvl463cIB/jmO/1NA==",
+  "salt": "P5hrtrQWBawRoA==",
+  "lastSignedInAt": "1769061915885",
+  "createdAt": "1769061915885",
+  "providerUserInfo": []
+},
+{
+  "localId": "3jrxomO6OIbS6fKdNQ6RG0vswYT2",
+  "email": "hod.ee@icem.edu",
+  "emailVerified": false,
+  "passwordHash": "rYa7FdyXouWbp/DcfELp0MeDPjlS7BobeBIdjUsh9XlbwutMzUJwCrpxCkfygYPyzSVbPYlz3GeL9zE0liW05w==",
+  "salt": "0OqOCB7XaPa6Cg==",
+  "lastSignedInAt": "1769061913907",
+  "createdAt": "1769061913907",
+  "providerUserInfo": []
+},
+{
+  "localId": "EcGEHXYsjWU9ziBoe9PzoAQ4YCk1",
+  "email": "faculty3@igsb.edu",
+  "emailVerified": false,
+  "passwordHash": "iJda/SCBCmfu/fRGF23K4gWe4H3n1LNJQfINXeXgISi+1sUgu7B2GSPf0In6Jlwb8xoA6Y/fAJtiZqGvaZRBgg==",
+  "salt": "oupI5j1P58NlHw==",
+  "lastSignedInAt": "1769061917947",
+  "createdAt": "1769061917947",
+  "providerUserInfo": []
+},
+{
+  "localId": "G2yvAqsZXPMgeq5u8xiWa8ZRpje2",
+  "email": "faculty2@icem.edu",
+  "emailVerified": false,
+  "passwordHash": "LEObB00r/H/LvtM01c4y3dIBIeNAeLqgvt6VsCvfWJ+cP5wx5/lB5oxUIvslweKCzG6/HZp1ZcZ07wyx2EH5cw==",
+  "salt": "gR+R3CrhfEJc/w==",
+  "lastSignedInAt": "1769061916914",
+  "createdAt": "1769061916914",
+  "providerUserInfo": []
+},
+{
+  "localId": "MuJ2UYG663WUAdRIgRibIFwi9Bs1",
+  "email": "superadmin@facultyhub.com",
+  "emailVerified": false,
+  "passwordHash": "u3uNr16Bf2Oa0rD7C4+mmaqraIPy0CdBMO9FNdXWdKcNosMzQHo8J0pfPl6FYh1Ry8Wn/SAnSn3ESGiGkdKx3w==",
+  "salt": "DBUPBiIhJ0WCag==",
+  "lastSignedInAt": "1769062948885",
+  "createdAt": "1769061909500",
+  "providerUserInfo": []
+},
+{
+  "localId": "j2a2cpr1yxMERoCxJvrZjhKM3Fq1",
+  "email": "hod.cs@icem.edu",
+  "emailVerified": false,
+  "passwordHash": "kysJaEus+BLSL3UaguBkDmI319pPoQkvMcrSz/4DM1IH+/w2ITc6Om2JeUdim7PRdNhihfInd5F0BaRSk1hqLA==",
+  "salt": "JobI1V516wHkeg==",
+  "lastSignedInAt": "1769062275818",
+  "createdAt": "1769061912922",
+  "providerUserInfo": []
+},
+{
+  "localId": "lRKfAehwikU1pKPFdME5yxyelwm2",
+  "email": "admin@igsb.edu",
+  "emailVerified": false,
+  "passwordHash": "vtzbhVJ9dy7C+Vvr2py8FMwWW3npeBpEBqiELZb0fnayri3wPhBPkM2lqdRxo1wbGIv3rbELG3Hrdvf+tKQhvA==",
+  "salt": "1rJflM2qNb+V6w==",
+  "lastSignedInAt": "1769062724796",
+  "createdAt": "1769061911932",
+  "providerUserInfo": []
+},
+{
+  "localId": "rR9QGC5OqVYP90JTdfJryAUcFCK2",
+  "email": "admin@icem.edu",
+  "emailVerified": false,
+  "passwordHash": "qpDi0SZwrlvsrH618F/UX2ZZmaya59FK1zTsxzO9HjOwMrKGughmZNhtnwini2eautCUDhk4LNmYZv35AwaKdw==",
+  "salt": "7Uv3l2v/6aRGmA==",
+  "lastSignedInAt": "1769062309371",
+  "createdAt": "1769061910868",
+  "providerUserInfo": []
+},
+{
+  "localId": "vfVOGvrtkNUTdTfhhLAFCU4r3aS2",
+  "email": "hod.mba@igsb.edu",
+  "emailVerified": false,
+  "passwordHash": "/sDYNIUlle6zMAquX+wQ5laW6+aUP4cMES8EQx5L46fcREko0zVsPuRwRk/AfunjVRwOgdeCINxaYjd5sHUlMg==",
+  "salt": "xK5h4SYN8VyczA==",
+  "lastSignedInAt": "1769061914900",
+  "createdAt": "1769061914900",
+  "providerUserInfo": []
+}]}
