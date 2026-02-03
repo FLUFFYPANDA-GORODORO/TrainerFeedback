@@ -6,7 +6,8 @@ import {
   Trash2, 
   Upload,
   User,
-  Loader2
+  Loader2,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,7 @@ import {
   addTrainersBatch
 } from '@/services/superadmin/trainerService';
 import { useSuperAdminData } from '@/contexts/SuperAdminDataContext';
+import TrainerAnalytics from './TrainerAnalytics';
 
 const TrainersTab = () => {
   // Get trainers from context (cached, no re-fetch on tab switch)
@@ -54,6 +56,9 @@ const TrainersTab = () => {
   const [editingId, setEditingId] = useState(null);
   const [batchFile, setBatchFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Analytics view state
+  const [selectedTrainerForAnalytics, setSelectedTrainerForAnalytics] = useState(null);
 
   // Force refresh trainers from context
   const refreshTrainers = () => loadTrainers(true);
@@ -178,6 +183,17 @@ const TrainersTab = () => {
     };
     reader.readAsText(batchFile);
   };
+
+  // If a trainer is selected for analytics, show analytics view
+  if (selectedTrainerForAnalytics) {
+    return (
+      <TrainerAnalytics
+        trainerId={selectedTrainerForAnalytics.id}
+        trainerName={selectedTrainerForAnalytics.name}
+        onBack={() => setSelectedTrainerForAnalytics(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -349,6 +365,15 @@ const TrainersTab = () => {
               </div>
 
               <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-transparent transition-colors"
+                  onClick={() => setSelectedTrainerForAnalytics(trainer)}
+                  title="View Analytics"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

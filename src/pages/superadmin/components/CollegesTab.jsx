@@ -4,7 +4,8 @@ import {
   Plus, 
   Pencil, 
   Trash2, 
-  GraduationCap 
+  GraduationCap,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ import {
   updateCollege, 
   deleteCollege 
 } from '@/services/superadmin/collegeService';
+import CollegeAnalytics from './CollegeAnalytics';
 
 const CollegesTab = ({ colleges, admins, onRefresh }) => {
   // Dialog states
@@ -33,6 +35,9 @@ const CollegesTab = ({ colleges, admins, onRefresh }) => {
   const [newCollege, setNewCollege] = useState({ name: '', code: '', logoUrl: '' });
   const [isEditingCollege, setIsEditingCollege] = useState(false);
   const [editingCollegeId, setEditingCollegeId] = useState(null);
+  
+  // Analytics view state
+  const [selectedCollegeForAnalytics, setSelectedCollegeForAnalytics] = useState(null);
 
   // Handlers
   const openCreateCollegeDialog = () => {
@@ -90,6 +95,18 @@ const CollegesTab = ({ colleges, admins, onRefresh }) => {
       }
     }
   };
+
+  // If a college is selected for analytics, show analytics view
+  if (selectedCollegeForAnalytics) {
+    return (
+      <CollegeAnalytics
+        collegeId={selectedCollegeForAnalytics.id}
+        collegeName={selectedCollegeForAnalytics.name}
+        filters={{}} // No course/batch filters in this view
+        onBack={() => setSelectedCollegeForAnalytics(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -174,6 +191,15 @@ const CollegesTab = ({ colleges, admins, onRefresh }) => {
 
               {/* Action Buttons */}
               <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-transparent transition-colors"
+                  onClick={() => setSelectedCollegeForAnalytics(college)}
+                  title="View Analytics"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

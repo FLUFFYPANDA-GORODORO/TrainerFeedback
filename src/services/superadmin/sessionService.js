@@ -145,6 +145,7 @@ export const getSessionById = async (id) => {
 /**
  * Close a session and compile all response statistics
  * This stores the compiled stats in the session document itself
+ * and updates the college/trainer cache documents
  * @param {string} id - Session ID
  * @returns {Promise<Object>} - Updated session with compiled stats
  */
@@ -152,6 +153,13 @@ export const closeSessionWithStats = async (id) => {
   try {
     // Import compileSessionStats dynamically to avoid circular dependency
     const { compileSessionStats } = await import('./responseService');
+    const { updateCollegeCache, updateTrainerCache } = await import('./cacheService');
+    
+    // Get session data first (needed for cache updates)
+    const session = await getSessionById(id);
+    if (!session) {
+      throw new Error('Session not found');
+    }
     
     // Compile statistics from all responses
     const compiledStats = await compileSessionStats(id);
@@ -165,6 +173,16 @@ export const closeSessionWithStats = async (id) => {
       updatedAt: serverTimestamp()
     });
     
+    // Update cache documents (don't fail the close if cache update fails)
+    try {
+      await Promise.all([
+        updateCollegeCache(session, compiledStats),
+        updateTrainerCache(session, compiledStats)
+      ]);
+    } catch (cacheError) {
+      console.error('Cache update failed (session still closed):', cacheError);
+    }
+    
     return { id, status: 'inactive', compiledStats };
   } catch (error) {
     console.error('Error closing session with stats:', error);
@@ -174,13 +192,15 @@ export const closeSessionWithStats = async (id) => {
 
 /**
  * Subscribe to real-time session updates
+ * Limited to 50 most recent sessions to reduce read costs
  * @param {Function} callback - Callback function receiving updated sessions array
  * @returns {Function} - Unsubscribe function
  */
 export const subscribeToSessions = (callback) => {
   const q = query(
     collection(db, COLLECTION_NAME),
-    orderBy('createdAt', 'desc')
+    orderBy('createdAt', 'desc'),
+    limit(50)
   );
   
   return onSnapshot(q, (snapshot) => {

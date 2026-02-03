@@ -241,7 +241,7 @@ const SuperAdminDashboardInner = () => {
             <OverviewTab 
               colleges={colleges} 
               admins={admins} 
-              sessions={sessions} 
+              sessions={sessions}
             />
           )}
 
