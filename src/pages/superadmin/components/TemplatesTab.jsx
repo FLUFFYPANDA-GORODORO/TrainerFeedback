@@ -182,11 +182,8 @@ const TemplatesTab = () => {
     questions.splice(idx, 1);
     setTemplate({ ...template, questions });
   };
-
   /* ================= ADVANCED ================= */
-
   const currentSection = template.sections[currentSectionIndex];
-
   const addSectionQuestion = () => {
     const sections = [...template.sections];
     sections[currentSectionIndex].questions.push(
@@ -202,13 +199,11 @@ const TemplatesTab = () => {
     );
     setTemplate({ ...template, sections });
   };
-
   const updateSectionQuestion = (qIdx, q) => {
     const sections = [...template.sections];
     sections[currentSectionIndex].questions[qIdx] = q;
     setTemplate({ ...template, sections });
   };
-
   const addSection = () => {
     const sections = [
       ...template.sections,
@@ -221,15 +216,12 @@ const TemplatesTab = () => {
     setTemplate({ ...template, sections });
     setCurrentSectionIndex(sections.length - 1);
   };
-
   /* ================= SAVE ================= */
-
   const saveTemplate = async () => {
     if (!template.title.trim()) {
       toast.error('Template title required');
       return;
     }
-
     const payload =
       templateMode === 'simple'
         ? {
@@ -244,7 +236,6 @@ const TemplatesTab = () => {
             description: template.description,
             sections: template.sections
           };
-
     try {
       isEditing
         ? await updateTemplate(editingId, payload)
