@@ -182,6 +182,7 @@ const TemplatesTab = () => {
     questions.splice(idx, 1);
     setTemplate({ ...template, questions });
   };
+
   /* ================= ADVANCED ================= */
   const currentSection = template.sections[currentSectionIndex];
   const addSectionQuestion = () => {

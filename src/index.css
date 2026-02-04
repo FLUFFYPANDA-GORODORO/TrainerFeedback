@@ -210,3 +210,29 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/30;
 }
+/* ===== SurveySparrow-style surface ===== */
+.glass-card {
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.85),
+    rgba(255,255,255,0.65)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.06);
+  border: none;
+}
+
+/* softer hover (not jumpy) */
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px rgba(0,0,0,0.08);
+}
+
+/* Hero button like SurveySparrow */
+.gradient-hero {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  box-shadow: 0 12px 30px rgba(79,70,229,0.35);
+}
