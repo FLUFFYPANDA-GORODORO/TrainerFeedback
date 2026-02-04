@@ -1,400 +1,571 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  Save, 
-  MoreVertical, 
-  FileText,
-  Copy,
-  GripVertical
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, Trash2, Save, FileText, Pencil } from 'lucide-react';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle,
-  CardFooter 
-} from '@/components/ui/card';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger, 
-  DialogDescription, 
-  DialogFooter 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
 } from '@/components/ui/dialog';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
-import { 
-  getAllTemplates, 
-  createTemplate, 
-  updateTemplate, 
+
+import {
+  getAllTemplates,
+  createTemplate,
+  updateTemplate,
   deleteTemplate,
-  seedDefaultTemplate 
+  seedDefaultTemplate
 } from '@/services/superadmin/templateService';
-import { QUESTION_CATEGORIES, DEFAULT_CATEGORY } from '@/constants/questionCategories';
+
+import {
+  QUESTION_CATEGORIES,
+  DEFAULT_CATEGORY
+} from '@/constants/questionCategories';
+
+/* ================= CONSTANTS ================= */
 
 const QUESTION_TYPES = [
-  { value: 'rating', label: 'Star Rating (1-5)' },
+  { value: 'rating', label: 'Star Rating (1–5)' },
   { value: 'mcq', label: 'Multiple Choice' },
-  { value: 'text', label: 'Long Answer' },
-  { value: 'boolean', label: 'Yes/No' }
+  { value: 'text', label: 'Long Answer' }
 ];
+
+const generateId = () =>
+  crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`;
+
+/* ================= HELPERS ================= */
+
+const normalizeQuestion = (q, type) => {
+  const base = {
+    id: q.id,
+    responseKey: q.responseKey,
+    text: q.text,
+    type,
+    required: q.required ?? true
+  };
+
+  if (type === 'rating') {
+    return { ...base, category: q.category || DEFAULT_CATEGORY, scale: 5 };
+  }
+
+  if (type === 'mcq') {
+    return {
+      ...base,
+      options: q.options?.length >= 2 ? q.options : ['Option 1', 'Option 2']
+    };
+  }
+
+  return base;
+};
+
+/* ================= COMPONENT ================= */
 
 const TemplatesTab = () => {
   const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [builderOpen, setBuilderOpen] = useState(false);
-  
-  // Builder State
-  const [currentTemplate, setCurrentTemplate] = useState({
+  const [createOpen, setCreateOpen] = useState(false);
+  const [templateMode, setTemplateMode] = useState('simple');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+
+  const [template, setTemplate] = useState({
     title: '',
     description: '',
+    questions: [],
     sections: []
   });
+
+  /* ================= LOAD ================= */
 
   useEffect(() => {
     loadTemplates();
   }, []);
 
   const loadTemplates = async () => {
-    setLoading(true);
     try {
-      // Try to seed if empty
-      await seedDefaultTemplate(); 
-      const data = await getAllTemplates();
-      setTemplates(data);
-    } catch (error) {
+      await seedDefaultTemplate();
+      setTemplates(await getAllTemplates());
+    } catch {
       toast.error('Failed to load templates');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleCreateNew = () => {
-    setCurrentTemplate({
-      title: 'New Feedback Template',
-      description: '',
-      sections: [
-        {
-          id: Date.now().toString(),
-          title: 'Section 1',
-          questions: []
-        }
+  /* ================= CREATE / EDIT ================= */
+
+  const openCreateModal = (mode) => {
+    setTemplateMode(mode);
+    setIsEditing(false);
+    setEditingId(null);
+    setCurrentSectionIndex(0);
+
+    if (mode === 'simple') {
+      setTemplate({ title: '', description: '', questions: [], sections: [] });
+    } else {
+      setTemplate({
+        title: '',
+        description: '',
+        sections: [{ id: generateId(), title: 'Section 1', questions: [] }]
+      });
+    }
+
+    setCreateOpen(true);
+  };
+
+  const handleEdit = (tpl) => {
+    setIsEditing(true);
+    setEditingId(tpl.id);
+    setCurrentSectionIndex(0);
+
+    if (tpl.sections?.length === 1 && tpl.sections[0].title === 'Questions') {
+      setTemplateMode('simple');
+      setTemplate({
+        title: tpl.title,
+        description: tpl.description,
+        questions: tpl.sections[0].questions,
+        sections: tpl.sections
+      });
+    } else {
+      setTemplateMode('advanced');
+      setTemplate({
+        title: tpl.title,
+        description: tpl.description,
+        questions: [],
+        sections: tpl.sections
+      });
+    }
+
+    setCreateOpen(true);
+  };
+
+  /* ================= SIMPLE ================= */
+
+  const addSimpleQuestion = () => {
+    setTemplate(prev => ({
+      ...prev,
+      questions: [
+        ...prev.questions,
+        normalizeQuestion(
+          {
+            id: generateId(),
+            responseKey: `q-${generateId()}`,
+            text: '',
+            required: true
+          },
+          'rating'
+        )
       ]
-    });
-    setBuilderOpen(true);
+    }));
   };
 
-  const handleEdit = (template) => {
-    setCurrentTemplate(template);
-    setBuilderOpen(true);
+  const updateSimpleQuestion = (idx, q) => {
+    const questions = [...template.questions];
+    questions[idx] = q;
+    setTemplate({ ...template, questions });
   };
 
-  const handleDelete = async (id, e) => {
-    e.stopPropagation();
-    if (confirm('Are you sure you want to delete this template?')) {
-        try {
-            await deleteTemplate(id);
-            toast.success('Template deleted');
-            loadTemplates();
-        } catch (err) {
-            toast.error('Failed to delete template');
-        }
-    }
+  const removeSimpleQuestion = (idx) => {
+    const questions = [...template.questions];
+    questions.splice(idx, 1);
+    setTemplate({ ...template, questions });
   };
 
-  const handleSave = async () => {
-    if (!currentTemplate.title.trim()) return toast.error('Template title is required');
-    
-    try {
-        if (currentTemplate.id) {
-            await updateTemplate(currentTemplate.id, currentTemplate);
-            toast.success('Template updated');
-        } else {
-            await createTemplate(currentTemplate);
-            toast.success('Template created');
-        }
-        setBuilderOpen(false);
-        loadTemplates();
-    } catch (err) {
-        toast.error('Failed to save template');
-    }
+  /* ================= ADVANCED ================= */
+  const currentSection = template.sections[currentSectionIndex];
+  const addSectionQuestion = () => {
+    const sections = [...template.sections];
+    sections[currentSectionIndex].questions.push(
+      normalizeQuestion(
+        {
+          id: generateId(),
+          responseKey: `q-${generateId()}`,
+          text: '',
+          required: true
+        },
+        'rating'
+      )
+    );
+    setTemplate({ ...template, sections });
   };
-
-  // Builder Logic
+  const updateSectionQuestion = (qIdx, q) => {
+    const sections = [...template.sections];
+    sections[currentSectionIndex].questions[qIdx] = q;
+    setTemplate({ ...template, sections });
+  };
   const addSection = () => {
-    setCurrentTemplate({
-      ...currentTemplate,
-      sections: [
-        ...currentTemplate.sections,
-        {
-          id: Date.now().toString(),
-          title: `Section ${currentTemplate.sections.length + 1}`,
-          questions: []
-        }
-      ]
-    });
+    const sections = [
+      ...template.sections,
+      {
+        id: generateId(),
+        title: `Section ${template.sections.length + 1}`,
+        questions: []
+      }
+    ];
+    setTemplate({ ...template, sections });
+    setCurrentSectionIndex(sections.length - 1);
   };
-
-  const removeSection = (sectionIndex) => {
-    const newSections = [...currentTemplate.sections];
-    newSections.splice(sectionIndex, 1);
-    setCurrentTemplate({ ...currentTemplate, sections: newSections });
-  };
-
-  const updateSection = (index, field, value) => {
-    const newSections = [...currentTemplate.sections];
-    newSections[index][field] = value;
-    setCurrentTemplate({ ...currentTemplate, sections: newSections });
-  };
-
-  const addQuestion = (sectionIndex) => {
-    const newSections = [...currentTemplate.sections];
-    newSections[sectionIndex].questions.push({
-      id: Date.now().toString(),
-      text: '',
-      type: 'rating',
-      category: DEFAULT_CATEGORY,
-      required: true,
-      options: []
-    });
-    setCurrentTemplate({ ...currentTemplate, sections: newSections });
-  };
-
-  const removeQuestion = (sectionIndex, questionIndex) => {
-    const newSections = [...currentTemplate.sections];
-    newSections[sectionIndex].questions.splice(questionIndex, 1);
-    setCurrentTemplate({ ...currentTemplate, sections: newSections });
-  };
-
-  const updateQuestion = (sectionIndex, questionIndex, field, value) => {
-    const newSections = [...currentTemplate.sections];
-    newSections[sectionIndex].questions[questionIndex][field] = value;
-    setCurrentTemplate({ ...currentTemplate, sections: newSections });
-  };
-
-  const updateQuestionOption = (sectionIndex, questionIndex, optionIndex, value) => {
-    const newSections = [...currentTemplate.sections];
-    const options = [...newSections[sectionIndex].questions[questionIndex].options];
-    options[optionIndex] = value;
-    newSections[sectionIndex].questions[questionIndex].options = options;
-    setCurrentTemplate({ ...currentTemplate, sections: newSections });
-  };
-  
-  const addQuestionOption = (sectionIndex, questionIndex) => {
-    const newSections = [...currentTemplate.sections];
-    if (!newSections[sectionIndex].questions[questionIndex].options) {
-        newSections[sectionIndex].questions[questionIndex].options = [];
+  /* ================= SAVE ================= */
+  const saveTemplate = async () => {
+    if (!template.title.trim()) {
+      toast.error('Template title required');
+      return;
     }
-    newSections[sectionIndex].questions[questionIndex].options.push(`Option ${newSections[sectionIndex].questions[questionIndex].options.length + 1}`);
-    setCurrentTemplate({ ...currentTemplate, sections: newSections });
+    const payload =
+      templateMode === 'simple'
+        ? {
+            title: template.title,
+            description: template.description,
+            sections: [
+              { id: generateId(), title: 'Questions', questions: template.questions }
+            ]
+          }
+        : {
+            title: template.title,
+            description: template.description,
+            sections: template.sections
+          };
+    try {
+      isEditing
+        ? await updateTemplate(editingId, payload)
+        : await createTemplate(payload);
+
+      toast.success(isEditing ? 'Template updated' : 'Template created');
+      setCreateOpen(false);
+      loadTemplates();
+    } catch {
+      toast.error('Failed to save template');
+    }
   };
 
-  const removeQuestionOption = (sectionIndex, questionIndex, optionIndex) => {
-      const newSections = [...currentTemplate.sections];
-      newSections[sectionIndex].questions[questionIndex].options.splice(optionIndex, 1);
-      setCurrentTemplate({ ...currentTemplate, sections: newSections });
+  /* ================= DELETE ================= */
+
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this template?')) return;
+    await deleteTemplate(id);
+    toast.success('Template deleted');
+    loadTemplates();
   };
+
+  /* ================= UI ================= */
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+
+      {/* HEADER */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Feedback Templates</h1>
-          <p className="text-muted-foreground">Manage and customize feedback forms</p>
+          <h1 className="text-2xl font-bold">Feedback Templates</h1>
+          <p className="text-muted-foreground">Manage feedback forms</p>
         </div>
-        <Button onClick={handleCreateNew} className="gap-2 gradient-hero text-primary-foreground hover:opacity-90">
-             <Plus className="h-4 w-4" />
-             Create Template
-        </Button>
+
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => openCreateModal('simple')}>
+            <Plus className="h-4 w-4 mr-2" /> Simple Template
+          </Button>
+          <Button onClick={() => openCreateModal('advanced')}>
+            <Plus className="h-4 w-4 mr-2" /> Advanced Template
+          </Button>
+        </div>
       </div>
 
-      {builderOpen ? (
-        // Builder View
-        <div className="space-y-6 animate-fade-in">
-             <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div className="space-y-2 w-full max-w-2xl">
-                            <Label>Template Title</Label>
-                            <Input 
-                                value={currentTemplate.title} 
-                                onChange={e => setCurrentTemplate({...currentTemplate, title: e.target.value})}
-                                className="text-lg font-semibold"
-                            />
-                            <Label>Description</Label>
-                            <Input 
-                                value={currentTemplate.description} 
-                                onChange={e => setCurrentTemplate({...currentTemplate, description: e.target.value})}
-                                placeholder="Description"
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <Button variant="outline" onClick={() => setBuilderOpen(false)}>Cancel</Button>
-                            <Button onClick={handleSave} className="gradient-hero text-primary-foreground">
-                                <Save className="h-4 w-4 mr-2" /> Save Template
-                            </Button>
-                        </div>
-                    </div>
-                </CardHeader>
-             </Card>
+      {/* LIST */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {templates.map(t => (
+          <div key={t.id} className="glass-card p-5 rounded-xl group">
+            <div className="flex justify-between">
+              <FileText />
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                <Button size="icon" variant="ghost" onClick={() => handleEdit(t)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="text-destructive"
+                  onClick={() => handleDelete(t.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
-             {/* Sections Render */}
-             {currentTemplate.sections.map((section, sIdx) => (
-                 <Card key={section.id} className="border-l-4 border-l-primary/50">
-                    <CardHeader className="pb-2">
-                        <div className="flex justify-between items-center">
-                            <Input 
-                                value={section.title} 
-                                onChange={e => updateSection(sIdx, 'title', e.target.value)}
-                                className="font-medium text-lg border-transparent hover:border-input focus:border-input max-w-md p-0 h-auto"
-                            />
-                            <Button variant="ghost" size="sm" onClick={() => removeSection(sIdx)} className="text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {section.questions.map((q, qIdx) => (
-                            <div key={q.id} className="p-4 bg-muted/30 rounded-lg space-y-3 group border border-transparent hover:border-border">
-                                <div className="flex gap-4 items-start">
-                                    <div className="mt-2 text-muted-foreground">
-                                        <GripVertical className="h-4 w-4" />
-                                    </div>
-                                    <div className="flex-1 space-y-3">
-                                        <div className="flex gap-4">
-                                            <div className="flex-1">
-                                                <Input 
-                                                    value={q.text} 
-                                                    onChange={e => updateQuestion(sIdx, qIdx, 'text', e.target.value)}
-                                                    placeholder="Question Text"
-                                                />
-                                            </div>
-                                            <Select 
-                                                value={q.type} 
-                                                onValueChange={v => updateQuestion(sIdx, qIdx, 'type', v)}
-                                            >
-                                                <SelectTrigger className="w-[180px]">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {QUESTION_TYPES.map(t => (
-                                                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {q.type === 'rating' && (
-                                                <Select 
-                                                    value={q.category || DEFAULT_CATEGORY} 
-                                                    onValueChange={v => updateQuestion(sIdx, qIdx, 'category', v)}
-                                                >
-                                                    <SelectTrigger className="w-[160px]">
-                                                        <SelectValue placeholder="Category" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {QUESTION_CATEGORIES.map(cat => (
-                                                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        </div>
+            <h3 className="font-semibold mt-2">{t.title}</h3>
+            <p className="text-sm text-muted-foreground">{t.description}</p>
 
-                                        {/* MCQ Options */}
-                                        {q.type === 'mcq' && (
-                                            <div className="space-y-2 pl-4 border-l-2">
-                                                {q.options?.map((opt, oIdx) => (
-                                                    <div key={oIdx} className="flex gap-2 items-center">
-                                                        <div className="h-4 w-4 rounded-full border border-muted-foreground" />
-                                                        <Input 
-                                                            value={opt} 
-                                                            onChange={e => updateQuestionOption(sIdx, qIdx, oIdx, e.target.value)}
-                                                            className="h-8"
-                                                        />
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => removeQuestionOption(sIdx, qIdx, oIdx)}>
-                                                            <Trash2 className="h-3 w-3" />
-                                                        </Button>
-                                                    </div>
-                                                ))}
-                                                <Button variant="link" size="sm" className="h-auto p-0" onClick={() => addQuestionOption(sIdx, qIdx)}>
-                                                    + Add Option
-                                                </Button>
-                                            </div>
-                                        )}
+            <Badge className="mt-2">
+              {t.sections?.reduce((a, s) => a + s.questions.length, 0)} Questions
+            </Badge>
+          </div>
+        ))}
+      </div>
 
-                                        <div className="flex justify-end items-center gap-4 pt-2">
-                                            <div className="flex items-center gap-2">
-                                                <Switch 
-                                                    checked={q.required} 
-                                                    onCheckedChange={c => updateQuestion(sIdx, qIdx, 'required', c)}
-                                                    id={`req-${q.id}`}
-                                                />
-                                                <Label htmlFor={`req-${q.id}`} className="text-xs">Required</Label>
-                                            </div>
-                                            <div className="h-4 border-l mx-2" />
-                                            <Button variant="ghost" size="sm" className="text-destructive h-8" onClick={() => removeQuestion(sIdx, qIdx)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+      {/* CREATE / EDIT MODAL */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? 'Edit Template' : 'Create Template'}</DialogTitle>
+            <DialogDescription>
+              {templateMode === 'simple'
+                ? 'Single page feedback'
+                : 'One section per page'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            <Label>Template Title *</Label>
+            <Input
+              value={template.title}
+              onChange={e => setTemplate({ ...template, title: e.target.value })}
+            />
+
+            <Label>Description</Label>
+            <Input
+              value={template.description}
+              onChange={e => setTemplate({ ...template, description: e.target.value })}
+            />
+
+            {/* SIMPLE MODE */}
+            {templateMode === 'simple' && (
+              <>
+                {template.questions.map((q, idx) => (
+                  <div key={q.id} className="border p-3 rounded space-y-3">
+                    <Input
+                      value={q.text}
+                      onChange={e =>
+                        updateSimpleQuestion(idx, { ...q, text: e.target.value })
+                      }
+                    />
+
+                    <Select
+                      value={q.type}
+                      onValueChange={v =>
+                        updateSimpleQuestion(idx, normalizeQuestion(q, v))
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {QUESTION_TYPES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
+                          </SelectItem>
                         ))}
-                         <Button variant="outline" size="sm" onClick={() => addQuestion(sIdx)} className="w-full border-dashed">
-                            <Plus className="h-4 w-4 mr-2" /> Add Question
+                      </SelectContent>
+                    </Select>
+
+                    {q.type === 'rating' && (
+                      <Select
+                        value={q.category}
+                        onValueChange={v =>
+                          updateSimpleQuestion(idx, { ...q, category: v })
+                        }
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {QUESTION_CATEGORIES.map(c => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {q.type === 'mcq' && (
+                      <>
+                        {q.options.map((opt, oIdx) => (
+                          <Input
+                            key={oIdx}
+                            value={opt}
+                            onChange={e => {
+                              const options = [...q.options];
+                              options[oIdx] = e.target.value;
+                              updateSimpleQuestion(idx, { ...q, options });
+                            }}
+                          />
+                        ))}
+                        <Button
+                          variant="link"
+                          onClick={() =>
+                            updateSimpleQuestion(idx, {
+                              ...q,
+                              options: [...q.options, `Option ${q.options.length + 1}`]
+                            })
+                          }
+                        >
+                          + Add Option
                         </Button>
-                    </CardContent>
-                 </Card>
-             ))}
-             
-            <Button variant="outline" onClick={addSection} className="w-full py-6 border-dashed text-muted-foreground">
-                <Plus className="h-5 w-5 mr-2" /> Add New Section
+                      </>
+                    )}
+
+                    <div className="flex justify-between">
+                      <Switch
+                        checked={q.required}
+                        onCheckedChange={v =>
+                          updateSimpleQuestion(idx, { ...q, required: v })
+                        }
+                      />
+                      <Trash2
+                        className="cursor-pointer text-destructive"
+                        onClick={() => removeSimpleQuestion(idx)}
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                <Button variant="outline" onClick={addSimpleQuestion}>
+                  + Add Question
+                </Button>
+              </>
+            )}
+
+            {/* ADVANCED MODE – SECTION PAGED */}
+            {templateMode === 'advanced' && currentSection && (
+              <div className="border p-4 rounded space-y-4">
+                <Input
+                  value={currentSection.title}
+                  onChange={e => {
+                    const sections = [...template.sections];
+                    sections[currentSectionIndex].title = e.target.value;
+                    setTemplate({ ...template, sections });
+                  }}
+                />
+
+                {currentSection.questions.map((q, qIdx) => (
+                  <div key={q.id} className="border p-3 rounded space-y-3">
+                    <Input
+                      value={q.text}
+                      onChange={e =>
+                        updateSectionQuestion(qIdx, { ...q, text: e.target.value })
+                      }
+                    />
+
+                    <Select
+                      value={q.type}
+                      onValueChange={v =>
+                        updateSectionQuestion(qIdx, normalizeQuestion(q, v))
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {QUESTION_TYPES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {q.type === 'rating' && (
+                      <Select
+                        value={q.category}
+                        onValueChange={v =>
+                          updateSectionQuestion(qIdx, { ...q, category: v })
+                        }
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {QUESTION_CATEGORIES.map(c => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {q.type === 'mcq' && (
+                      <>
+                        {q.options.map((opt, oIdx) => (
+                          <Input
+                            key={oIdx}
+                            value={opt}
+                            onChange={e => {
+                              const options = [...q.options];
+                              options[oIdx] = e.target.value;
+                              updateSectionQuestion(qIdx, { ...q, options });
+                            }}
+                          />
+                        ))}
+                        <Button
+                          variant="link"
+                          onClick={() =>
+                            updateSectionQuestion(qIdx, {
+                              ...q,
+                              options: [...q.options, `Option ${q.options.length + 1}`]
+                            })
+                          }
+                        >
+                          + Add Option
+                        </Button>
+                      </>
+                    )}
+
+                    <div className="flex justify-between">
+                      <Switch
+                        checked={q.required}
+                        onCheckedChange={v =>
+                          updateSectionQuestion(qIdx, { ...q, required: v })
+                        }
+                      />
+                      <Trash2
+                        className="cursor-pointer text-destructive"
+                        onClick={() => {
+                          const sections = [...template.sections];
+                          sections[currentSectionIndex].questions.splice(qIdx, 1);
+                          setTemplate({ ...template, sections });
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                <Button variant="outline" onClick={addSectionQuestion}>
+                  + Add Question
+                </Button>
+
+                <div className="flex justify-between pt-4">
+                  <Button
+                    disabled={currentSectionIndex === 0}
+                    onClick={() => setCurrentSectionIndex(i => i - 1)}
+                  >
+                    Previous
+                  </Button>
+
+                  {currentSectionIndex < template.sections.length - 1 ? (
+                    <Button onClick={() => setCurrentSectionIndex(i => i + 1)}>
+                      Next
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={addSection}>
+                      + Add Section
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button onClick={saveTemplate}>
+              <Save className="mr-2 h-4 w-4" />
+              {isEditing ? 'Update Template' : 'Save Template'}
             </Button>
-        </div>
-      ) : (
-        // List View
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-             {templates.map(t => (
-                 <Card key={t.id} className="group hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleEdit(t)}>
-                    <CardHeader>
-                        <CardTitle className="flex justify-between items-start">
-                            <span className="truncate pr-2">{t.title}</span>
-                            {t.isDefault && <Badge variant="secondary">Default</Badge>}
-                        </CardTitle>
-                        <CardDescription className="line-clamp-2 min-h-[2.5em]">{t.description || 'No description'}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                            {t.sections?.length || 0} Sections • {t.sections?.reduce((acc, s) => acc + (s.questions?.length || 0), 0) || 0} Questions
-                        </p>
-                    </CardContent>
-                     <CardFooter className="justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEdit(t); }}>
-                            <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive" onClick={(e) => handleDelete(t.id, e)}>
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </CardFooter>
-                 </Card>
-             ))}
-        </div>
-      )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
