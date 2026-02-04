@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   XCircle
 } from 'lucide-react';
+import { FiCheckSquare } from "react-icons/fi";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -741,12 +742,12 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
           </div>
         </div>
         <div className="flex items-center gap-4 p-4 bg-card border rounded-xl">
-          <div className="h-12 w-12 rounded-full bg-rose-500/10 flex items-center justify-center">
-            <XCircle className="h-6 w-6 text-rose-500" />
+          <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
+            <FiCheckSquare className="h-6 w-6 text-green-500" />
           </div>
           <div>
             <p className="text-3xl font-bold text-foreground">{sessionStats.inactive}</p>
-            <p className="text-sm text-muted-foreground">Inactive Sessions</p>
+            <p className="text-sm text-muted-foreground">Completed Sessions</p>
           </div>
         </div>
       </div>
