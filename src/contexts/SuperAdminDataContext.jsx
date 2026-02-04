@@ -3,6 +3,7 @@ import { getAllColleges } from '@/services/superadmin/collegeService';
 import { getAllTrainers } from '@/services/superadmin/trainerService';
 import { getAllSessions, subscribeToSessions } from '@/services/superadmin/sessionService';
 import { getAllTemplates } from '@/services/superadmin/templateService';
+import { getAllSystemUsers } from '@/services/superadmin/userService';
 import { toast } from 'sonner';
 
 const SuperAdminDataContext = createContext(null);
@@ -13,6 +14,7 @@ export const SuperAdminDataProvider = ({ children }) => {
   const [trainers, setTrainers] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [admins, setAdmins] = useState([]);
   
   // Loading states
   const [loading, setLoading] = useState({
@@ -20,6 +22,7 @@ export const SuperAdminDataProvider = ({ children }) => {
     trainers: false,
     sessions: false,
     templates: false,
+    admins: false,
     initial: true
   });
 
@@ -28,7 +31,8 @@ export const SuperAdminDataProvider = ({ children }) => {
     colleges: false,
     trainers: false,
     sessions: false,
-    templates: false
+    templates: false,
+    admins: false
   });
 
   // Load colleges (with optional force refresh)
@@ -89,6 +93,25 @@ export const SuperAdminDataProvider = ({ children }) => {
     }
   }, [loaded.templates, templates]);
 
+  // Load admins (with optional force refresh)
+  const loadAdmins = useCallback(async (force = false) => {
+    if (loaded.admins && !force) return admins;
+    
+    setLoading(prev => ({ ...prev, admins: true }));
+    try {
+      const data = await getAllSystemUsers();
+      setAdmins(data);
+      setLoaded(prev => ({ ...prev, admins: true }));
+      return data;
+    } catch (error) {
+      console.error('Failed to load admins:', error);
+      toast.error('Failed to load admins');
+      return [];
+    } finally {
+      setLoading(prev => ({ ...prev, admins: false }));
+    }
+  }, [loaded.admins, admins]);
+
   // Load sessions (manual load, subscription handles real-time)
   const loadSessions = useCallback(async (force = false) => {
     if (loaded.sessions && !force) return sessions;
@@ -115,10 +138,11 @@ export const SuperAdminDataProvider = ({ children }) => {
       loadColleges(true),
       loadTrainers(true),
       loadSessions(true),
-      loadTemplates(true)
+      loadTemplates(true),
+      loadAdmins(true)
     ]);
     setLoading(prev => ({ ...prev, initial: false }));
-  }, [loadColleges, loadTrainers, loadSessions, loadTemplates]);
+  }, [loadColleges, loadTrainers, loadSessions, loadTemplates, loadAdmins]);
 
   // Initial load and session subscription
   useEffect(() => {
@@ -126,7 +150,8 @@ export const SuperAdminDataProvider = ({ children }) => {
       await Promise.all([
         loadColleges(),
         loadTrainers(),
-        loadTemplates()
+        loadTemplates(),
+        loadAdmins()
       ]);
       setLoading(prev => ({ ...prev, initial: false }));
     };
@@ -142,7 +167,6 @@ export const SuperAdminDataProvider = ({ children }) => {
     return () => unsubscribe && unsubscribe();
   }, []); // Only run once on mount
 
-  // Update trainers list (for local state updates after add/edit/delete)
   const updateTrainersList = useCallback((updater) => {
     if (typeof updater === 'function') {
       setTrainers(updater);
@@ -151,7 +175,6 @@ export const SuperAdminDataProvider = ({ children }) => {
     }
   }, []);
 
-  // Update templates list
   const updateTemplatesList = useCallback((updater) => {
     if (typeof updater === 'function') {
       setTemplates(updater);
@@ -160,12 +183,19 @@ export const SuperAdminDataProvider = ({ children }) => {
     }
   }, []);
 
-  // Update colleges list
   const updateCollegesList = useCallback((updater) => {
     if (typeof updater === 'function') {
       setColleges(updater);
     } else {
       setColleges(updater);
+    }
+  }, []);
+  
+  const updateAdminsList = useCallback((updater) => {
+    if (typeof updater === 'function') {
+      setAdmins(updater);
+    } else {
+      setAdmins(updater);
     }
   }, []);
 
@@ -175,6 +205,7 @@ export const SuperAdminDataProvider = ({ children }) => {
     trainers,
     sessions,
     templates,
+    admins,
     
     // Loading states
     loading,
@@ -185,12 +216,14 @@ export const SuperAdminDataProvider = ({ children }) => {
     loadTrainers,
     loadSessions,
     loadTemplates,
+    loadAdmins,
     refreshAll,
     
     // Update functions (for local state updates)
     updateTrainersList,
     updateTemplatesList,
     updateCollegesList,
+    updateAdminsList,
     setSessions
   };
 

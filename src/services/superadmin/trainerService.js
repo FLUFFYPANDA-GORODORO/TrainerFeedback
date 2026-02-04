@@ -3,8 +3,9 @@ import {
   collection, 
   addDoc, 
   updateDoc, 
-  deleteDoc, 
   doc, 
+  setDoc,
+  deleteDoc, 
   getDocs, 
   query, 
   where,
@@ -14,6 +15,7 @@ import {
   limit,
   startAfter
 } from 'firebase/firestore';
+import { createUserWithoutLoggingIn } from '../authService';
 
 const COLLECTION_NAME = 'trainers';
 
@@ -28,17 +30,30 @@ export const addTrainer = async ({ trainer_id, name, domain, specialisation, top
       throw new Error(`Trainer with ID ${trainer_id} already exists.`);
     }
 
-    // Note: Password is provided but not used for Auth creation yet as per requirements.
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+    // Create Auth User first
+    let uid;
+    try {
+        uid = await createUserWithoutLoggingIn(email, password);
+    } catch (authError) {
+        // If auth fails (e.g. email exists), throw immediately
+        throw new Error(`Failed to create auth user: ${authError.message}`);
+    }
+
+    // Use UID as Document ID
+    await setDoc(doc(db, COLLECTION_NAME, uid), {
+        uid, // redundancy but useful
+        role: 'trainer',
         trainer_id,
         name,
         domain,
         specialisation,
         topics,
         email,
-        // password, // explicitly NOT storing plain text password in DB unless requested, user said "password can be auto generated... not store the auth logic yet"
-      createdAt: serverTimestamp()
+        createdAt: serverTimestamp()
     });
+    
+    // Return compatible object
+    return { id: uid, trainer_id, name, email };
 
     return { id: docRef.id, trainer_id, name, email };
   } catch (error) {

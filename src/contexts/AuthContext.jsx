@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getCurrentUser, login as authLogin, logout as authLogout } from '@/lib/mockAuth';
+import { auth, db } from '../services/firebase';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const AuthContext = createContext(undefined);
 
@@ -7,37 +9,102 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Helper function to fetch user role and data from Firestore
+  const fetchUserRoleAndData = async (firebaseUser) => {
+    try {
+      // 1. Check 'users' collection (Superadmin / College Admin)
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        return {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          role: userData.role, // 'superAdmin' or 'collegeAdmin'
+          ...userData
+        };
+      }
+
+      // 2. Check 'trainers' collection
+      // We assume the trainer document ID might NOT be the UID initially if not migrated, 
+      // but for new auth-based trainers we expect UID to match doc ID or a field.
+      // However, best practice with Auth is to use UID as doc ID.
+      // For now, let's try to find by doc ID = UID first.
+      const trainerDocRef = doc(db, 'trainers', firebaseUser.uid);
+      const trainerDocSnap = await getDoc(trainerDocRef);
+
+      if (trainerDocSnap.exists()) {
+        const trainerData = trainerDocSnap.data();
+        return {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          role: 'trainer',
+          ...trainerData
+        };
+      }
+
+      // Fallback: If not found in either, return basic auth info (Roleless)
+      return {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        role: 'guest' 
+      };
+
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
-    // Check for existing auth on mount
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-    setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setIsLoading(true);
+      if (firebaseUser) {
+        const userData = await fetchUserRoleAndData(firebaseUser);
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = useCallback(async (email, password) => {
-    setIsLoading(true);
     try {
-      const result = authLogin(email, password);
-      if (result.success) {
-        setUser(result.user);
-        return { success: true, user: result.user };
+      // Sign in with Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // The onAuthStateChanged listener will handle state update, 
+      // but we might want to wait for that or fetch valid user data to return here.
+      const userData = await fetchUserRoleAndData(userCredential.user);
+      
+      if (userData) {
+          return { success: true, user: userData };
+      } else {
+          return { success: false, error: 'User data not found.' };
       }
-      return { success: false, error: result.error };
     } catch (error) {
-      return { success: false, error: 'An error occurred during login' };
-    } finally {
-      setIsLoading(false);
+      console.error('Login error:', error);
+      return { success: false, error: error.message };
     }
   }, []);
 
-  const logout = useCallback(() => {
-    authLogout();
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await signOut(auth);
+      // State clear handled by onAuthStateChanged
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   }, []);
 
-  const refreshUser = useCallback(() => {
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
+  const refreshUser = useCallback(async () => {
+    if (auth.currentUser) {
+       const userData = await fetchUserRoleAndData(auth.currentUser);
+       setUser(userData);
+    }
   }, []);
 
   return (

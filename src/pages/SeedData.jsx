@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { resetAllData } from '@/lib/dataService';
+import { createSystemUser } from '@/services/superadmin/userService';
+import { addTrainer } from '@/services/superadmin/trainerService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCw, Check, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Check, AlertTriangle, Database, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const SeedData = () => {
   const [isSeeding, setIsSeeding] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [isAuthSeeding, setIsAuthSeeding] = useState(false);
+  const [authSeedComplete, setAuthSeedComplete] = useState(false);
 
   const handleSeedData = () => {
     setIsSeeding(true);
@@ -20,72 +25,137 @@ const SeedData = () => {
     }, 1000);
   };
 
+  const handleSeedAuth = async () => {
+    setIsAuthSeeding(true);
+    try {
+        // 1. Create Superadmin
+        try {
+            await createSystemUser({
+                name: 'Super Admin',
+                email: 'superadmin@gryphonacademy.co.in',
+                role: 'superAdmin',
+                collegeId: null
+            }, 'password123');
+            toast.success('Superadmin created');
+        } catch (e) {
+            console.log('Superadmin creation info:', e.message); // Likely already exists
+        }
+
+        // 2. Create College Admin
+        try {
+            await createSystemUser({
+                name: 'Jane Admin',
+                email: 'admin@icem.com',
+                role: 'collegeAdmin',
+                collegeId: 'col_1' // Assuming 'col_1' exists in seeded data or manual
+            }, 'password123');
+            toast.success('College Admin created');
+        } catch (e) {
+             console.log('College Admin creation info:', e.message);
+        }
+
+        // 3. Create Trainer
+        try {
+            await addTrainer({
+                trainer_id: 'TR-DEMO',
+                name: 'John Trainer',
+                email: 'john.trainer@test.com',
+                password: 'password123',
+                domain: 'Computer Science',
+                specialisation: 'React',
+                topics: ['Frontend', 'UI/UX']
+            });
+             toast.success('Trainer created');
+        } catch (e) {
+             console.log('Trainer creation info:', e.message);
+        }
+
+        setAuthSeedComplete(true);
+        toast.success('Firebase Auth Seeding Complete!');
+    } catch (error) {
+        toast.error('Error seeding auth: ' + error.message);
+    } finally {
+        setIsAuthSeeding(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <RefreshCw className="h-5 w-5" />
-            Reset Demo Data
+            System Setup
           </CardTitle>
           <CardDescription>
-            Reset the application data to the initial demo state
+            Initialize your application data
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {!isComplete ? (
-            <>
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-warning/10 text-warning">
-                <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                <p className="text-sm">
-                  This will reset all data including users, colleges, sessions, and feedback. This action cannot be undone.
-                </p>
-              </div>
-              
-              <Button 
-                onClick={handleSeedData} 
-                disabled={isSeeding}
-                className="w-full gradient-hero text-primary-foreground"
-              >
-                {isSeeding ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Resetting Data...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Reset to Demo Data
-                  </>
-                )}
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 text-green-700">
-                <Check className="h-5 w-5" />
-                <p className="text-sm font-medium">
-                  Data has been reset successfully!
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Demo accounts:</p>
-                <ul className="text-sm space-y-1">
-                  <li><strong>Super Admin:</strong> superadmin@test.com</li>
-                  <li><strong>College Admin:</strong> admin@icem.com</li>
-                  <li><strong>Trainer:</strong> john.trainer@test.com</li>
-                  <li><strong>Password (all):</strong> password123</li>
-                </ul>
-              </div>
-              
-              <Link to="/login" className="block">
-                <Button className="w-full gradient-hero text-primary-foreground">
-                  Go to Login
+        <CardContent className="space-y-6">
+          
+          {/* Section 1: Local Data */}
+          <div className="space-y-4 border-b border-border pb-6">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+                <Database className="h-4 w-4" /> 
+                Local Data (Mock)
+            </h3>
+            {!isComplete ? (
+                <Button 
+                    onClick={handleSeedData} 
+                    disabled={isSeeding}
+                    variant="outline"
+                    className="w-full"
+                >
+                    {isSeeding ? 'Resetting...' : 'Reset Local Mock Data'}
                 </Button>
-              </Link>
-            </>
-          )}
+            ) : (
+                <div className="flex items-center gap-2 text-green-600 text-sm">
+                    <Check className="h-4 w-4" /> Local data reset!
+                </div>
+            )}
+            <p className="text-xs text-muted-foreground">Resets colleges, sessions, etc. in local storage.</p>
+          </div>
+
+          {/* Section 2: Firebase Auth */}
+          <div className="space-y-4">
+             <h3 className="text-sm font-medium flex items-center gap-2">
+                <Shield className="h-4 w-4" /> 
+                Firebase Auth Users
+            </h3>
+            
+            {!authSeedComplete ? (
+                 <Button 
+                    onClick={handleSeedAuth} 
+                    disabled={isAuthSeeding}
+                    className="w-full gradient-hero text-primary-foreground"
+                >
+                    {isAuthSeeding ? 'Creating Users...' : 'Create Default Firebase Users'}
+                </Button>
+            ) : (
+                 <div className="flex items-center gap-2 text-green-600 text-sm">
+                    <Check className="h-4 w-4" /> Users created!
+                </div>
+            )}
+             <p className="text-xs text-muted-foreground">Creates the demo accounts (Superadmin, Admin, Trainer) in your real Firebase project.</p>
+          </div>
+
+          {/* Credentials Info */}
+          <div className="bg-secondary/30 p-4 rounded-lg space-y-2 mt-4">
+            <p className="text-sm font-medium">Demo Credentials:</p>
+            <ul className="text-xs space-y-1 text-muted-foreground">
+                <li><strong>Super Admin:</strong> superadmin@gryphonacademy.co.in</li>
+                <li><strong>College Admin:</strong> admin@icem.com</li>
+                <li><strong>Trainer:</strong> john.trainer@test.com</li>
+                <li><strong>Password:</strong> password123</li>
+            </ul>
+            </div>
+              
+            <Link to="/login" className="block pt-2">
+            <Button className="w-full" variant="secondary">
+                Go to Login
+            </Button>
+            </Link>
+
         </CardContent>
       </Card>
     </div>

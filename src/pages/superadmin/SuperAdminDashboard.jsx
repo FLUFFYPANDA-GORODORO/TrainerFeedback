@@ -40,6 +40,7 @@ const SuperAdminDashboardInner = () => {
   // Get data from context
   const { 
     colleges, 
+    admins,
     trainers, 
     sessions, 
     templates,
@@ -47,8 +48,7 @@ const SuperAdminDashboardInner = () => {
     refreshAll 
   } = useSuperAdminData();
 
-  // Legacy data from mock/local storage (admins, academicConfig, globalStats)
-  const admins = usersApi.getAll().filter(u => u.role === 'collegeAdmin');
+  // Legacy data from mock/local storage (academicConfig, globalStats)
   const academicConfig = academicConfigApi.getActive() || {};
   const stats = analyticsApi.getGlobalStats();
   const globalStats = { ...stats, totalColleges: colleges.length };
@@ -261,7 +261,6 @@ const SuperAdminDashboardInner = () => {
 
           {activeTab === 'admins' && (
             <AdminsTab 
-              admins={admins} 
               colleges={colleges} 
               onRefresh={refreshAll} 
             />

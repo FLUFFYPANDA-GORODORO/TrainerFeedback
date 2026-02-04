@@ -91,6 +91,11 @@ const TrainersTab = () => {
       toast.error('Please fill in required fields (ID, Name, Email)');
       return;
     }
+
+    if (!isEditing && !currentTrainer.password) {
+        toast.error('Password is required for new trainers');
+        return;
+    }
     
     // Process topics
     const topicsArray = currentTrainer.topics.split(',').map(t => t.trim()).filter(t => t);
@@ -331,13 +336,13 @@ const TrainersTab = () => {
                 {!isEditing && (
                     <div className="space-y-2">
                         <Label>Password (Initial)</Label>
-                         <Input
+                        <Input
                         type="password"
                         value={currentTrainer.password}
                         onChange={(e) => setCurrentTrainer({ ...currentTrainer, password: e.target.value })}
-                        placeholder="Auto-generated if empty"
+                        placeholder="******"
                         />
-                        <p className="text-xs text-muted-foreground">Note: Auth logic currently deferred.</p>
+                        <p className="text-xs text-muted-foreground">Account will be created with this password.</p>
                     </div>
                 )}
                 </div>

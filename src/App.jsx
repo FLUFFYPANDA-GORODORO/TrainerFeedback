@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 // Pages
@@ -38,27 +39,27 @@ const App = () => {
 
                 {/* Super Admin Routes - has its own built-in layout */}
                 <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
-                <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
-                <Route path="/super-admin/colleges" element={<SuperAdminDashboard />} />
-                <Route path="/super-admin/admins" element={<SuperAdminDashboard />} />
-                <Route path="/super-admin/trainers" element={<SuperAdminDashboard />} />
-                <Route path="/super-admin/sessions" element={<SuperAdminDashboard />} />
-                <Route path="/super-admin/sessions/:sessionId/responses" element={<SuperAdminDashboard />} />
-                <Route path="/super-admin/templates" element={<SuperAdminDashboard />} />
-                <Route path="/super-admin/academic-config" element={<SuperAdminDashboard />} />
+                <Route path="/super-admin/dashboard" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super-admin/colleges" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super-admin/admins" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super-admin/trainers" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super-admin/sessions" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super-admin/sessions/:sessionId/responses" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super-admin/templates" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super-admin/academic-config" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
 
                 {/* College Admin Routes - has its own built-in layout */}
                 <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/sessions" element={<AdminDashboard />} />
-                <Route path="/admin/feedback" element={<AdminDashboard />} />
-                <Route path="/admin/sessions/:sessionId/responses" element={<AdminDashboard />} />
+                <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['collegeAdmin']}><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/sessions" element={<ProtectedRoute allowedRoles={['collegeAdmin']}><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/feedback" element={<ProtectedRoute allowedRoles={['collegeAdmin']}><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/sessions/:sessionId/responses" element={<ProtectedRoute allowedRoles={['collegeAdmin']}><AdminDashboard /></ProtectedRoute>} />
 
                 {/* Trainer Routes - has its own built-in layout */}
                 <Route path="/trainer" element={<Navigate to="/trainer/dashboard" replace />} />
-                <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
-                <Route path="/trainer/sessions" element={<TrainerDashboard />} />
-                <Route path="/trainer/feedback" element={<TrainerDashboard />} />
+                <Route path="/trainer/dashboard" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
+                <Route path="/trainer/sessions" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
+                <Route path="/trainer/feedback" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />
