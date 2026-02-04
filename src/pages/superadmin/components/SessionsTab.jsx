@@ -386,7 +386,7 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
       assignedTrainer: null,
       sessionDate: '',
       sessionTime: 'Morning',
-      sessionDuration: '180',
+      sessionDuration: '60',
       questions: [],
       templateId: '',
       ttl: '24'
