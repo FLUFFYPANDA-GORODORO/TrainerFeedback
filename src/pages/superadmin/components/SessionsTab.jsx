@@ -208,7 +208,15 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
       if (formData.templateId) {
         const selectedTemplate = templates.find(t => t.id === formData.templateId);
         if (selectedTemplate && selectedTemplate.sections) {
-          const templateQuestions = selectedTemplate.sections.flatMap(section => section.questions || []);
+          // Flatten questions AND regenerate IDs to ensure uniqueness within the session
+          // This prevents issues if the template itself has duplicates or if multiple sections are combined incorrectly
+          const templateQuestions = selectedTemplate.sections.flatMap(section => 
+              (section.questions || []).map(q => ({
+                  ...q,
+                  // Use a combination of timestamp and random to ensure uniqueness even if generated in a tight loop
+                  id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${q.id || 'new'}`
+              }))
+          );
           sessionQuestions = [...sessionQuestions, ...templateQuestions];
         }
       }

@@ -77,24 +77,24 @@ export const AnonymousFeedback = () => {
     }
   };
 
-  const handleRatingChange = (questionId, rating) => {
+  const handleRatingChange = (index, rating) => {
     setResponses(prev => ({
       ...prev,
-      [questionId]: { ...prev[questionId], value: parseInt(rating), type: 'rating' }
+      [index]: { ...prev[index], value: parseInt(rating), type: 'rating' }
     }));
   };
 
-  const handleTextChange = (questionId, text) => {
+  const handleTextChange = (index, text) => {
     setResponses(prev => ({
       ...prev,
-      [questionId]: { ...prev[questionId], value: text, type: 'text' }
+      [index]: { ...prev[index], value: text, type: 'text' }
     }));
   };
 
-  const handleMcqChange = (questionId, option) => {
+  const handleMcqChange = (index, option) => {
     setResponses(prev => ({
       ...prev,
-      [questionId]: { ...prev[questionId], value: option, type: 'mcq' }
+      [index]: { ...prev[index], value: option, type: 'mcq' }
     }));
   };
 
@@ -107,9 +107,9 @@ export const AnonymousFeedback = () => {
       const questions = session.questions || [];
       
       // Validate required questions
-      const requiredQuestions = questions.filter(q => q.required);
+      const requiredQuestions = questions.map((q, idx) => ({ ...q, idx })).filter(q => q.required);
       for (const q of requiredQuestions) {
-        if (!responses[q.id]?.value) {
+        if (!responses[q.idx]?.value) {
           setError('Please answer all required questions');
           setIsSubmitting(false);
           return;
@@ -117,10 +117,10 @@ export const AnonymousFeedback = () => {
       }
 
       // Format answers array
-      const answers = questions.map(q => ({
+      const answers = questions.map((q, index) => ({
         questionId: q.id,
-        value: responses[q.id]?.value || null,
-        type: responses[q.id]?.type || q.type || 'rating'
+        value: responses[index]?.value || null,
+        type: responses[index]?.type || q.type || 'rating'
       })).filter(a => a.value !== null);
 
       // Submit to Firebase subcollection
@@ -298,15 +298,15 @@ export const AnonymousFeedback = () => {
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Rate from 1 (Poor) to 5 (Excellent)</p>
                         <RadioGroup
-                          value={responses[question.id]?.value?.toString() || ''}
-                          onValueChange={(value) => handleRatingChange(question.id, value)}
+                          value={responses[index]?.value?.toString() || ''}
+                          onValueChange={(value) => handleRatingChange(index, value)}
                           className="flex gap-2"
                         >
                           {[1, 2, 3, 4, 5].map((rating) => (
                             <label
                               key={rating}
                               className={`flex flex-col items-center justify-center w-14 h-14 rounded-lg border-2 cursor-pointer transition-all ${
-                                responses[question.id]?.value === rating
+                                responses[index]?.value === rating
                                   ? 'border-primary bg-primary/10'
                                   : 'border-border hover:border-primary/50'
                               }`}
@@ -314,7 +314,7 @@ export const AnonymousFeedback = () => {
                               <RadioGroupItem value={rating.toString()} className="sr-only" />
                               <Star
                                 className={`h-5 w-5 ${
-                                  responses[question.id]?.value >= rating
+                                  responses[index]?.value >= rating
                                     ? 'fill-yellow-400 text-yellow-400'
                                     : 'text-muted-foreground'
                                 }`}
@@ -330,15 +330,15 @@ export const AnonymousFeedback = () => {
                     {question.type === 'mcq' && question.options && (
                       <div className="space-y-2">
                         <RadioGroup
-                          value={responses[question.id]?.value || ''}
-                          onValueChange={(value) => handleMcqChange(question.id, value)}
+                          value={responses[index]?.value || ''}
+                          onValueChange={(value) => handleMcqChange(index, value)}
                           className="space-y-2"
                         >
                           {question.options.map((option, optIndex) => (
                             <label
                               key={optIndex}
                               className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                responses[question.id]?.value === option
+                                responses[index]?.value === option
                                   ? 'border-primary bg-primary/5'
                                   : 'border-border hover:border-primary/50'
                               }`}
@@ -356,8 +356,8 @@ export const AnonymousFeedback = () => {
                       <div className="space-y-2">
                         <Textarea
                           placeholder="Share your thoughts..."
-                          value={responses[question.id]?.value || ''}
-                          onChange={(e) => handleTextChange(question.id, e.target.value)}
+                          value={responses[index]?.value || ''}
+                          onChange={(e) => handleTextChange(index, e.target.value)}
                           rows={3}
                         />
                       </div>
