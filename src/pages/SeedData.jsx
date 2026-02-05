@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { resetAllData } from '@/lib/dataService';
 import { createSystemUser } from '@/services/superadmin/userService';
 import { addTrainer } from '@/services/superadmin/trainerService';
+import { rebuildCache } from '@/services/superadmin/rebuildCache';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCw, Check, AlertTriangle, Database, Shield } from 'lucide-react';
@@ -13,6 +14,8 @@ const SeedData = () => {
   const [isComplete, setIsComplete] = useState(false);
   const [isAuthSeeding, setIsAuthSeeding] = useState(false);
   const [authSeedComplete, setAuthSeedComplete] = useState(false);
+  const [isRebuilding, setIsRebuilding] = useState(false);
+  const [rebuildComplete, setRebuildComplete] = useState(false);
 
   const handleSeedData = () => {
     setIsSeeding(true);
@@ -79,6 +82,19 @@ const SeedData = () => {
     }
   };
 
+  const handleRebuildCache = async () => {
+    setIsRebuilding(true);
+    try {
+      await rebuildCache();
+      setRebuildComplete(true);
+      toast.success('Analytics Cache Rebuilt Successfully!');
+    } catch (error) {
+      toast.error('Failed to rebuild cache: ' + error.message);
+    } finally {
+      setIsRebuilding(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <Card className="w-full max-w-md">
@@ -137,6 +153,30 @@ const SeedData = () => {
                 </div>
             )}
              <p className="text-xs text-muted-foreground">Creates the demo accounts (Superadmin, Admin, Trainer) in your real Firebase project.</p>
+          </div>
+
+          {/* Section 3: Maintenance */}
+          <div className="space-y-4">
+             <h3 className="text-sm font-medium flex items-center gap-2">
+                <Database className="h-4 w-4" /> 
+                Maintenance
+            </h3>
+            
+            {!rebuildComplete ? (
+                 <Button 
+                    onClick={handleRebuildCache} 
+                    disabled={isRebuilding}
+                    variant="outline"
+                    className="w-full border-orange-200 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
+                >
+                    {isRebuilding ? 'Rebuilding...' : 'Rebuild Analytics Cache'}
+                </Button>
+            ) : (
+                 <div className="flex items-center gap-2 text-green-600 text-sm">
+                    <Check className="h-4 w-4" /> Cache Updated!
+                </div>
+            )}
+             <p className="text-xs text-muted-foreground">Fixes stat discrepancies by recalculating analytics from all sessions.</p>
           </div>
 
           {/* Credentials Info */}

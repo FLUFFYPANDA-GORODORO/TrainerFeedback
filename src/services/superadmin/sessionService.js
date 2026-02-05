@@ -12,7 +12,8 @@ import {
   serverTimestamp,
   orderBy,
   limit,
-  onSnapshot
+  onSnapshot,
+  startAfter
 } from 'firebase/firestore';
 
 const COLLECTION_NAME = 'sessions';
@@ -97,7 +98,30 @@ export const updateSession = async (id, updates) => {
 // Delete a session
 export const deleteSession = async (id) => {
   try {
-    await deleteDoc(doc(db, COLLECTION_NAME, id));
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const session = { id: docSnap.id, ...docSnap.data() };
+      
+      // If session contributed to analytics, remove its stats from cache
+      if (session.status === 'inactive' && session.compiledStats) {
+        try {
+          // Dynamic import to avoid circular dependency
+          const { updateCollegeCache, updateTrainerCache } = await import('./cacheService');
+          
+          await Promise.all([
+            updateCollegeCache(session, session.compiledStats, true), // true = isDelete
+            updateTrainerCache(session, session.compiledStats, true)
+          ]);
+        } catch (cacheErr) {
+          console.error('Failed to cleanup cache for deleted session:', cacheErr);
+          // Continue with deletion anyway
+        }
+      }
+    }
+
+    await deleteDoc(docRef);
     return true;
   } catch (error) {
     console.error('Error deleting session:', error);
@@ -125,6 +149,68 @@ export const getAllSessions = async (collegeId = null) => {
   }
 };
 
+/**
+ * Get paginated sessions for a college
+ * @param {string} collegeId 
+ * @param {number} pageSize 
+ * @param {Object} lastDoc - The last document from previous fetch (for cursor)
+ */
+export const getSessionsByCollege = async (collegeId, pageSize = 50, lastDoc = null) => {
+  try {
+    let q = query(
+      collection(db, COLLECTION_NAME),
+      where('collegeId', '==', collegeId),
+      orderBy('sessionDate', 'desc'),
+      orderBy('createdAt', 'desc'), // Secondary sort for stability
+      limit(pageSize)
+    );
+
+    if (lastDoc) {
+      q = query(
+        collection(db, COLLECTION_NAME),
+        where('collegeId', '==', collegeId),
+        orderBy('sessionDate', 'desc'),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastDoc),
+        limit(pageSize)
+      );
+    }
+
+    const snapshot = await getDocs(q);
+    const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    return {
+      sessions,
+      lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+      hasMore: snapshot.docs.length === pageSize
+    };
+  } catch (error) {
+    console.error('Error getting paginated sessions:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get active sessions for a college (for pinning to top)
+ */
+export const getActiveSessionsByCollege = async (collegeId) => {
+  try {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('collegeId', '==', collegeId),
+      where('status', '==', 'active'),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error getting active sessions:', error);
+    // Don't throw, just return empty if error (resilience)
+    return [];
+  }
+};
+
 // Get session by ID
 export const getSessionById = async (id) => {
   try {
@@ -145,7 +231,8 @@ export const getSessionById = async (id) => {
 /**
  * Close a session and compile all response statistics
  * This stores the compiled stats in the session document itself
- * and updates the college/trainer cache documents
+ * and updates the college/trainer cache documents safely using a transaction
+ * to prevent double-counting race conditions.
  * @param {string} id - Session ID
  * @returns {Promise<Object>} - Updated session with compiled stats
  */
@@ -154,37 +241,65 @@ export const closeSessionWithStats = async (id) => {
     // Import compileSessionStats dynamically to avoid circular dependency
     const { compileSessionStats } = await import('./responseService');
     const { updateCollegeCache, updateTrainerCache } = await import('./cacheService');
+    const { runTransaction } = await import('firebase/firestore');
     
-    // Get session data first (needed for cache updates)
-    const session = await getSessionById(id);
-    if (!session) {
-      throw new Error('Session not found');
-    }
-    
-    // Compile statistics from all responses
+    // 1. Compile statistics first (expensive read operation, do outside transaction if possible)
+    // NOTE: Ideally we want snapshot consistency, but since responses are appended and we are closing,
+    // minor shift in stats is less critical than double-counting the session itself.
+    // Calculating stats first avoids hitting transaction time limits or read limits if many responses.
     const compiledStats = await compileSessionStats(id);
     
-    // Update session with status and compiled stats
-    const docRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(docRef, {
-      status: 'inactive',
-      compiledStats,
-      closedAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+    let sessionDataForCache = null;
+
+    // 2. Run Transaction to securely update status and cache
+    await runTransaction(db, async (transaction) => {
+        const docRef = doc(db, COLLECTION_NAME, id);
+        const sessionDoc = await transaction.get(docRef);
+        
+        if (!sessionDoc.exists()) {
+            throw new Error('Session not found');
+        }
+
+        const sessionData = sessionDoc.data();
+        
+        // CRITICAL GUARD: Check if already inactive inside the lock
+        if (sessionData.status === 'inactive') {
+            throw new Error('Session is already closed. Updates aborted to prevent double-counting.');
+        }
+
+        const session = { id: sessionDoc.id, ...sessionData };
+        sessionDataForCache = session; // Capture for post-transaction use
+
+        // Update session with status and compiled stats
+        transaction.update(docRef, {
+            status: 'inactive',
+            compiledStats,
+            closedAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+
+        // Update cache documents passing the transaction object (Critical Counters)
+        await updateCollegeCache(session, compiledStats, false, transaction);
+        await updateTrainerCache(session, compiledStats, false, transaction);
     });
     
-    // Update cache documents (don't fail the close if cache update fails)
-    try {
-      await Promise.all([
-        updateCollegeCache(session, compiledStats),
-        updateTrainerCache(session, compiledStats)
-      ]);
-    } catch (cacheError) {
-      console.error('Cache update failed (session still closed):', cacheError);
+    // 3. Post-Transaction: Update Qualitative Cache (Experience Data)
+    // This is run asynchronously and does not
+    //  block the success return if it takes time.
+    // It handles merging top/worst comments into the global cache.
+    if (sessionDataForCache) {
+        const { updateQualitativeCache } = await import('./cacheService');
+        updateQualitativeCache(sessionDataForCache, compiledStats)
+            .catch(err => console.error('Background qualitative update failed:', err));
     }
     
     return { id, status: 'inactive', compiledStats };
   } catch (error) {
+    if (error.message.includes('Session is already closed')) {
+        console.warn('Session close ignored:', error.message);
+        // Return existing state if known, or just the inactive status
+        return { id, status: 'inactive' };
+    }
     console.error('Error closing session with stats:', error);
     throw error;
   }
