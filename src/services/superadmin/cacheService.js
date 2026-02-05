@@ -101,6 +101,7 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
     const courseName = session.course || 'Unknown';
     const yearName = session.year || '1';
     const batchName = session.batch || 'A';
+    const domain = session.domain ? sanitizeFieldName(session.domain) : null;
 
     if (cacheDoc.exists()) {
       // Update existing cache with increments
@@ -123,6 +124,13 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
         baseUpdates[`categoryData.${safeCat}.sum`] = increment(data.sum * multiplier);
         baseUpdates[`categoryData.${safeCat}.count`] = increment(data.count * multiplier);
       });
+
+      // Update Domain Stats
+      if (domain) {
+        baseUpdates[`domains.${domain}.totalResponses`] = increment(totalResponses * multiplier);
+        baseUpdates[`domains.${domain}.totalRatingsCount`] = increment(totalRatingsCount * multiplier);
+        baseUpdates[`domains.${domain}.ratingSum`] = increment(ratingSum * multiplier);
+      }
 
       if (transaction) {
          transaction.update(cacheRef, baseUpdates);
@@ -187,6 +195,7 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
         ratingSum,
         ratingDistribution: ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         categoryData: {},
+        domains: {}, // Initialize domains map
         courses: {
           [courseName]: {
             totalResponses,
@@ -210,6 +219,15 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
       Object.entries(categoryIncrements).forEach(([cat, data]) => {
          newCache.categoryData[cat] = { sum: data.sum, count: data.count };
       });
+
+      // Add initial domain stats
+      if (domain) {
+        newCache.domains[domain] = {
+           totalResponses,
+           totalRatingsCount,
+           ratingSum
+        };
+      }
 
       if (transaction) {
           transaction.set(cacheRef, newCache);
