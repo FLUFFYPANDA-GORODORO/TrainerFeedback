@@ -9,7 +9,8 @@ import {
   Filter,
   RotateCcw,
   MessageSquare,
-  FolderCode
+  FolderCode,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,20 +37,23 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Cell
+  Cell,
+  PieChart,
+  Pie
 } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAdminData } from '@/contexts/AdminDataContext';
 import { getAcademicConfig } from '@/services/superadmin/academicService';
 
 const CollegeOverviewTab = () => {
-  const { sessions, trainers, college, cache, trends, loadSessions } = useAdminData();
+  const { sessions, trainers, college, cache, trends, loadSessions, refreshAll, loading } = useAdminData();
 
   // Filter state
   const [filters, setFilters] = useState({
-    projectCode: 'all',
+    projectCode: 'all', // Keeping in state but removing from UI as requested
     trainerId: 'all',
     course: 'all',
+    department: 'all',
     year: 'all',
     batch: 'all',
     dateRange: 'all'
@@ -63,6 +67,7 @@ const CollegeOverviewTab = () => {
       projectCode: 'all',
       trainerId: 'all',
       course: 'all',
+      department: 'all',
       year: 'all',
       batch: 'all',
       dateRange: 'all'
@@ -125,11 +130,25 @@ const CollegeOverviewTab = () => {
     return Object.keys(academicOptions.courses);
   }, [academicOptions]);
 
+  const availableDepartments = useMemo(() => {
+    if (!academicOptions?.courses || filters.course === 'all') return [];
+    const course = academicOptions.courses[filters.course];
+    return course?.departments ? Object.keys(course.departments) : [];
+  }, [academicOptions, filters.course]);
+
   const availableYears = useMemo(() => {
     if (!academicOptions?.courses || filters.course === 'all') return [];
     const yearsSet = new Set();
     const course = academicOptions.courses[filters.course];
-    if (course?.departments) {
+    
+    // If department is selected, only show years from that department
+    if (filters.department !== 'all') {
+      const dept = course.departments?.[filters.department];
+      if (dept?.years) {
+        Object.keys(dept.years).forEach(year => yearsSet.add(year));
+      }
+    } else if (course?.departments) {
+      // Otherwise aggregate from all departments
       Object.values(course.departments).forEach(dept => {
         if (dept?.years) {
           Object.keys(dept.years).forEach(year => yearsSet.add(year));
@@ -137,30 +156,41 @@ const CollegeOverviewTab = () => {
       });
     }
     return [...yearsSet].sort();
-  }, [academicOptions, filters.course]);
+  }, [academicOptions, filters.course, filters.department]);
 
   const availableBatches = useMemo(() => {
     if (!academicOptions?.courses || filters.course === 'all') return [];
     const allBatches = new Set();
     const course = academicOptions.courses[filters.course];
-    if (course?.departments) {
+    
+    const collectFromYear = (yearObj) => {
+       if (yearObj?.batches) yearObj.batches.forEach(b => allBatches.add(b));
+    };
+
+    if (filters.department !== 'all') {
+       const dept = course.departments?.[filters.department];
+       if (filters.year !== 'all') {
+          collectFromYear(dept?.years?.[filters.year]);
+       } else if (dept?.years) {
+          Object.values(dept.years).forEach(collectFromYear);
+       }
+    } else if (course?.departments) {
       Object.values(course.departments).forEach(dept => {
         if (dept?.years) {
-          const yearsToScan = filters.year !== 'all' ? [filters.year] : Object.keys(dept.years);
-          yearsToScan.forEach(yearKey => {
-            const year = dept.years[yearKey];
-            if (year?.batches) {
-              year.batches.forEach(batch => allBatches.add(batch));
-            }
-          });
+          if (filters.year !== 'all') {
+             collectFromYear(dept.years[filters.year]);
+          } else {
+             Object.values(dept.years).forEach(collectFromYear);
+          }
         }
       });
     }
-    return [...allBatches];
-  }, [academicOptions, filters.course, filters.year]);
+    return [...allBatches].sort();
+  }, [academicOptions, filters.course, filters.department, filters.year]);
 
   // Extract unique Project Codes from sessions (only if sessions loaded)
   const availableProjectCodes = useMemo(() => {
+    // Session-dependent, keep as is or return empty if sessions not loaded
     if (!sessions.length) return [];
     const codes = new Set();
     sessions.forEach(s => {
@@ -169,27 +199,27 @@ const CollegeOverviewTab = () => {
     return [...codes].sort();
   }, [sessions]);
 
-  // Load sessions on mount to ensure Top Trainers and other detailed stats are available
-  useEffect(() => {
-     if (sessions.length === 0 && loadSessions) {
-        loadSessions();
-     }
-  }, [sessions.length, loadSessions]);
+  // Removed auto-load of sessions to optimize performance as requested
+  // useEffect(() => {
+  //    if (sessions.length === 0 && loadSessions) {
+  //       loadSessions();
+  //    }
+  // }, [sessions.length, loadSessions]);
 
   const filteredSessions = useMemo(() => {
+    // Only used if sessions ARE loaded (e.g. visited sessions tab)
     if (sessions.length === 0) return [];
 
     return sessions.filter(session => {
-      // Only include closed sessions with compiled stats
       if (session.status !== 'inactive' || !session.compiledStats) return false;
       
-      if (filters.projectCode !== 'all' && session.projectId !== filters.projectCode) return false;
+      // if (filters.projectCode !== 'all' && session.projectId !== filters.projectCode) return false; // Removed filter UI
       if (filters.trainerId !== 'all' && session.assignedTrainer?.id !== filters.trainerId) return false;
       if (filters.course !== 'all' && session.course !== filters.course) return false;
+      if (filters.department !== 'all' && session.branch !== filters.department) return false; // Assuming branch == department
       if (filters.year !== 'all' && session.year !== filters.year) return false;
       if (filters.batch !== 'all' && session.batch !== filters.batch) return false;
       
-      // Date filtering
       if (filters.dateRange !== 'all') {
         const { startDate, endDate } = getDateRange(filters.dateRange);
         if (startDate && endDate) {
@@ -197,29 +227,22 @@ const CollegeOverviewTab = () => {
           if (sessionDate < startDate || sessionDate > endDate) return false;
         }
       }
-      
       return true;
     });
   }, [sessions, filters]);
 
-  // Aggregate stats: Use Cache if available and no filters, otherwise use sessions
+  // Aggregate stats: Use Cache Hierarchical Lookup Optimized for Read Cost
   const aggregatedStats = useMemo(() => {
-    // Primary Source: Server Cache (Scalable)
-    // We strictly use the server-side cache to avoid fetching 1000+ sessions on the client.
-    // If this cache is out of sync, use the 'Sync Data' button in the user profile.
-    const isDefaultView = filters.projectCode === 'all' && 
-                          filters.trainerId === 'all' && 
+    // 1. If global view (no filters), return root cache
+    const isDefaultView = filters.trainerId === 'all' && 
                           filters.course === 'all' && 
-                          filters.year === 'all' && 
-                          filters.batch === 'all' &&
                           filters.dateRange === 'all';
     
     if (isDefaultView && cache) {
       const avgRating = cache.totalRatingsCount > 0 
         ? (cache.ratingSum / cache.totalRatingsCount).toFixed(2) 
         : '0.00';
-        
-      // Prepare category averages from cache.categoryData
+      
       const categoryAverages = {};
       if (cache.categoryData) {
          Object.entries(cache.categoryData).forEach(([cat, data]) => {
@@ -228,20 +251,57 @@ const CollegeOverviewTab = () => {
                : 0;
          });
       }
- 
+
       return {
         totalSessions: cache.totalSessions || 0,
         totalResponses: cache.totalResponses || 0,
+        totalRatingsCount: cache.totalRatingsCount || 0,
         avgRating,
         ratingDistribution: cache.ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         categoryAverages,
         qualitative: cache.qualitative || { high: [], low: [], avg: [] }
       };
     }
+
+    // 2. If filtered by Hierarchy (Course -> Year -> Batch), try to peek into Cache hierarchy
+    // Note: Department level stats are NOT currently in cache, so we might fallback or show 'N/A' if granular dept filtering strictly needed without sessions.
+    // However, we can use Course -> Year -> Batch if available.
+    
+    if (cache && cache.courses && filters.course !== 'all') {
+       const courseData = cache.courses[filters.course];
+       if (courseData) {
+          let targetData = courseData; // Start at course level
+          
+          // Drill down if Year selected
+          if (filters.year !== 'all' && targetData.years && targetData.years[filters.year]) {
+             targetData = targetData.years[filters.year];
+             
+             // Drill down if Batch selected
+             if (filters.batch !== 'all' && targetData.batches && targetData.batches[filters.batch]) {
+                targetData = targetData.batches[filters.batch];
+             }
+          }
+          
+          // If we have data at this level
+          if (targetData.totalResponses !== undefined) {
+             const avg = targetData.totalRatingsCount > 0 
+                ? (targetData.ratingSum / targetData.totalRatingsCount).toFixed(2) 
+                : '0.00';
+             
+             return {
+                totalSessions: 0, // Not tracked in hierarchy usually, or add if available
+                totalResponses: targetData.totalResponses || 0,
+                totalRatingsCount: targetData.totalRatingsCount || 0,
+                avgRating: avg,
+                ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, // Hierarchy often doesn't store distribution to save space
+                categoryAverages: {} // Hierarchy doesn't store category breakdown
+             };
+          }
+       }
+    }
  
-    // Fallback: Aggregate from Filtered Sessions (Only when filters are active)
-    // This is unavoidable for filtered views unless we build complex backend aggregation queries.
-    if (!isDefaultView && filteredSessions.length > 0) {
+    // 3. Fallback: Aggregate from Filtered Sessions (Legacy/Detailed behavior)
+    if (filteredSessions.length > 0) {
        const stats = {
          totalResponses: 0,
          totalRatingsCount: 0,
@@ -284,6 +344,7 @@ const CollegeOverviewTab = () => {
        return {
          totalSessions: filteredSessions.length,
          totalResponses: stats.totalResponses,
+         totalRatingsCount: stats.totalRatingsCount,
          avgRating,
          ratingDistribution: stats.ratingDistribution,
          categoryAverages
@@ -294,60 +355,31 @@ const CollegeOverviewTab = () => {
     return {
       totalSessions: 0,
       totalResponses: 0,
+      totalRatingsCount: 0,
       avgRating: '0.00',
       ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       categoryAverages: {}
     };
   }, [filteredSessions, cache, filters]);
 
-  // Response trend
+  // Response trend (Last 7 days) - ordered oldest to newest
   const responseTrend = useMemo(() => {
-    const days = {};
     const today = new Date();
-    // Initialize last 7 days keys
+    const days = [];
+    
+    // Build array from 6 days ago to today (oldest first)
     for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
-        const dayNum = String(date.getDate()).padStart(2, '0'); // using 01, 02 keys
-         // Format for display
+        const dayNum = String(date.getDate()).padStart(2, '0'); // "01", "02" keys
         const displayKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        days[i] = { day: displayKey, responses: 0, dayNum: dayNum };
+        
+        const responses = trends?.dailyResponses?.[dayNum] || 0;
+        days.push({ day: displayKey, responses: responses });
     }
 
-    const isDefaultView = filters.projectCode === 'all' && 
-                          filters.trainerId === 'all' && 
-                          filters.course === 'all' && 
-                          filters.year === 'all' && 
-                          filters.batch === 'all' &&
-                          filters.dateRange === 'all';
-
-    // Use Trends Cache if available and default view
-    if (isDefaultView && trends && trends.dailyResponses) {
-        return Object.values(days).map(d => ({
-            day: d.day,
-            responses: trends.dailyResponses[d.dayNum] || 0
-        }));
-    }
-
-    // Fallback: Calculate from filtered sessions
-    const calculatedDays = {};
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const key = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      calculatedDays[key] = { day: key, responses: 0 };
-    }
-
-    filteredSessions.forEach(session => {
-      const sessionDate = new Date(session.sessionDate);
-      const key = sessionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (calculatedDays[key]) {
-        calculatedDays[key].responses += session.compiledStats?.totalResponses || 0;
-      }
-    });
-
-    return Object.values(calculatedDays);
-  }, [filteredSessions, trends, filters]);
+    return days;
+  }, [trends]);
 
   // Category radar data
   const categoryRadarData = useMemo(() => {
@@ -367,6 +399,44 @@ const CollegeOverviewTab = () => {
         fullMark: 5
       }));
   }, [aggregatedStats]);
+
+  // Rating distribution bar chart data (from collegeCache)
+  const ratingDistributionData = useMemo(() => {
+    const distribution = aggregatedStats.ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    
+    return Object.entries(distribution).map(([rating, count]) => ({
+      rating: `${rating} Star`,
+      count: count || 0
+    }));
+  }, [aggregatedStats]);
+
+  // Domain Analytics Data (from collegeCache.domains)
+  const domainAnalyticsData = useMemo(() => {
+    const domains = cache?.domains || {};
+    
+    const domainEntries = Object.entries(domains);
+    
+    if (domainEntries.length === 0) {
+      return { chartData: [], totalResponses: 0 };
+    }
+    
+    let totalResponses = 0;
+    const chartData = domainEntries.map(([domainName, data]) => {
+      const avgRating = data.totalRatingsCount > 0 
+        ? (data.ratingSum / data.totalRatingsCount).toFixed(2) 
+        : '0.00';
+      totalResponses += data.totalResponses || 0;
+      
+      return {
+        name: domainName.replace(/_/g, ' '), // Clean up sanitized names
+        responses: data.totalResponses || 0,
+        avgRating: parseFloat(avgRating),
+        totalRatings: data.totalRatingsCount || 0
+      };
+    });
+    
+    return { chartData, totalResponses };
+  }, [cache]);
 
   // Top trainers
   const topTrainers = useMemo(() => {
@@ -437,39 +507,32 @@ const CollegeOverviewTab = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs">Project Code</Label>
-              <Select value={filters.projectCode} onValueChange={v => setFilters({...filters, projectCode: v})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Projects</SelectItem>
-                  {availableProjectCodes.map(code => <SelectItem key={code} value={code}>{code}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Trainer</Label>
-              <Select value={filters.trainerId} onValueChange={v => setFilters({...filters, trainerId: v})}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Trainers</SelectItem>
-                  {trainers.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
               <Label className="text-xs">Course</Label>
               <Select 
                 value={filters.course} 
-                onValueChange={v => setFilters({...filters, course: v, year: 'all', batch: 'all'})}
+                onValueChange={v => setFilters({...filters, course: v, department: 'all', year: 'all', batch: 'all'})}
               >
                 <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Courses</SelectItem>
                   {availableCourses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Department</Label>
+              <Select 
+                value={filters.department} 
+                onValueChange={v => setFilters({...filters, department: v, year: 'all', batch: 'all'})}
+                disabled={filters.course === 'all'}
+              >
+                <SelectTrigger className={filters.course === 'all' ? 'opacity-50' : ''}>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {availableDepartments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -509,6 +572,17 @@ const CollegeOverviewTab = () => {
             </div>
 
             <div className="space-y-1">
+              <Label className="text-xs">Trainer</Label>
+              <Select value={filters.trainerId} onValueChange={v => setFilters({...filters, trainerId: v})}>
+                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Trainers</SelectItem>
+                  {trainers.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
               <Label className="text-xs">Date Range</Label>
               <Select value={filters.dateRange} onValueChange={v => setFilters({...filters, dateRange: v})}>
                 <SelectTrigger><SelectValue placeholder="All Time" /></SelectTrigger>
@@ -536,7 +610,7 @@ const CollegeOverviewTab = () => {
           <CardContent>
             <div className="text-3xl font-bold">{aggregatedStats.totalResponses}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              from {aggregatedStats.totalSessions} session{aggregatedStats.totalSessions !== 1 ? 's' : ''}
+              Total Student Responses
             </p>
           </CardContent>
         </Card>
@@ -550,7 +624,7 @@ const CollegeOverviewTab = () => {
             <div className="text-3xl font-bold">{aggregatedStats.avgRating}</div>
             <div className="flex items-center gap-1 mt-1">
               {[1,2,3,4,5].map(i => (
-                <Star key={i} className={`h-3 w-3 ${i <= Math.round(aggregatedStats.avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                <Star key={i} className={`h-3 w-3 ${i <= Math.round(Number(aggregatedStats.avgRating)) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
               ))}
               <span className="text-xs text-muted-foreground ml-1">out of 5.0</span>
             </div>
@@ -559,66 +633,67 @@ const CollegeOverviewTab = () => {
 
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Trainers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" /> 
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{trainers.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Available for assignment</p>
+            <div className="text-3xl font-bold">{aggregatedStats.totalSessions || 0}</div>
+             <p className="text-xs text-muted-foreground mt-1">Conducted Sessions</p>
           </CardContent>
         </Card>
         
-        {/* Placeholder for Project Count or other metric */}
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-            <FolderCode className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Rating Count</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-             <div className="text-3xl font-bold">{availableProjectCodes.length}</div>
-             <p className="text-xs text-muted-foreground mt-1">Project Codes</p>
+             <div className="text-3xl font-bold">{aggregatedStats.totalRatingsCount || 0}</div>
+             <p className="text-xs text-muted-foreground mt-1">Individual Ratings Given</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Chart Row */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Chart Row - 3 Charts: Rating Distribution, Response Trend, Category Breakdown */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Rating Distribution Bar Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Response Trend</CardTitle>
-            <CardDescription>Last 7 days</CardDescription>
+            <CardTitle>Rating Distribution</CardTitle>
+            <CardDescription>X: Star Rating | Y: Response Count</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={responseTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="day" className="text-xs" />
+                <BarChart data={ratingDistributionData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                  <XAxis dataKey="rating" className="text-xs" />
                   <YAxis allowDecimals={false} className="text-xs" />
                   <Tooltip 
+                    cursor={false}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px'
                     }}
+                    formatter={(value) => [value, 'Responses']}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="responses" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))' }}
+                  <Bar 
+                    dataKey="count" 
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
                   />
-                </LineChart>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
+        {/* Category Breakdown Radar Chart */}
         <Card>
           <CardHeader>
             <CardTitle>Category Breakdown</CardTitle>
-            <CardDescription>Performance by category</CardDescription>
+            <CardDescription>X: Category | Y: Score (0-5)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -662,137 +737,146 @@ const CollegeOverviewTab = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Domain Performance Vertical Bar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Domain Performance</CardTitle>
+            <CardDescription>X: Domain | Y: Avg Rating (0-5)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {domainAnalyticsData.chartData.length > 0 ? (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={domainAnalyticsData.chartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <XAxis dataKey="name" className="text-xs" />
+                    <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
+                    <Tooltip 
+                      cursor={false}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value) => [value.toFixed(2), 'Avg Rating']}
+                    />
+                    <Bar 
+                      dataKey="avgRating" 
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No domain data available yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Student Voices Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            <CardTitle>Student Voices</CardTitle>
-          </div>
-          <CardDescription>Highlights from student feedback</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {aggregatedStats.qualitative && (
-            <Tabs defaultValue="high" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-4">
-                <TabsTrigger value="high" className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800">
-                  Top Compliments
-                </TabsTrigger>
-                <TabsTrigger value="avg" className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800">
-                  Recent Thoughts
-                </TabsTrigger>
-                <TabsTrigger value="low" className="data-[state=active]:bg-red-100 data-[state=active]:text-red-800">
-                  Areas for Improvement
-                </TabsTrigger>
-              </TabsList>
-              
-              {['high', 'avg', 'low'].map(type => (
-                <TabsContent key={type} value={type} className="mt-0">
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {aggregatedStats.qualitative[type]?.length > 0 ? (
-                      aggregatedStats.qualitative[type].map((comment, idx) => (
-                        <div key={idx} className="flex flex-col p-4 rounded-lg bg-muted/30 border border-border/50 h-full">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-0.5">
-                              {[1,2,3,4,5].map(star => (
-                                <Star 
-                                  key={star} 
-                                  className={`h-3 w-3 ${star <= Math.round(Number(comment.rating)) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`} 
-                                />
-                              ))}
+      {/* Response Trend & Student Voices - Side by Side */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Response Trend Line Chart - LEFT */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Response Trend</CardTitle>
+            <CardDescription>X: Date | Y: Responses (Last 7 days)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={responseTrend}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="day" className="text-xs" />
+                  <YAxis allowDecimals={false} className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="responses" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--primary))' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Student Voices Section - RIGHT */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              <CardTitle>Student Voices</CardTitle>
+            </div>
+            <CardDescription>Highlights from student feedback</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {aggregatedStats.qualitative && (
+              <Tabs defaultValue="high" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="high" className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs">
+                    Praise
+                  </TabsTrigger>
+                  <TabsTrigger value="low" className="data-[state=active]:bg-red-100 data-[state=active]:text-red-800 text-xs">
+                    Concerns
+                  </TabsTrigger>
+                </TabsList>
+                
+                {['high', 'low'].map(type => (
+                  <TabsContent key={type} value={type} className="mt-0">
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {aggregatedStats.qualitative[type]?.length > 0 ? (
+                        aggregatedStats.qualitative[type].slice(0, 5).map((comment, idx) => (
+                          <div key={idx} className="flex flex-col p-3 rounded-lg bg-muted/30 border border-border/50">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-0.5">
+                                {[1,2,3,4,5].map(star => (
+                                  <Star 
+                                    key={star} 
+                                    className={`h-3 w-3 ${star <= Math.round(Number(comment.rating)) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`} 
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(comment.date).toLocaleDateString()}
+                              </span>
                             </div>
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(comment.date).toLocaleDateString()}
-                            </span>
+                            
+                            <p className="text-sm italic text-foreground/80 line-clamp-2 mb-2">"{comment.text}"</p>
+                            
+                            <div className="pt-2 border-t border-border/30 flex justify-between items-center text-xs text-muted-foreground">
+                              <span className="truncate max-w-[100px]" title={comment.trainerName}>
+                                 {comment.trainerName || 'Unknown Trainer'}
+                              </span>
+                              <span className="opacity-70">{comment.course}</span>
+                            </div>
                           </div>
-                          
-                          <p className="text-sm italic text-foreground/80 flex-grow mb-3">"{comment.text}"</p>
-                          
-                          <div className="mt-auto pt-2 border-t border-border/30 flex justify-between items-center text-xs text-muted-foreground">
-                            <span className="truncate max-w-[120px]" title={comment.trainerName}>
-                               {comment.trainerName || 'Unknown Trainer'}
-                            </span>
-                            <span className="opacity-70">{comment.course}</span>
-                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                          No comments available yet.
                         </div>
-                      ))
-                    ) : (
-                      <div className="col-span-3 text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                        No comments available in this category yet.
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Top Trainers */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Top Trainers</CardTitle>
-            </div>
-            <TrendingUp className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {topTrainers.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {topTrainers.map((trainer, index) => (
-                <div 
-                  key={trainer.id} 
-                  className="flex flex-col p-4 rounded-lg bg-muted/50 border border-border/50"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold ${
-                      index === 0 ? 'bg-yellow-500' : 
-                      index === 1 ? 'bg-gray-400' : 
-                      index === 2 ? 'bg-amber-600' : 'bg-primary/20 text-primary'
-                    }`}>
-                      {index < 3 ? index + 1 : trainer.name.charAt(0)}
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{trainer.name}</p>
-                      <p className="text-xs text-muted-foreground">{trainer.sessions} session{trainer.sessions !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-bold text-lg">{trainer.avgRating}</span>
-                      <span className="text-xs text-muted-foreground">/ 5.0</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{trainer.responses} responses</span>
-                  </div>
-
-                  {trainer.recentComments.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-border/50">
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                        <MessageSquare className="h-3 w-3" />
-                        Recent
-                      </div>
-                      <p className="text-xs italic text-muted-foreground line-clamp-2">
-                        "{trainer.recentComments[0]?.text || trainer.recentComments[0]}"
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No trainer data available. Complete some sessions first.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
