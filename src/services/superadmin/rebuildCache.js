@@ -1,7 +1,7 @@
 
 import { db } from '../firebase';
 import { collection, getDocs, deleteDoc, doc, writeBatch, query, where } from 'firebase/firestore';
-import { updateCollegeCache, updateTrainerCache } from './cacheService';
+import { updateCollegeCache, updateTrainerCache, updateQualitativeCache } from './cacheService';
 
 /**
  * Rebuild Analytics Cache
@@ -62,7 +62,8 @@ export const rebuildCache = async () => {
       try {
         await Promise.all([
           updateCollegeCache(session, session.compiledStats),
-          updateTrainerCache(session, session.compiledStats)
+          updateTrainerCache(session, session.compiledStats),
+          updateQualitativeCache(session, session.compiledStats)
         ]);
         processed++;
         if (processed % 5 === 0) console.log(`   Processed ${processed}/${sessions.length}...`);
