@@ -5,11 +5,19 @@ import {
   Pencil, 
   Trash2, 
   GraduationCap,
-  BarChart3
+  BarChart3,
+  MoreVertical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Dialog, 
   DialogContent, 
@@ -176,8 +184,8 @@ const CollegesTab = ({ colleges, admins, onRefresh }) => {
             style={{ animationDelay: `${index * 0.05}s` }}
           >
             <div className="flex items-start justify-between">
-              {/* Logo Section - Wider container for better visibility */}
-              <div className="h-24 w-[292px] rounded-xl bg-primary/5 flex items-center justify-center p-1 border border-border/50">
+              {/* Logo Section - Wider container for better visibility, removed grey bg */}
+              <div className="h-24 w-[292px] rounded-xl flex items-center justify-center p-1 border border-border/50">
                 {college.logoUrl ? (
                   <img 
                     src={college.logoUrl} 
@@ -189,33 +197,30 @@ const CollegesTab = ({ colleges, admins, onRefresh }) => {
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-transparent transition-colors"
-                  onClick={() => setSelectedCollegeForAnalytics(college)}
-                  title="View Analytics"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-transparent transition-colors"
-                  onClick={() => openEditCollegeDialog(college)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-transparent transition-colors"
-                  onClick={() => handleDeleteCollege(college.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+              {/* Action Menu - Replaces individual buttons */}
+              <div className="-mr-2 -mt-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-transparent">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => setSelectedCollegeForAnalytics(college)}>
+                            <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditCollegeDialog(college)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit College
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                            onClick={() => handleDeleteCollege(college.id)}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete College
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 

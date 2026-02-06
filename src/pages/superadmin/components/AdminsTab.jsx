@@ -7,7 +7,8 @@ import {
   Shield, 
   ShieldCheck,
   Building,
-  Loader2
+  Loader2,
+  MoreVertical 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from 'sonner';
 import { 
   createSystemUser, 
@@ -267,58 +275,72 @@ const AdminsTab = ({ colleges, onRefresh }) => {
         {admins.map((user, index) => (
              <div
                 key={user.id}
-                className="glass-card rounded-xl p-5 animate-fade-up relative group flex flex-col gap-4"
+                className="group relative flex flex-col bg-card border rounded-xl shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 animate-fade-up overflow-hidden"
                 style={{ animationDelay: `${index * 0.05}s` }}
              >
-                <div className="flex items-start justify-between">
-                     <div className={`h-12 w-12 rounded-full flex items-center justify-center border ${
+                <div className="p-5 flex items-center gap-5">
+                     {/* Avatar */}
+                     <div className={`h-16 w-16 rounded-full flex-shrink-0 flex items-center justify-center border shadow-inner ${
                          user.role === 'superAdmin' 
-                            ? 'bg-purple-100 border-purple-200 text-purple-600 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400' 
-                            : 'bg-blue-100 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
+                            ? 'bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-100 text-purple-600' 
+                            : 'bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-100 text-blue-600'
                      }`}>
-                         {user.role === 'superAdmin' ? <ShieldCheck className="h-6 w-6"/> : <Building className="h-6 w-6"/>}
+                         {user.role === 'superAdmin' ? <ShieldCheck className="h-8 w-8"/> : <Building className="h-8 w-8"/>}
                      </div>
 
-                    <div className="flex gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            onClick={() => openEditDialog(user)}
-                        >
-                            <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                     {/* Details Column */}
+                     <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex items-center gap-3">
+                            <h3 className="font-bold text-lg text-foreground leading-none">{user.name}</h3>
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                                user.role === 'superAdmin'
+                                ? 'bg-primary/5 text-primary border-primary/10'
+                                : 'bg-muted text-muted-foreground border-border'
+                            }`}>
+                                {user.role === 'superAdmin' ? 'Super Admin' : 'College Admin'}
+                            </span>
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground leading-none">{user.email}</p>
+
+                        {/* Organization Tag */}
+                        <div className="pt-1">
+                            {user.role === 'superAdmin' ? (
+                                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                                    Gryphon Academy Pvt Ltd
+                                </span>
+                            ) : (
+                                user.collegeId && (
+                                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground/80">
+                                        <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                                        {getCollegeName(user.collegeId)}
+                                    </span>
+                                )
+                            )}
+                        </div>
+                     </div>
+
+                     {/* Action Menu */}
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-transparent -mr-2 -mt-2 self-start">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => openEditDialog(user)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit User
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
                             onClick={() => handleDelete(user.id)}
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 className="font-semibold text-lg text-foreground">{user.name}</h3>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-border/50">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        user.role === 'superAdmin' 
-                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' 
-                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                    }`}>
-                        {user.role === 'superAdmin' ? 'Super Admin' : 'College Admin'}
-                    </span>
-                    
-                    {user.role === 'collegeAdmin' && user.collegeId && (
-                        <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground flex items-center gap-1">
-                            <Building className="h-3 w-3" />
-                            {getCollegeName(user.collegeId)}
-                        </span>
-                    )}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                 </div>
              </div>
         ))}

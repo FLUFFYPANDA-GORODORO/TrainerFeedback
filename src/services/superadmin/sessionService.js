@@ -40,17 +40,6 @@ export const createSession = async (sessionData) => {
         projectId = ''
     } = sessionData;
 
-    // Calculate expiresAt based on sessionDate and TTL
-    // Assuming sessionDate is YYYY-MM-DD
-    const expiryDate = new Date(sessionDate);
-    // Add 1 day if afternoon? Or just use TTL from start of day?
-    // Let's assume TTL starts from end of session day or just generic hours
-    // Simple approach: ExpiresAt = SessionDate (end of day) + TTL hours? 
-    // Or simpler: SessionDate + 1 day.
-    // User asked for "auto close the status to expired after x time".
-    // Let's store expiresAt as a timestamp. 
-    expiryDate.setHours(expiryDate.getHours() + parseInt(ttl) + 24); // Default 24h buffer from start of date?
-
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       collegeId,
       collegeName,
@@ -69,7 +58,6 @@ export const createSession = async (sessionData) => {
       projectId,
       status: 'active',
       templateId: sessionData.templateId || null,
-      expiresAt: expiryDate.toISOString(),
       createdAt: serverTimestamp()
     });
 
@@ -145,6 +133,33 @@ export const getAllSessions = async (collegeId = null) => {
     }));
   } catch (error) {
     console.error('Error getting sessions:', error);
+    throw error;
+  }
+};
+
+// Get sessions by Trainer ID
+export const getSessionsByTrainer = async (trainerId) => {
+  try {
+    // Note: Removed orderBy to avoid strict index requirement for now
+    const q = query(
+      collection(db, COLLECTION_NAME), 
+      where('assignedTrainer.id', '==', trainerId)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const sessions = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Client-side sort by createdAt desc
+    return sessions.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB - dateA;
+    });
+  } catch (error) {
+    console.error('Error getting trainer sessions:', error);
     throw error;
   }
 };

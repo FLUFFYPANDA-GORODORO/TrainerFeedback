@@ -70,18 +70,11 @@ import { getAcademicConfig } from '@/services/superadmin/academicService';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import SessionAnalytics from './SessionAnalytics';
+import SessionWizard from '@/components/shared/SessionWizard';
 import { useSuperAdminData } from '@/contexts/SuperAdminDataContext';
 
 // Define domain options configuration
-const DOMAIN_OPTIONS = [
-  "Technical",
-  "Soft Skills",
-  "Tools",
-  "Aptitude",
-  "Verbal",
-  "Management",
-  "Other"
-];
+
 
 const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
   // Get data from context (cached, real-time subscribed)
@@ -110,8 +103,7 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
 
   // Dialog & Wizard State
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
-  const [step, setStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [editingSessionId, setEditingSessionId] = useState(null); // null = create mode, id = edit mode
 
   // Export Confirmation Dialog
@@ -122,128 +114,47 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
   const [selectedSessionForAnalytics, setSelectedSessionForAnalytics] = useState(null);
 
   // Form Data
-  const [formData, setFormData] = useState({
-    collegeId: '',
-    collegeName: '',
-    academicYear: '2025-26',
-    course: '',
-    branch: '',
-    year: '',
-    batch: '',
-    topic: '',
-    domain: '',
-    assignedTrainer: null, // { id, name }
-    sessionDate: '',
-    sessionTime: 'Morning',
-    sessionDuration: '60',
-    questions: [],
-    templateId: '',
-    ttl: '24'
-  });
+
 
   // Dynamic Options based on selection
-  const [academicOptions, setAcademicOptions] = useState(null);
-  const [filteredTrainers, setFilteredTrainers] = useState([]);
+
 
   // Removed useEffect - data comes from context with real-time subscription
   // useEffect for domain-based trainer filtering still needed
-  useEffect(() => {
-    let filtered = trainers;
-    if (formData.domain) {
-      filtered = filtered.filter(t =>
-        t.domain?.toLowerCase().includes(formData.domain.toLowerCase()) ||
-        t.specialisation?.toLowerCase().includes(formData.domain.toLowerCase())
-      );
-    }
-    setFilteredTrainers(filtered);
-  }, [formData.domain, trainers]);
+
 
   // loadInitialData removed - data comes from context
 
   // Filter Logic (including tab filter)
-  const filteredSessions = sessions.filter(session => {
-    // Tab filter
-    if (sessionTab === 'active' && session.status !== 'active') return false;
-    if (sessionTab === 'inactive' && session.status !== 'inactive') return false;
-    // Existing filters
-    if (filters.collegeId !== 'all' && session.collegeId !== filters.collegeId) return false;
-    if (filters.course !== 'all' && session.course !== filters.course) return false;
-    if (filters.domain !== 'all' && session.domain !== filters.domain) return false;
-    if (filters.trainerId !== 'all' && session.assignedTrainer?.id !== filters.trainerId) return false;
-    if (filters.topic && !session.topic.toLowerCase().includes(filters.topic.toLowerCase())) return false;
-    return true;
-  });
+  // Filter Logic (including tab filter)
+  const filteredSessions = useMemo(() => {
+    return sessions.filter(session => {
+      // Tab filter
+      if (sessionTab === 'active' && session.status !== 'active') return false;
+      if (sessionTab === 'inactive' && session.status !== 'inactive') return false;
+
+      // Existing filters
+      if (filters.collegeId !== 'all' && session.collegeId !== filters.collegeId) return false;
+      if (filters.course !== 'all' && session.course !== filters.course) return false;
+      if (filters.domain !== 'all' && session.domain !== filters.domain) return false;
+      if (filters.trainerId !== 'all' && session.assignedTrainer?.id !== filters.trainerId) return false;
+      if (filters.topic && !session.topic.toLowerCase().includes(filters.topic.toLowerCase())) return false;
+      
+      return true;
+    }).sort((a, b) => {
+      // Sort by sessionDate descending
+      const dateA = new Date(a.sessionDate || 0);
+      const dateB = new Date(b.sessionDate || 0);
+      return dateB - dateA;
+    });
+  }, [sessions, sessionTab, filters]);
 
   // Session Creation Logic
-  const handleCollegeSelect = async (collegeId) => {
-    const college = colleges.find(c => c.id === collegeId);
-    setFormData(prev => ({ ...prev, collegeId, collegeName: college?.name || '' }));
 
-    try {
-      const config = await getAcademicConfig(collegeId);
-      setAcademicOptions(config || {});
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load academic config for college");
-    }
-  };
 
-  useEffect(() => {
-    if (step === 2) {
-      let filtered = trainers;
-      if (formData.domain) {
-        filtered = filtered.filter(t =>
-          t.domain?.toLowerCase().includes(formData.domain.toLowerCase()) ||
-          t.specialisation?.toLowerCase().includes(formData.domain.toLowerCase())
-        );
-      }
-      setFilteredTrainers(filtered);
-    }
-  }, [formData.domain, step, trainers]);
 
-  const handleCreateSession = async () => {
-    setIsSubmitting(true);
-    try {
-      let sessionQuestions = [...(formData.questions || [])];
-      if (formData.templateId) {
-        const selectedTemplate = templates.find(t => t.id === formData.templateId);
-        if (selectedTemplate && selectedTemplate.sections) {
-          // Flatten questions AND regenerate IDs to ensure uniqueness within the session
-          // This prevents issues if the template itself has duplicates or if multiple sections are combined incorrectly
-          const templateQuestions = selectedTemplate.sections.flatMap(section => 
-              (section.questions || []).map(q => ({
-                  ...q,
-                  // Use a combination of timestamp and random to ensure uniqueness even if generated in a tight loop
-                  id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${q.id || 'new'}`
-              }))
-          );
-          sessionQuestions = [...sessionQuestions, ...templateQuestions];
-        }
-      }
 
-      const sessionPayload = {
-        ...formData,
-        questions: sessionQuestions
-      };
 
-      if (editingSessionId) {
-        // Update existing session
-        await updateSession(editingSessionId, sessionPayload);
-        toast.success('Session updated successfully');
-      } else {
-        // Create new session
-        await createSession(sessionPayload);
-        toast.success('Session created successfully');
-      }
-      setSessionDialogOpen(false);
-      resetForm();
-      onRefresh && onRefresh(); // Use the context refresh
-    } catch (error) {
-      toast.error(editingSessionId ? 'Failed to update session' : 'Failed to create session');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   // Row Actions
   const handleToggleStatus = async (session) => {
@@ -380,284 +291,12 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
     }
   };
 
-  const resetForm = () => {
-    setStep(1);
-    setFormData({
-      collegeId: '',
-      collegeName: '',
-      academicYear: '2025-26',
-      course: '',
-      branch: '',
-      year: '',
-      batch: '',
-      topic: '',
-      domain: '',
-      assignedTrainer: null,
-      sessionDate: '',
-      sessionTime: 'Morning',
-      sessionDuration: '60',
-      questions: [],
-      templateId: '',
-      ttl: '24'
-    });
-    setAcademicOptions(null);
-    setEditingSessionId(null);
-  };
+
 
   // Render Wizard Steps
-  const renderStep = () => {
-    switch (step) {
-      case 1:
-        const courses = academicOptions?.courses ? Object.keys(academicOptions.courses) : [];
-        const currentCourseData = formData.course ? academicOptions?.courses[formData.course] : null;
-        const departments = currentCourseData?.departments ? Object.keys(currentCourseData.departments) : [];
-        const currentDeptData = formData.branch && currentCourseData?.departments ? currentCourseData.departments[formData.branch] : null;
-        const years = currentDeptData?.years ? Object.keys(currentDeptData.years) : [];
-        const currentYearData = formData.year && currentDeptData?.years ? currentDeptData.years[formData.year] : null;
-        const batches = currentYearData?.batches || [];
 
-        return (
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>College *</Label>
-              <Select
-                value={formData.collegeId}
-                onValueChange={handleCollegeSelect}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select College" />
-                </SelectTrigger>
-                <SelectContent>
-                  {colleges.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
-            <div className="space-y-4 border-t pt-4">
-              <div className="space-y-2">
-                <Label>Academic Year</Label>
-                <Input
-                  value={formData.academicYear}
-                  onChange={e => setFormData({ ...formData, academicYear: e.target.value })}
-                  placeholder="2025-26"
-                  disabled={!formData.collegeId}
-                />
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Course *</Label>
-                  <Select
-                    value={formData.course}
-                    onValueChange={v => setFormData({ ...formData, course: v, branch: '', year: '', batch: '' })}
-                    disabled={!formData.collegeId || !academicOptions}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {courses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Branch/Dept *</Label>
-                  <Select
-                    value={formData.branch}
-                    onValueChange={v => setFormData({ ...formData, branch: v, year: '', batch: '' })}
-                    disabled={!formData.course}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Year *</Label>
-                  <Select
-                    value={formData.year}
-                    onValueChange={v => setFormData({ ...formData, year: v, batch: '' })}
-                    disabled={!formData.branch}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Batch *</Label>
-                  <Select
-                    value={formData.batch}
-                    onValueChange={v => setFormData({ ...formData, batch: v })}
-                    disabled={!formData.year}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Batch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {batches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6 py-2">
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Trainer Selection</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Domain (Filter)</Label>
-                  <Select
-                    value={formData.domain}
-                    onValueChange={v => setFormData({ ...formData, domain: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Domain" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DOMAIN_OPTIONS.map(d => (
-                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Topic *</Label>
-                  <Input
-                    value={formData.topic}
-                    onChange={e => setFormData({ ...formData, topic: e.target.value })}
-                    placeholder="Topic Name"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Select Trainer *</Label>
-                <div className="max-h-[150px] overflow-y-auto border rounded-md p-2 space-y-2 bg-muted/20">
-                  {filteredTrainers.map(t => (
-                    <div
-                      key={t.id}
-                      className={`p-2 rounded cursor-pointer flex justify-between items-center transition-colors ${formData.assignedTrainer?.id === t.id ? 'bg-primary/10 border-primary border' : 'hover:bg-accent bg-card'}`}
-                      onClick={() => setFormData({ ...formData, assignedTrainer: { id: t.id, name: t.name } })}
-                    >
-                      <div>
-                        <p className="font-medium text-sm">{t.name}</p>
-                        <p className="text-xs text-muted-foreground">{t.specialisation}</p>
-                      </div>
-                      {formData.assignedTrainer?.id === t.id && <div className="h-2 w-2 rounded-full bg-primary" />}
-                    </div>
-                  ))}
-                  {filteredTrainers.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No trainers match filters.</p>}
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t my-2" />
-
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Session Logistics</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Date *</Label>
-                  <Input
-                    type="date"
-                    value={formData.sessionDate}
-                    onChange={e => setFormData({ ...formData, sessionDate: e.target.value })}
-                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                    className="cursor-pointer block"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Session Time *</Label>
-                  <Select
-                    value={formData.sessionTime}
-                    onValueChange={v => setFormData({ ...formData, sessionTime: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Morning">Morning</SelectItem>
-                      <SelectItem value="Afternoon">Afternoon</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Duration (mins)</Label>
-                  <Input
-                    type="number"
-                    value={formData.sessionDuration}
-                    onChange={e => setFormData({ ...formData, sessionDuration: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Auto-Close (Hours)</Label>
-                  <Input
-                    type="number"
-                    value={formData.ttl}
-                    onChange={e => setFormData({ ...formData, ttl: e.target.value })}
-                    placeholder="24"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t my-2" />
-
-            {/* Template Selection */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold">Feedback Template</Label>
-              <div className="space-y-2">
-                <Label>Select Template</Label>
-                <Select
-                  value={formData.templateId}
-                  onValueChange={v => setFormData({ ...formData, templateId: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a feedback template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templates.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Selecting a template will automatically populate the feedback questions for this session.
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-      default: return null;
-    }
-  };
-
-  const isStepValid = () => {
-    switch (step) {
-      case 1: return formData.collegeId && formData.academicYear && formData.course && formData.branch && formData.year && formData.batch;
-      case 2: return formData.topic && formData.assignedTrainer && formData.sessionDate && formData.sessionTime;
-      default: return false;
-    }
-  };
 
   const uniqueCourses = [...new Set(sessions.map(s => s.course))].filter(Boolean);
   const uniqueDomains = [...new Set(sessions.map(s => s.domain))].filter(Boolean);
@@ -679,52 +318,36 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
           <h1 className="font-display text-2xl font-bold text-foreground">Feedback Sessions</h1>
           <p className="text-muted-foreground">Monitor and manage all feedback sessions across colleges</p>
         </div>
-        <Dialog open={sessionDialogOpen} onOpenChange={(open) => {
-          setSessionDialogOpen(open);
-          if (!open) resetForm();
-        }}>
+        <Dialog open={sessionDialogOpen} onOpenChange={setSessionDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 gradient-hero text-primary-foreground hover:opacity-90">
+            <Button 
+                onClick={() => setEditingSessionId(null)}
+                className="gap-2 gradient-hero text-primary-foreground hover:opacity-90"
+            >
               <Plus className="h-4 w-4" />
               Create Session
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <DialogHeader>
-              <DialogTitle>{editingSessionId ? 'Edit' : 'Create'} Feedback Session {editingSessionId ? '' : `(Step ${step}/2)`}</DialogTitle>
-              <DialogDescription>
-                {step === 1 && "Batch Selection Process"}
-                {step === 2 && "Session Details & Logistics"}
-              </DialogDescription>
-            </DialogHeader>
-
-            {renderStep()}
-
-            <DialogFooter className="mt-6">
-              {step > 1 && (
-                <Button variant="outline" onClick={() => setStep(step - 1)}>
-                  <ChevronLeft className="h-4 w-4 mr-2" /> Back
-                </Button>
-              )}
-              {step < 2 ? (
-                <Button
-                  onClick={() => setStep(step + 1)}
-                  disabled={!isStepValid()}
-                  className="gradient-hero text-primary-foreground"
-                >
-                  Next <ChevronRight className="h-4 w-4 ml-2" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleCreateSession}
-                  disabled={!isStepValid() || isSubmitting}
-                  className="gradient-hero text-primary-foreground"
-                >
-                  {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  {editingSessionId ? 'Save Changes' : 'Create Session'}
-                </Button>
-              )}
-            </DialogFooter>
+          <DialogContent className="max-w-2xl p-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
+              <div className="p-6 max-h-[90vh] overflow-y-auto">
+                 <DialogHeader className="mb-4">
+                    <DialogTitle>{editingSessionId ? 'Edit' : 'Create'} Feedback Session</DialogTitle>
+                    <DialogDescription>
+                        Complete the batch selection and session details.
+                    </DialogDescription>
+                </DialogHeader>
+                <SessionWizard
+                    key={editingSessionId || 'new'} // Force re-mount on mode change
+                    session={editingSessionId ? sessions.find(s => s.id === editingSessionId) : null}
+                    colleges={colleges}
+                    trainers={trainers}
+                    onSuccess={() => {
+                        setSessionDialogOpen(false);
+                        onRefresh && onRefresh();
+                    }}
+                    onCancel={() => setSessionDialogOpen(false)}
+                />
+            </div>
           </DialogContent>
         </Dialog>
       </div>
@@ -788,7 +411,7 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
               : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
           >
-            Past Sessions
+            Inactive Sessions
           </button>
         </div>
       </div>
@@ -898,9 +521,7 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(session.id)}>
-                          Copy ID
-                        </DropdownMenuItem>
+
                         <DropdownMenuItem onClick={() => {
                           const shareUrl = `${window.location.origin}/feedback/anonymous/${session.id}`;
                           navigator.clipboard.writeText(shareUrl);
@@ -911,12 +532,6 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => {
                           setEditingSessionId(session.id);
-                          setFormData({
-                            ...session,
-                            sessionDuration: session.sessionDuration?.toString() || '60',
-                            ttl: session.ttl?.toString() || '24'
-                          });
-                          setStep(2); // Jump to details step for editing
                           setSessionDialogOpen(true);
                         }}>
                           <Pencil className="mr-2 h-4 w-4" /> Update
