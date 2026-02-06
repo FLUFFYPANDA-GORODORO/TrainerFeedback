@@ -498,10 +498,16 @@ const CollegeOverviewTab = () => {
               <Filter className="h-5 w-5 text-primary" />
               <CardTitle className="text-lg">Filters</CardTitle>
             </div>
-            <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-2">
-              <RotateCcw className="h-4 w-4" />
-              Reset
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-2">
+                <RotateCcw className="h-4 w-4" />
+                Reset
+              </Button>
+              <Button variant="outline" size="sm" onClick={refreshAll} className="gap-2">
+                <RefreshCw className={`h-4 w-4 ${loading.college ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -654,38 +660,44 @@ const CollegeOverviewTab = () => {
         </Card>
       </div>
 
-      {/* Chart Row - 3 Charts: Rating Distribution, Response Trend, Category Breakdown */}
+      {/* Chart Row - 3 Charts: Domain Performance, Category Breakdown, Rating Distribution */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Rating Distribution Bar Chart */}
+        {/* Domain Performance Vertical Bar Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Rating Distribution</CardTitle>
-            <CardDescription>X: Star Rating | Y: Response Count</CardDescription>
+            <CardTitle>Domain Performance</CardTitle>
+            <CardDescription>X: Domain | Y: Avg Rating (0-5)</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={ratingDistributionData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                  <XAxis dataKey="rating" className="text-xs" />
-                  <YAxis allowDecimals={false} className="text-xs" />
-                  <Tooltip 
-                    cursor={false}
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value) => [value, 'Responses']}
-                  />
-                  <Bar 
-                    dataKey="count" 
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {domainAnalyticsData.chartData.length > 0 ? (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={domainAnalyticsData.chartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <XAxis dataKey="name" className="text-xs" />
+                    <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
+                    <Tooltip 
+                      cursor={false}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value) => [value.toFixed(2), 'Avg Rating']}
+                    />
+                    <Bar 
+                      dataKey="avgRating" 
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No domain data available yet.
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -738,42 +750,36 @@ const CollegeOverviewTab = () => {
           </CardContent>
         </Card>
 
-        {/* Domain Performance Vertical Bar Chart */}
+        {/* Rating Distribution Bar Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Domain Performance</CardTitle>
-            <CardDescription>X: Domain | Y: Avg Rating (0-5)</CardDescription>
+            <CardTitle>Rating Distribution</CardTitle>
+            <CardDescription>X: Star Rating | Y: Response Count</CardDescription>
           </CardHeader>
           <CardContent>
-            {domainAnalyticsData.chartData.length > 0 ? (
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={domainAnalyticsData.chartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                    <XAxis dataKey="name" className="text-xs" />
-                    <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
-                    <Tooltip 
-                      cursor={false}
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                      formatter={(value) => [value.toFixed(2), 'Avg Rating']}
-                    />
-                    <Bar 
-                      dataKey="avgRating" 
-                      fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No domain data available yet.
-              </div>
-            )}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ratingDistributionData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                  <XAxis dataKey="rating" className="text-xs" />
+                  <YAxis allowDecimals={false} className="text-xs" />
+                  <Tooltip 
+                    cursor={false}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value) => [value, 'Responses']}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
