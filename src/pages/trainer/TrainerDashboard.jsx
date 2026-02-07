@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getSessionsByTrainer } from '@/services/superadmin/sessionService';
 import { getCollegeById, getAllColleges } from '@/services/superadmin/collegeService';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalClose } from '@/components/ui/modal';
 import SessionWizard from '@/components/shared/SessionWizard';
 import { toast } from 'sonner';
 import {
@@ -309,15 +309,19 @@ const TrainerDashboard = () => {
         <main className="flex-1 overflow-y-auto bg-muted/5 p-6 scroll-smooth">
           <div className={`max-w-8xl mx-auto transition-all duration-300 ${isSidebarCollapsed ? 'px-6' : 'px-0'}`}>
 
-            {/* Session Form Dialog (Shared for Create/Edit) */}
-            <Dialog open={isSessionFormOpen} onOpenChange={setIsSessionFormOpen}>
-                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>{editingSession ? 'Edit Session' : 'Create New Session'}</DialogTitle>
-                        <DialogDescription>
+            {/* Session Form Modal (Shared for Create/Edit) */}
+            <Modal open={isSessionFormOpen} onOpenChange={setIsSessionFormOpen} className="sm:max-w-[600px]">
+                <ModalClose onClose={() => {
+                    setIsSessionFormOpen(false);
+                    setEditingSession(null);
+                }} />
+                <div className="p-6 max-h-[90vh] overflow-y-auto">
+                    <ModalHeader className="mb-4">
+                        <ModalTitle>{editingSession ? 'Edit Session' : 'Create New Session'}</ModalTitle>
+                        <ModalDescription>
                             {editingSession ? 'Update the details of your session below.' : 'Fill in the details below to create a new session.'}
-                        </DialogDescription>
-                    </DialogHeader>
+                        </ModalDescription>
+                    </ModalHeader>
                     <SessionWizard
                         session={editingSession}
                         colleges={colleges}
@@ -333,10 +337,13 @@ const TrainerDashboard = () => {
                         currentUserId={user.uid}
                         currentUserName={user.name}
                         onSuccess={handleSessionSaved}
-                        onCancel={() => setIsSessionFormOpen(false)}
+                        onCancel={() => {
+                            setIsSessionFormOpen(false);
+                            setEditingSession(null);
+                        }}
                     />
-                </DialogContent>
-            </Dialog>
+                </div>
+            </Modal>
 
             {/* Content Tabs */}
             {activeTab === 'overview' && (

@@ -39,14 +39,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalClose
+} from '@/components/ui/modal';
 import {
   Select,
   SelectContent,
@@ -318,38 +316,49 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
           <h1 className="font-display text-2xl font-bold text-foreground">Feedback Sessions</h1>
           <p className="text-muted-foreground">Monitor and manage all feedback sessions across colleges</p>
         </div>
-        <Dialog open={sessionDialogOpen} onOpenChange={setSessionDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-                onClick={() => setEditingSessionId(null)}
-                className="gap-2 gradient-hero text-primary-foreground hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" />
-              Create Session
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl p-0 overflow-hidden" onOpenAutoFocus={(e) => e.preventDefault()}>
-              <div className="p-6 max-h-[90vh] overflow-y-auto">
-                 <DialogHeader className="mb-4">
-                    <DialogTitle>{editingSessionId ? 'Edit' : 'Create'} Feedback Session</DialogTitle>
-                    <DialogDescription>
-                        Complete the batch selection and session details.
-                    </DialogDescription>
-                </DialogHeader>
-                <SessionWizard
-                    key={editingSessionId || 'new'} // Force re-mount on mode change
-                    session={editingSessionId ? sessions.find(s => s.id === editingSessionId) : null}
-                    colleges={colleges}
-                    trainers={trainers}
-                    onSuccess={() => {
-                        setSessionDialogOpen(false);
-                        onRefresh && onRefresh();
-                    }}
-                    onCancel={() => setSessionDialogOpen(false)}
-                />
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button 
+            onClick={() => {
+                setEditingSessionId(null);
+                setSessionDialogOpen(true);
+            }}
+            className="gap-2 gradient-hero text-primary-foreground hover:opacity-90"
+        >
+          <Plus className="h-4 w-4" />
+          Create Session
+        </Button>
+        <Modal 
+          open={sessionDialogOpen} 
+          onOpenChange={setSessionDialogOpen}
+          className="max-w-2xl p-0 overflow-hidden"
+        >
+          <ModalClose onClose={() => {
+              setSessionDialogOpen(false);
+              setEditingSessionId(null);
+          }} />
+          <div className="p-6 max-h-[90vh] overflow-y-auto">
+             <ModalHeader className="mb-4">
+                <ModalTitle>{editingSessionId ? 'Edit' : 'Create'} Feedback Session</ModalTitle>
+                <ModalDescription>
+                    Complete the batch selection and session details.
+                </ModalDescription>
+            </ModalHeader>
+            <SessionWizard
+                key={editingSessionId || 'new'}
+                session={editingSessionId ? sessions.find(s => s.id === editingSessionId) : null}
+                colleges={colleges}
+                trainers={trainers}
+                onSuccess={() => {
+                    setSessionDialogOpen(false);
+                    setEditingSessionId(null);
+                    onRefresh && onRefresh();
+                }}
+                onCancel={() => {
+                    setSessionDialogOpen(false);
+                    setEditingSessionId(null);
+                }}
+            />
+          </div>
+        </Modal>
       </div>
 
       {/* Stats Summary Cards */}

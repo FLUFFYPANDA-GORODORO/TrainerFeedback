@@ -173,11 +173,13 @@ const SessionWizard = ({
         await createSession(payload);
         toast.success("Session created successfully");
       }
+      // Reset submitting state BEFORE calling onSuccess to ensure clean state
+      // This prevents race conditions when the parent closes the dialog
+      setIsSubmitting(false);
       onSuccess?.();
     } catch (error) {
       console.error("Session save failed:", error);
       toast.error("Failed to save session");
-    } finally {
       setIsSubmitting(false);
     }
   };
