@@ -325,52 +325,17 @@ const TrainerOverview = () => {
       }));
   }, [aggregatedStats]);
 
-  // 3. Response Trend (Last 7 Days)
+  // Response Trend - use cache trends data with day numbers like CollegeAnalytics
   const responseTrend = useMemo(() => {
-    // If Global -> Use Trends Cache
-    const isDefaultView = filters.collegeId === 'all' && filters.dateRange === 'all'; // etc... check full
-    // But trends cache is simple, let's just use it if available and no date filtering blocks it.
-    // For simplicity, if we are filtering sessions, we should rebuild trend from sessions.
+    if (!trends?.dailyResponses) return [];
     
-    if (isDefaultView && trends) {
-        const today = new Date();
-        const days = [];
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            const dayNum = String(date.getDate()).padStart(2, '0');
-            const displayKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const responses = trends.dailyResponses?.[dayNum] || 0;
-            days.push({ day: displayKey, responses });
-        }
-        return days;
-    } 
-    
-    // Fallback: Build from filtered sessions (simplified to date matches)
-    // Sessions only store 'sessionDate'. We can aggregate responses per day.
-    const today = new Date();
-    const daysMap = {};
-    const days = [];
-    
-    // Initialize last 7 days keys
-    for (let i = 6; i >= 0; i--) {
-         const date = new Date(today);
-         date.setDate(date.getDate() - i);
-         const key = date.toISOString().split('T')[0];
-         const displayKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-         daysMap[key] = { day: displayKey, responses: 0 };
-    }
-
-    filteredSessions.forEach(s => {
-        const dateKey = s.sessionDate.split('T')[0];
-        if (daysMap[dateKey]) {
-            daysMap[dateKey].responses += s.compiledStats?.totalResponses || 0;
-        }
-    });
-
-    return Object.values(daysMap);
-
-  }, [trends, filteredSessions, filters]);
+    return Object.entries(trends.dailyResponses)
+      .map(([day, count]) => ({
+        day: parseInt(day),
+        responses: count
+      }))
+      .sort((a, b) => a.day - b.day);
+  }, [trends]);
 
 
   if (isLoading) {
@@ -617,19 +582,42 @@ const TrainerOverview = () => {
         <Card>
           <CardHeader>
             <CardTitle>Response Trend</CardTitle>
-            <CardDescription>Daily responses over the last 7 days</CardDescription>
+            <CardDescription>X: Day | Y: Responses ({trends?.yearMonth || 'current month'})</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={responseTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="day" className="text-xs" />
-                  <YAxis allowDecimals={false} className="text-xs" />
-                  <Tooltip contentStyle={{ borderRadius: '8px' }} />
-                  <Line type="monotone" dataKey="responses" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
+              {responseTrend.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={responseTrend}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="day" 
+                      className="text-xs"
+                      tickFormatter={(day) => `${day}`}
+                    />
+                    <YAxis allowDecimals={false} className="text-xs" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      labelFormatter={(day) => `Day ${day}`}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="responses" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  No trend data available for this month yet.
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

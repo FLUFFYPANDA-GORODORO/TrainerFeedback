@@ -20,10 +20,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
   RadarChart,
   Radar,
   PolarGrid,
@@ -34,7 +30,6 @@ import {
 } from 'recharts';
 import { getCollegeCache, getCollegeTrends } from '@/services/superadmin/cacheService';
 
-const COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'];
 
 const CollegeAnalytics = ({ collegeId, collegeName, filters, onBack }) => {
   const [loading, setLoading] = useState(true);
@@ -207,18 +202,8 @@ const CollegeAnalytics = ({ collegeId, collegeName, filters, onBack }) => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Reordered: Responses, Rating, Sessions, This Month */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalSessions || 0}</div>
-          </CardContent>
-        </Card>
-        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Responses</CardTitle>
@@ -246,6 +231,16 @@ const CollegeAnalytics = ({ collegeId, collegeName, filters, onBack }) => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.totalSessions || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">This Month</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -258,8 +253,8 @@ const CollegeAnalytics = ({ collegeId, collegeName, filters, onBack }) => {
         </Card>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts Row - 3 Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Rating Distribution */}
         <Card>
           <CardHeader>
@@ -267,24 +262,26 @@ const CollegeAnalytics = ({ collegeId, collegeName, filters, onBack }) => {
             <CardDescription>Breakdown of all ratings received</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-72">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ratingData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
                   <XAxis dataKey="name" className="text-xs" />
                   <YAxis allowDecimals={false} className="text-xs" />
                   <Tooltip 
+                    cursor={false}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px'
-                    }} 
+                    }}
+                    formatter={(value) => [value, 'Responses']}
                   />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {ratingData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[entry.rating - 1]} />
-                    ))}
-                  </Bar>
+                  <Bar 
+                    dataKey="value" 
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -294,23 +291,23 @@ const CollegeAnalytics = ({ collegeId, collegeName, filters, onBack }) => {
         {/* Category Performance Radar */}
         <Card>
           <CardHeader>
-            <CardTitle>Category Performance</CardTitle>
-            <CardDescription>Average scores across evaluation categories</CardDescription>
+            <CardTitle>Category Breakdown</CardTitle>
+            <CardDescription>Average scores by category</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-72">
+            <div className="h-64">
               {radarData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                     <PolarGrid stroke="hsl(var(--border))" />
                     <PolarAngleAxis 
                       dataKey="category" 
-                      tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                      tick={{ fill: 'hsl(var(--foreground))', fontSize: 10 }}
                     />
                     <PolarRadiusAxis 
                       angle={90} 
                       domain={[0, 5]} 
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
                       tickCount={6}
                     />
                     <Radar
@@ -327,9 +324,8 @@ const CollegeAnalytics = ({ collegeId, collegeName, filters, onBack }) => {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
-                      formatter={(value) => [value.toFixed(2), 'Score']}
+                      formatter={(value) => [parseFloat(value).toFixed(2), 'Score']}
                     />
-                    <Legend />
                   </RadarChart>
                 </ResponsiveContainer>
               ) : (
@@ -340,86 +336,51 @@ const CollegeAnalytics = ({ collegeId, collegeName, filters, onBack }) => {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Daily Trend */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Response Trend</CardTitle>
-          <CardDescription>Daily responses for {trends?.yearMonth || 'current month'}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            {trendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="day" 
-                    className="text-xs"
-                    tickFormatter={(day) => `${day}`}
-                  />
-                  <YAxis allowDecimals={false} className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                    labelFormatter={(day) => `Day ${day}`}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="responses" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                No trend data available for this month yet.
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Course Breakdown */}
-      {cache.courses && Object.keys(cache.courses).length > 0 && (
+        {/* Response Trend */}
         <Card>
           <CardHeader>
-            <CardTitle>Course Breakdown</CardTitle>
-            <CardDescription>Performance by course</CardDescription>
+            <CardTitle>Response Trend</CardTitle>
+            <CardDescription>X: Day | Y: Responses ({trends?.yearMonth || 'current month'})</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {Object.entries(cache.courses).map(([course, data]) => {
-                // Use totalRatingsCount for accurate average (not totalResponses)
-                const ratingsCount = data.totalRatingsCount || data.totalResponses || 0;
-                const courseAvg = ratingsCount > 0 
-                  ? (data.ratingSum / ratingsCount).toFixed(2) 
-                  : '0.00';
-                return (
-                  <div key={course} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-medium">{course}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {data.totalResponses} responses
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-bold">{courseAvg}</span>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="h-64">
+              {trendData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="day" 
+                      className="text-xs"
+                      tickFormatter={(day) => `${day}`}
+                    />
+                    <YAxis allowDecimals={false} className="text-xs" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      labelFormatter={(day) => `Day ${day}`}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="responses" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  No trend data available for this month yet.
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 };

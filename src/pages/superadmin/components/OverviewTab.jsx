@@ -43,6 +43,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSuperAdminData } from '@/contexts/SuperAdminDataContext';
 import { getAcademicConfig } from '@/services/superadmin/academicService';
+import { getCollegeTrends, getCollegeCache } from '@/services/superadmin/cacheService';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -62,6 +63,11 @@ const OverviewTab = ({ colleges, admins }) => {
 
   // Academic config for selected college
   const [academicOptions, setAcademicOptions] = useState(null);
+  
+  // College trends cache (for specific college selection)
+  const [collegeTrends, setCollegeTrends] = useState(null);
+  // Qualitative data cache (for Student Voices)
+  const [qualitativeCache, setQualitativeCache] = useState({ high: [], low: [] });
 
   const resetFilters = () => {
     setFilters({
@@ -74,6 +80,8 @@ const OverviewTab = ({ colleges, admins }) => {
       dateRange: 'all'
     });
     setAcademicOptions(null);
+    setCollegeTrends(null);
+    setQualitativeCache({ high: [], low: [] });
   };
 
   // Calculate date range boundaries
@@ -127,6 +135,67 @@ const OverviewTab = ({ colleges, admins }) => {
     };
     loadAcademicConfig();
   }, [filters.collegeId]);
+
+  // Load college trends when specific college is selected
+  // Load college trends and qualitative data (specific or all)
+  useEffect(() => {
+    const loadCollegeData = async () => {
+      try {
+        if (filters.collegeId && filters.collegeId !== 'all') {
+          // Specific college
+          const [trends, cache] = await Promise.all([
+            getCollegeTrends(filters.collegeId),
+            getCollegeCache(filters.collegeId)
+          ]);
+          setCollegeTrends(trends);
+          setQualitativeCache(cache?.qualitative || { high: [], low: [] });
+        } else {
+          // All colleges - fetch trends and cache for all
+          const promises = colleges.map(c => Promise.all([
+            getCollegeTrends(c.id || c.code),
+            getCollegeCache(c.id || c.code)
+          ]));
+          
+          const results = await Promise.all(promises);
+          
+          // Aggregate Trends
+          const aggregatedTrends = {
+            dailyResponses: {},
+            yearMonth: results[0]?.[0]?.yearMonth || 'current month'
+          };
+          
+          // Aggregate Qualitative
+          const aggregatedQualitative = { high: [], low: [] };
+
+          results.forEach(([trend, cache]) => {
+            // Aggregate Trends
+            if (trend?.dailyResponses) {
+              Object.entries(trend.dailyResponses).forEach(([day, count]) => {
+                aggregatedTrends.dailyResponses[day] = (aggregatedTrends.dailyResponses[day] || 0) + (count || 0);
+              });
+            }
+            
+            // Aggregate Qualitative
+            if (cache?.qualitative) {
+              if (cache.qualitative.high) aggregatedQualitative.high.push(...cache.qualitative.high);
+              if (cache.qualitative.low) aggregatedQualitative.low.push(...cache.qualitative.low);
+            }
+          });
+          
+          setCollegeTrends(aggregatedTrends);
+          setQualitativeCache(aggregatedQualitative);
+        }
+      } catch (err) {
+        console.error('Failed to load college data:', err);
+        setCollegeTrends(null);
+        setQualitativeCache({ high: [], low: [] });
+      }
+    };
+
+    if (colleges && colleges.length > 0) {
+      loadCollegeData();
+    }
+  }, [filters.collegeId, colleges]);
 
   // Get unique courses from academic config (college-specific)
   const availableCourses = useMemo(() => {
@@ -306,30 +375,18 @@ const OverviewTab = ({ colleges, admins }) => {
       .slice(0, 30); // Max 30 colleges for the bar chart
   }, [filteredSessions, colleges]);
 
-  // Response trend (last 7 days)
+  // Response trend - use cache for specific college, aggregate from sessions for all
+  // Response trend - use cache data (now handles both specific and all colleges)
   const responseTrend = useMemo(() => {
-    const days = {};
-    const today = new Date();
-    
-    // Initialize last 7 days
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const key = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      days[key] = { day: key, responses: 0, sessions: 0 };
-    }
+    if (!collegeTrends?.dailyResponses) return [];
 
-    filteredSessions.forEach(session => {
-      const sessionDate = new Date(session.sessionDate);
-      const key = sessionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (days[key]) {
-        days[key].responses += session.compiledStats?.totalResponses || 0;
-        days[key].sessions += 1;
-      }
-    });
-
-    return Object.values(days);
-  }, [filteredSessions]);
+    return Object.entries(collegeTrends.dailyResponses)
+      .map(([day, count]) => ({
+        day: parseInt(day),
+        responses: count
+      }))
+      .sort((a, b) => a.day - b.day);
+  }, [collegeTrends]);
 
   // Category radar data
   const categoryRadarData = useMemo(() => {
@@ -390,42 +447,51 @@ const OverviewTab = ({ colleges, admins }) => {
   }, [filteredSessions]);
 
   // Qualitative data (aggregate from filtered sessions)
+  // Qualitative data - Filter what we have in cache
   const qualitativeData = useMemo(() => {
-    const high = [];
-    const low = [];
-    
-    filteredSessions.forEach(session => {
-      const cs = session.compiledStats;
-      if (!cs?.comments) return;
+    // Helper to filter comments list
+    const filterComments = (comments) => {
+      if (!comments) return [];
       
-      const trainerName = session.assignedTrainer?.name || 'Unknown Trainer';
-      const course = session.course || 'N/A';
-      const sessionDate = session.sessionDate;
-      
-      cs.comments.forEach(comment => {
-        const rating = Number(comment.rating) || 0;
-        const commentObj = {
-          text: comment.text || comment,
-          rating,
-          date: sessionDate,
-          trainerName,
-          course
-        };
+      return comments.filter(c => {
+        // Filter by Course
+        if (filters.course !== 'all' && c.course !== filters.course) return false;
         
-        if (rating >= 4) {
-          high.push(commentObj);
-        } else if (rating <= 2) {
-          low.push(commentObj);
+        // Filter by Date Range
+        if (filters.dateRange !== 'all') {
+           const { startDate, endDate } = getDateRange(filters.dateRange);
+           if (startDate && endDate) {
+             const cDate = new Date(c.date); // assuming c.date exists and is ISO string
+             if (cDate < startDate || cDate > endDate) return false;
+           }
         }
+        
+        // Filter by Trainer (Name matching)
+        if (filters.trainerId !== 'all') {
+           const trainerName = trainers.find(t => t.id === filters.trainerId)?.name;
+           if (trainerName && c.trainerName !== trainerName) return false;
+        }
+        
+        return true;
       });
-    });
-    
-    // Sort by date desc and limit to 10 each
-    return {
-      high: high.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10),
-      low: low.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10)
     };
-  }, [filteredSessions]);
+
+    const highFiltered = filterComments(qualitativeCache.high);
+    const lowFiltered = filterComments(qualitativeCache.low);
+
+    // Sort by Date (newest first) and limit to 5
+    // cacheService doesn't strictly sort by date in 'high'/'low' (it sorts by rating then date), 
+    // so we re-sort to be safe for the "Student Voices" feed feel.
+    // Or we stick to Rating sorting? High usually means Top Rated. 
+    // But "Student Voices" usually implies recent/relevant.
+    // Let's sort by Date descending for relevance.
+    const sortByDate = (a, b) => new Date(b.date || 0) - new Date(a.date || 0);
+
+    return {
+      high: highFiltered.sort(sortByDate).slice(0, 5),
+      low: lowFiltered.sort(sortByDate).slice(0, 5)
+    };
+  }, [qualitativeCache, filters, trainers]);
 
   // Top trainers
   const topTrainers = useMemo(() => {
@@ -841,31 +907,42 @@ const OverviewTab = ({ colleges, admins }) => {
           <Card>
             <CardHeader>
               <CardTitle>Response Trend</CardTitle>
-              <CardDescription>X: Date | Y: Responses (Last 7 days)</CardDescription>
+              <CardDescription>X: Day | Y: Responses ({collegeTrends?.yearMonth || 'current month'})</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={responseTrend}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="day" className="text-xs" />
-                    <YAxis allowDecimals={false} className="text-xs" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="responses" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={2}
-                      dot={{ fill: 'hsl(var(--primary))' }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {responseTrend.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={responseTrend}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="day" 
+                        className="text-xs"
+                        tickFormatter={(day) => `${day}`}
+                      />
+                      <YAxis allowDecimals={false} className="text-xs" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                        labelFormatter={(day) => `Day ${day}`}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="responses" 
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={2}
+                        dot={{ fill: 'hsl(var(--primary))' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                    No trend data available for this month yet.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
