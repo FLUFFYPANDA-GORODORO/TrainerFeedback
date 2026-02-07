@@ -53,10 +53,13 @@ const AdminDashboardContent = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={isActive ? 'default' : 'ghost'}
+              variant="ghost"
               className={`w-full justify-start h-10 mb-1 ${
                 isSidebarCollapsed ? 'px-2 justify-center' : 'px-3 gap-3'
-              } ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-primary/80'}`}
+              } ${isActive 
+                  ? 'bg-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary' 
+                  : 'text-primary-foreground hover:bg-primary/80'
+              }`}
               onClick={() => navigate(path)}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
@@ -96,167 +99,148 @@ const AdminDashboardContent = () => {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex overflow-hidden">
       
-      {/* Top Navbar (Full Width) */}
-      <header className="h-24 flex-shrink-0 border-b bg-card px-6 flex items-center justify-between z-20">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <img src="/gryphon_logo.png" alt="Gryphon" className="h-20 w-auto" onError={(e) => e.target.style.display = 'none'} />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-           {college && (
-            <div className="flex items-center gap-3 px-3 py-1.5">
-               {college.logoUrl ? (
-                  <img src={college.logoUrl} alt={college.name} className="h-20 w-auto object-contain max-w-[300px]" />
-               ) : (
-                  <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
-                    {college.name.substring(0, 2).toUpperCase()}
-                  </div>
-               )}
+      {/* Full-Height Sidebar */}
+      <aside 
+        className={`bg-primary text-primary-foreground border-r border-primary/80 flex flex-col transition-all duration-300 ease-in-out h-screen ${
+          isSidebarCollapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        {/* Logo Section at Top - Full Width */}
+        <div className={`h-28 border-b border-primary-foreground/20 flex items-center justify-center ${isSidebarCollapsed ? 'px-2' : 'px-3'}`}>
+          {!isSidebarCollapsed ? (
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="h-20 w-full object-contain" 
+              onError={(e) => e.target.style.display = 'none'} 
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-full bg-white p-1 shadow-md overflow-hidden flex items-center justify-center">
+              <img 
+                src="/shortlogo.png" 
+                alt="Logo" 
+                className="h-full w-full object-contain" 
+                onError={(e) => e.target.style.display = 'none'} 
+              />
             </div>
-           )}
-
-           {/* User Profile */}
-           <div className="flex items-center gap-3 pl-3 border-l">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium leading-none">{user.name}</p>
-                <p className="text-xs text-muted-foreground">Admin</p>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-xs">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-           </div>
+          )}
         </div>
-      </header>
 
-      {/* Main Layout Area */}
-      <div className="flex-1 flex overflow-hidden">
-        
-        {/* Collapsible Sidebar */}
-        <aside 
-          className={`bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out ${
-            isSidebarCollapsed ? 'w-16' : 'w-48'
-          }`}
-        >
-           {/* Toggle Button */}
-           <div className="p-3 flex justify-end">
+        {/* Admin Profile Section */}
+        <div className={`py-4 border-b border-primary-foreground/20 ${isSidebarCollapsed ? 'px-2 flex flex-col items-center gap-2' : 'px-4'}`}>
+          {!isSidebarCollapsed ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <p className="text-sm font-semibold text-primary-foreground truncate">{user.name}</p>
+                  <p className="text-xs text-primary-foreground/70">{user.role === 'superAdmin' ? 'Super Admin' : 'College Admin'}</p>
+                </div>
+              </div>
               <Button 
                 variant="ghost" 
-                size="icon" 
-                className="h-6 w-6" 
+                size="icon"
+                className="h-8 w-8 bg-white text-black hover:bg-gray-200 hover:scale-105 rounded-full shadow-sm transition-all"
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               >
-                 {isSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-           </div>
-           
-           {/* Navigation */}
-           <nav className="flex-1 p-3 space-y-1">
-              <NavItem 
-                id="overview" 
-                label="Overview" 
-                icon={LayoutDashboard} 
-                path="/admin/dashboard" 
+            </div>
+          ) : (
+            <>
+              <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-8 w-8 bg-white text-black hover:bg-gray-200 hover:scale-105 rounded-full shadow-sm transition-all"
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+         
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1 mt-2">
+          <NavItem 
+            id="overview" 
+            label="Dashboard" 
+            icon={LayoutDashboard} 
+            path="/admin/dashboard" 
+          />
+          <NavItem 
+            id="sessions" 
+            label="Feedback Sessions" 
+            icon={Calendar} 
+            path="/admin/sessions" 
+          />
+        </nav>
+
+        {/* Sign Out at Bottom */}
+        <div className={`p-3 border-t border-primary-foreground/20 ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost"
+                  className={`text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground ${
+                    isSidebarCollapsed ? 'h-10 w-10 p-0' : 'w-full justify-start gap-3'
+                  }`}
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4 flex-shrink-0" />
+                  {!isSidebarCollapsed && <span>Sign Out</span>}
+                </Button>
+              </TooltipTrigger>
+              {isSidebarCollapsed && (
+                <TooltipContent side="right" className="font-medium">
+                  Sign Out
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </aside>
+
+      {/* Main Content Area with Navbar */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        
+        {/* Top Navbar */}
+        <header className="h-28 flex-shrink-0 border-b bg-white flex items-center justify-between z-20 shadow-sm px-6">
+          {/* Left: Page Title */}
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-xl font-bold tracking-tight text-foreground">
+              {activeTab === 'overview' && 'Dashboard Overview'}
+              {activeTab === 'sessions' && 'Session Management'}
+              {activeTab === 'feedback' && 'Trainer Feedback'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {college?.name || ''}
+            </p>
+          </div>
+          
+          {/* Right: College Logo */}
+          <div className="h-full flex items-center">
+            {college && college.logoUrl && (
+              <img 
+                src={college.logoUrl} 
+                alt={college.name} 
+                className="h-full w-auto object-contain py-3" 
               />
-              <NavItem 
-                id="sessions" 
-                label="Sessions" 
-                icon={Calendar} 
-                path="/admin/sessions" 
-              />
-              {/* <NavItem 
-                id="feedback" 
-                label="Trainer Feedback" 
-                icon={BarChart3} 
-                path="/admin/feedback" 
-              /> */}
-           </nav>
+            )}
+          </div>
+        </header>
 
-           {/* Bottom Actions */}
-           <div className="p-3 border-t mt-auto space-y-1">
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                   <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className={`w-full justify-start ${isSidebarCollapsed ? 'px-2 justify-center' : 'px-3 gap-3'}`}
-                        onClick={refreshAll}
-                      >
-                         <RefreshCw className={`h-4 w-4 ${loading.college ? 'animate-spin' : ''}`} />
-                         {!isSidebarCollapsed && <span>Refresh Data</span>}
-                      </Button>
-                   </TooltipTrigger>
-                   {isSidebarCollapsed && <TooltipContent side="right">Refresh Data</TooltipContent>}
-                </Tooltip>
-
-                <Tooltip>
-                   <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={handleLogout} 
-                        className={`w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 ${
-                          isSidebarCollapsed ? 'px-2 justify-center' : 'px-3 gap-3'
-                        }`}
-                      >
-                         <LogOut className="h-4 w-4" />
-                         {!isSidebarCollapsed && <span>Sign Out</span>}
-                      </Button>
-                   </TooltipTrigger>
-                   {isSidebarCollapsed && <TooltipContent side="right">Sign Out</TooltipContent>}
-                </Tooltip>
-
-                {/* Developer / Admin Utils - Hidden in collapsed usually, but useful here */}
-                {user.role === 'superAdmin' && (
-                  <Tooltip>
-                     <TooltipTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => {
-                             import('@/services/superadmin/rebuildCache').then(m => {
-                                toast.promise(m.rebuildCache(), {
-                                   loading: 'Rebuilding analytics cache...',
-                                   success: 'Cache synchronized successfully!',
-                                   error: 'Failed to rebuild cache'
-                                });
-                             });
-                          }} 
-                          className={`w-full justify-start text-muted-foreground hover:text-primary ${
-                            isSidebarCollapsed ? 'px-2 justify-center' : 'px-3 gap-3'
-                          }`}
-                        >
-                           <Database className="h-4 w-4" />
-                           {!isSidebarCollapsed && <span>Sync Data</span>}
-                        </Button>
-                     </TooltipTrigger>
-                     {isSidebarCollapsed && <TooltipContent side="right">Sync Data</TooltipContent>}
-                  </Tooltip>
-                )}
-              </TooltipProvider>
-           </div>
-        </aside>
-
-        {/* Main Content Area */}
+        {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-muted/5 p-6 scroll-smooth">
           <div className={`max-w-8xl mx-auto transition-all duration-300 ${isSidebarCollapsed ? 'px-6' : 'px-0'}`}>
-             {/* Dynamic Page Title (Optional as breadcrumb) */}
-             <div className="mb-6 flex flex-col gap-1">
-                <h2 className="text-2xl font-bold tracking-tight">
-                  {activeTab === 'overview' && 'Dashboard Overview'}
-                  {activeTab === 'sessions' && 'Session Management'}
-                  {activeTab === 'feedback' && 'Trainer Feedback'}
-                </h2>
-                <p className="text-muted-foreground">
-                  {activeTab === 'overview' && `${college?.name || ''} • Welcome back, ${user.name.split(' ')[0]}`}
-                  {activeTab === 'sessions' && 'Manage feedback sessions and view responses'}
-                  {activeTab === 'feedback' && 'Detailed performance analytics for trainers'}
-                </p>
-             </div>
 
              {activeTab === 'overview' && <CollegeOverviewTab />}
              {activeTab === 'feedback' && <TrainerFeedbackTab />}

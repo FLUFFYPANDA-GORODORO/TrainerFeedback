@@ -40,6 +40,7 @@ import {
   Legend,
   Cell
 } from 'recharts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSuperAdminData } from '@/contexts/SuperAdminDataContext';
 import { getAcademicConfig } from '@/services/superadmin/academicService';
 
@@ -251,24 +252,37 @@ const OverviewTab = ({ colleges, admins }) => {
     return {
       totalSessions: filteredSessions.length,
       totalResponses: stats.totalResponses,
+      totalRatingsCount: stats.totalRatingsCount,
       avgRating,
       ratingDistribution: stats.ratingDistribution,
       categoryAverages
     };
   }, [filteredSessions]);
 
-  // College performance data for bar chart (use college code)
-  const collegePerformance = useMemo(() => {
+  // College performance data for bar chart - ALL colleges for full width chart
+  const allCollegesPerformance = useMemo(() => {
+    // Get all colleges with their performance data
     const collegeStats = {};
     
+    // Initialize all colleges (even ones without sessions yet)
+    colleges.forEach(college => {
+      collegeStats[college.code || college.id] = { 
+        id: college.id,
+        fullName: college.name, 
+        ratingSum: 0, 
+        ratingCount: 0, 
+        responses: 0 
+      };
+    });
+    
+    // Aggregate session data
     filteredSessions.forEach(session => {
       const collegeId = session.collegeId;
       const college = colleges.find(c => c.id === collegeId);
       const collegeCode = college?.code || 'UNK';
-      const collegeName = college?.name || 'Unknown';
       
       if (!collegeStats[collegeCode]) {
-        collegeStats[collegeCode] = { fullName: collegeName, ratingSum: 0, ratingCount: 0, responses: 0 };
+        collegeStats[collegeCode] = { id: collegeId, fullName: college?.name || 'Unknown', ratingSum: 0, ratingCount: 0, responses: 0 };
       }
       
       const cs = session.compiledStats;
@@ -285,11 +299,11 @@ const OverviewTab = ({ colleges, admins }) => {
       .map(([code, data]) => ({
         name: code,
         fullName: data.fullName,
-        avgRating: data.ratingCount > 0 ? (data.ratingSum / data.ratingCount).toFixed(2) : 0,
+        avgRating: data.ratingCount > 0 ? parseFloat((data.ratingSum / data.ratingCount).toFixed(2)) : 0,
         responses: data.responses
       }))
       .sort((a, b) => b.avgRating - a.avgRating)
-      .slice(0, 6);
+      .slice(0, 30); // Max 30 colleges for the bar chart
   }, [filteredSessions, colleges]);
 
   // Response trend (last 7 days)
@@ -335,6 +349,83 @@ const OverviewTab = ({ colleges, admins }) => {
         fullMark: 5
       }));
   }, [aggregatedStats]);
+
+  // Rating distribution bar chart data
+  const ratingDistributionData = useMemo(() => {
+    const distribution = aggregatedStats.ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    
+    return Object.entries(distribution).map(([rating, count]) => ({
+      rating: `${rating} Star`,
+      count: count || 0
+    }));
+  }, [aggregatedStats]);
+
+  // Domain analytics data (from filtered sessions)
+  const domainAnalyticsData = useMemo(() => {
+    const domains = {};
+    
+    filteredSessions.forEach(session => {
+      const domain = session.domain || 'Unknown';
+      if (!domains[domain]) {
+        domains[domain] = { ratingSum: 0, ratingCount: 0, responses: 0 };
+      }
+      
+      const cs = session.compiledStats;
+      if (cs) {
+        Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
+          domains[domain].ratingSum += Number(rating) * count;
+          domains[domain].ratingCount += count;
+        });
+        domains[domain].responses += cs.totalResponses || 0;
+      }
+    });
+
+    const chartData = Object.entries(domains).map(([name, data]) => ({
+      name: name.replace(/_/g, ' '),
+      avgRating: data.ratingCount > 0 ? parseFloat((data.ratingSum / data.ratingCount).toFixed(2)) : 0,
+      responses: data.responses
+    }));
+
+    return { chartData, totalResponses: chartData.reduce((sum, d) => sum + d.responses, 0) };
+  }, [filteredSessions]);
+
+  // Qualitative data (aggregate from filtered sessions)
+  const qualitativeData = useMemo(() => {
+    const high = [];
+    const low = [];
+    
+    filteredSessions.forEach(session => {
+      const cs = session.compiledStats;
+      if (!cs?.comments) return;
+      
+      const trainerName = session.assignedTrainer?.name || 'Unknown Trainer';
+      const course = session.course || 'N/A';
+      const sessionDate = session.sessionDate;
+      
+      cs.comments.forEach(comment => {
+        const rating = Number(comment.rating) || 0;
+        const commentObj = {
+          text: comment.text || comment,
+          rating,
+          date: sessionDate,
+          trainerName,
+          course
+        };
+        
+        if (rating >= 4) {
+          high.push(commentObj);
+        } else if (rating <= 2) {
+          low.push(commentObj);
+        }
+      });
+    });
+    
+    // Sort by date desc and limit to 10 each
+    return {
+      high: high.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10),
+      low: low.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10)
+    };
+  }, [filteredSessions]);
 
   // Top trainers
   const topTrainers = useMemo(() => {
@@ -390,14 +481,6 @@ const OverviewTab = ({ colleges, admins }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening.</p>
-        </div>
-      </div>
-
       {/* Filter Bar */}
       <Card>
         <CardHeader className="pb-3">
@@ -413,7 +496,7 @@ const OverviewTab = ({ colleges, admins }) => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             {/* Project Code - Disabled for now */}
             <div className="space-y-1">
               <Label className="text-xs">Project</Label>
@@ -528,9 +611,9 @@ const OverviewTab = ({ colleges, admins }) => {
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{aggregatedStats.totalResponses}</div>
+            <div className="text-3xl font-bold">{(aggregatedStats.totalResponses || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              from {aggregatedStats.totalSessions} session{aggregatedStats.totalSessions !== 1 ? 's' : ''}
+              {filters.collegeId === 'all' ? 'Across all colleges' : 'From selected college'}
             </p>
           </CardContent>
         </Card>
@@ -544,7 +627,7 @@ const OverviewTab = ({ colleges, admins }) => {
             <div className="text-3xl font-bold">{aggregatedStats.avgRating}</div>
             <div className="flex items-center gap-1 mt-1">
               {[1,2,3,4,5].map(i => (
-                <Star key={i} className={`h-3 w-3 ${i <= Math.round(aggregatedStats.avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                <Star key={i} className={`h-3 w-3 ${i <= Math.round(aggregatedStats.avgRating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
               ))}
               <span className="text-xs text-muted-foreground ml-1">out of 5.0</span>
             </div>
@@ -553,214 +636,303 @@ const OverviewTab = ({ colleges, admins }) => {
 
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Colleges</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{colleges.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active institutions</p>
+            <div className="text-3xl font-bold">{(aggregatedStats.totalSessions || 0).toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {filters.collegeId === 'all' ? 'Across all colleges' : 'From selected college'}
+            </p>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Trainers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Ratings</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{trainers.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all colleges</p>
+            <div className="text-3xl font-bold">{(aggregatedStats.totalRatingsCount || 0).toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {filters.collegeId === 'all' ? 'Across all colleges' : 'From selected college'}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* College Performance Bar Chart */}
+      {/* Conditional Charts Section */}
+      {filters.collegeId === 'all' ? (
+        /* All Colleges View - Full Width Bar Chart */
         <Card>
           <CardHeader>
-            <CardTitle>College Performance</CardTitle>
-            <CardDescription>Average rating by college</CardDescription>
+            <CardTitle>All Colleges Performance</CardTitle>
+            <CardDescription>Average rating by college (up to 30 colleges)</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              {collegePerformance.length > 0 ? (
+            <div className="h-80">
+              {allCollegesPerformance.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={collegePerformance} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis type="number" domain={[0, 5]} className="text-xs" />
-                    <YAxis type="category" dataKey="name" width={60} className="text-xs" />
+                  <BarChart data={allCollegesPerformance}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      className="text-xs" 
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
                     <Tooltip 
+                      cursor={false}
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))', 
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
-                      formatter={(value, name) => [value, 'Avg Rating']}
-                      labelFormatter={(label) => collegePerformance.find(c => c.name === label)?.fullName || label}
+                      formatter={(value) => [value, 'Avg Rating']}
+                      labelFormatter={(label) => allCollegesPerformance.find(c => c.name === label)?.fullName || label}
                     />
-                    <Bar dataKey="avgRating" radius={[0, 4, 4, 0]}>
-                      {collegePerformance.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Bar>
+                    <Bar 
+                      dataKey="avgRating" 
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                  No college data available
+                  No college data available. Add colleges to see performance.
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
+      ) : (
+        /* Specific College View - 3 Charts Grid */
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Domain Performance Vertical Bar Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Domain Performance</CardTitle>
+              <CardDescription>X: Domain | Y: Avg Rating (0-5)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {domainAnalyticsData.chartData.length > 0 ? (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={domainAnalyticsData.chartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                      <XAxis dataKey="name" className="text-xs" />
+                      <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
+                      <Tooltip 
+                        cursor={false}
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                        formatter={(value) => [value.toFixed(2), 'Avg Rating']}
+                      />
+                      <Bar 
+                        dataKey="avgRating" 
+                        fill="hsl(var(--primary))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No domain data available yet.
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Response Trend Line Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Response Trend</CardTitle>
-            <CardDescription>Last 7 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={responseTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="day" className="text-xs" />
-                  <YAxis allowDecimals={false} className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="responses" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Category Breakdown Radar Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Category Breakdown</CardTitle>
+              <CardDescription>X: Category | Y: Score (0-5)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                {categoryRadarData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={categoryRadarData}>
+                      <PolarGrid stroke="hsl(var(--border))" />
+                      <PolarAngleAxis 
+                        dataKey="category" 
+                        tick={{ fill: 'hsl(var(--foreground))', fontSize: 10 }}
+                      />
+                      <PolarRadiusAxis 
+                        angle={90} 
+                        domain={[0, 5]} 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                        tickCount={6}
+                      />
+                      <Radar
+                        name="Score"
+                        dataKey="score"
+                        stroke="hsl(var(--primary))"
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.4}
+                        strokeWidth={2}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                        formatter={(value) => [parseFloat(value).toFixed(2), 'Score']}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                    No category data available
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Category Radar Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Category Breakdown</CardTitle>
-            <CardDescription>Performance by category</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              {categoryRadarData.length > 0 ? (
+          {/* Rating Distribution Bar Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Rating Distribution</CardTitle>
+              <CardDescription>X: Star Rating | Y: Response Count</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={categoryRadarData}>
-                    <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis 
-                      dataKey="category" 
-                      tick={{ fill: 'hsl(var(--foreground))', fontSize: 10 }}
+                  <BarChart data={ratingDistributionData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <XAxis dataKey="rating" className="text-xs" />
+                    <YAxis allowDecimals={false} className="text-xs" />
+                    <Tooltip 
+                      cursor={false}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value) => [value, 'Responses']}
                     />
-                    <PolarRadiusAxis 
-                      angle={90} 
-                      domain={[0, 5]} 
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
-                      tickCount={6}
-                    />
-                    <Radar
-                      name="Score"
-                      dataKey="score"
-                      stroke="hsl(var(--primary))"
+                    <Bar 
+                      dataKey="count" 
                       fill="hsl(var(--primary))"
-                      fillOpacity={0.4}
-                      strokeWidth={2}
+                      radius={[4, 4, 0, 0]}
                     />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Response Trend & Student Voices - Side by Side */}
+      <div className="grid gap-6 lg:grid-cols-2">
+          {/* Response Trend Line Chart - LEFT */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Response Trend</CardTitle>
+              <CardDescription>X: Date | Y: Responses (Last 7 days)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={responseTrend}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="day" className="text-xs" />
+                    <YAxis allowDecimals={false} className="text-xs" />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))', 
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
-                      formatter={(value) => [parseFloat(value).toFixed(2), 'Score']}
                     />
-                  </RadarChart>
+                    <Line 
+                      type="monotone" 
+                      dataKey="responses" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))' }}
+                    />
+                  </LineChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                  No category data available
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Top Trainers Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Top Trainers</CardTitle>
-              <CardDescription>Best performing faculty members</CardDescription>
-            </div>
-            <TrendingUp className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {topTrainers.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {topTrainers.map((trainer, index) => (
-                <div 
-                  key={trainer.id} 
-                  className="flex flex-col p-4 rounded-lg bg-muted/50 border border-border/50"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold ${
-                      index === 0 ? 'bg-yellow-500' : 
-                      index === 1 ? 'bg-gray-400' : 
-                      index === 2 ? 'bg-amber-600' : 'bg-primary/20 text-primary'
-                    }`}>
-                      {index < 3 ? index + 1 : trainer.name.charAt(0)}
+          {/* Student Voices Section - RIGHT */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                <CardTitle>Student Voices</CardTitle>
+              </div>
+              <CardDescription>Highlights from student feedback</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="high" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="high" className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs">
+                    Praise
+                  </TabsTrigger>
+                  <TabsTrigger value="low" className="data-[state=active]:bg-red-100 data-[state=active]:text-red-800 text-xs">
+                    Concerns
+                  </TabsTrigger>
+                </TabsList>
+                
+                {['high', 'low'].map(type => (
+                  <TabsContent key={type} value={type} className="mt-0">
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {qualitativeData[type]?.length > 0 ? (
+                        qualitativeData[type].slice(0, 5).map((comment, idx) => (
+                          <div key={idx} className="flex flex-col p-3 rounded-lg bg-muted/30 border border-border/50">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-0.5">
+                                {[1,2,3,4,5].map(star => (
+                                  <Star 
+                                    key={star} 
+                                    className={`h-3 w-3 ${star <= Math.round(Number(comment.rating)) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'}`} 
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(comment.date).toLocaleDateString()}
+                              </span>
+                            </div>
+                            
+                            <p className="text-sm italic text-foreground/80 line-clamp-2 mb-2">"{comment.text}"</p>
+                            
+                            <div className="pt-2 border-t border-border/30 flex justify-between items-center text-xs text-muted-foreground">
+                              <span className="truncate max-w-[100px]" title={comment.trainerName}>
+                                 {comment.trainerName || 'Unknown Trainer'}
+                              </span>
+                              <span className="opacity-70">{comment.course}</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                          No comments available yet.
+                        </div>
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{trainer.name}</p>
-                      <p className="text-xs text-muted-foreground">{trainer.sessions} session{trainer.sessions !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-bold text-lg">{trainer.avgRating}</span>
-                      <span className="text-xs text-muted-foreground">/ 5.0</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{trainer.responses} responses</span>
-                  </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
 
-                  {trainer.recentComments.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-border/50">
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                        <MessageSquare className="h-3 w-3" />
-                        Recent
-                      </div>
-                      <p className="text-xs italic text-muted-foreground line-clamp-2">
-                        "{trainer.recentComments[0]?.text || trainer.recentComments[0]}"
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No trainer data available. Complete some sessions first.
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };

@@ -399,32 +399,83 @@ const TrainersTab = () => {
       </div>
 
       {/* Redesigned Trainers Grid */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {filteredTrainers.map((trainer, index) => (
           <div
             key={trainer.id}
             className="group relative flex flex-col bg-card border rounded-xl shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-300 animate-fade-up overflow-hidden"
             style={{ animationDelay: `${index * 0.05}s` }}
           >
-            {/* Top Row: Avatar & Dropdown Menu */}
-            <div className="p-5 pb-0 flex items-start justify-between">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary/5 to-primary/20 flex items-center justify-center border border-primary/10 text-primary shadow-inner">
-                <User className="h-7 w-7" />
+            <div className="p-5 flex items-center gap-5">
+              {/* Avatar */}
+              <div className="h-16 w-16 rounded-full flex-shrink-0 bg-gradient-to-br from-primary/5 to-primary/20 flex items-center justify-center border border-primary/10 text-primary shadow-inner">
+                <User className="h-12 w-12" />
               </div>
 
-              {/* Secure Action Menu */}
+              {/* Details Column */}
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="flex items-center gap-3">
+                  <h3 className="font-bold text-lg text-foreground leading-none">{trainer.name}</h3>
+                  <span className="text-[10px] font-mono bg-muted px-2 py-0.5 rounded-full text-muted-foreground border shrink-0">
+                    {trainer.trainer_id}
+                  </span>
+                </div>
+                
+                <p className="text-sm text-muted-foreground leading-none">{trainer.email}</p>
+
+                {/* Domain & Specialisation */}
+                {(trainer.domain || trainer.specialisation) && (
+                  <div className="pt-2 flex flex-wrap gap-2 text-xs">
+                    {trainer.domain && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-primary-foreground font-medium shadow-sm">
+                        {trainer.domain}
+                      </span>
+                    )}
+                    {trainer.specialisation && (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary text-secondary-foreground border">
+                             {trainer.specialisation}
+                        </span>
+                    )}
+                  </div>
+                )}
+
+                 {/* Skills / Topics */}
+                 <div className="pt-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {trainer.topics && trainer.topics.length > 0 ? (
+                        <>
+                            {trainer.topics.slice(0, 3).map((topic, i) => (
+                            <span key={i} className="text-[10px] font-medium px-1.5 py-0.5 bg-muted/80 rounded border text-muted-foreground">
+                                {topic}
+                            </span>
+                            ))}
+                             {trainer.topics.length > 3 && (
+                                <span className="text-[10px] px-1.5 py-0.5 text-muted-foreground">+{trainer.topics.length - 3}</span>
+                            )}
+                        </>
+                      ) : (
+                        <span className="text-[10px] italic text-muted-foreground opacity-60">No skills listed</span>
+                      )}
+                    </div>
+                  </div>
+              </div>
+
+              {/* Action Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-transparent -mr-2 -mt-2 self-start">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setSelectedTrainerForAnalytics(trainer)}>
+                    <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => openEditDialog(trainer)}>
                     <Pencil className="mr-2 h-4 w-4" /> Edit Profile
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"
                     onClick={() => handleDeleteTrainer(trainer.id)}
@@ -433,66 +484,6 @@ const TrainersTab = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-
-            {/* Info Section */}
-            <div className="p-5 flex-grow space-y-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-lg text-foreground leading-tight">{trainer.name}</h3>
-                  <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground border">
-                    {trainer.trainer_id}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground truncate">{trainer.email}</p>
-              </div>
-
-              {/* Domain & Specs Palls */}
-              {(trainer.domain || trainer.specialisation) && (
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {trainer.domain && (
-                    <span className="px-2 py-1 rounded-md bg-primary/10 text-primary font-medium border border-primary/20">
-                      {trainer.domain}
-                    </span>
-                  )}
-                  {trainer.specialisation && (
-                    <span className="px-2 py-1 rounded-md bg-secondary text-secondary-foreground border">
-                      {trainer.specialisation}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Expertise Tags */}
-              <div className="pt-2">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground/70 mb-1.5">Top Skills</p>
-                <div className="flex flex-wrap gap-1">
-                  {trainer.topics && trainer.topics.length > 0 ? (
-                    trainer.topics.slice(0, 3).map((topic, i) => (
-                      <span key={i} className="text-[11px] px-1.5 py-0.5 bg-muted rounded text-foreground/80">
-                        {topic}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-xs italic text-muted-foreground">No skills listed</span>
-                  )}
-                  {trainer.topics && trainer.topics.length > 3 && (
-                    <span className="text-[10px] px-1.5 py-0.5 text-muted-foreground">+{trainer.topics.length - 3} more</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer Action: Explicit Analytics Button */}
-            <div className="p-3 bg-muted/20 border-t mt-auto">
-              <Button
-                variant="secondary"
-                className="w-full gap-2 bg-background hover:bg-primary hover:text-primary-foreground border shadow-sm transition-all group-hover:border-primary/30"
-                onClick={() => setSelectedTrainerForAnalytics(trainer)}
-              >
-                <BarChart3 className="h-4 w-4" />
-                View Analytics
-              </Button>
             </div>
           </div>
         ))}
