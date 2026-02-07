@@ -69,13 +69,67 @@ const updateNestedField = async (docRef, pathSegments, value) => {
  * @param {boolean} isDelete - Whether this is a deletion (decrement stats)
  * @param {Object} transaction - Optional Firestore transaction
  */
-export const updateCollegeCache = async (session, stats, isDelete = false, transaction = null) => {
+/**
+ * Update college cache after session close
+ * @param {Object} session - The closed session object
+ * @param {Object} stats - Compiled stats from the session
+ * @param {boolean} isDelete - Whether this is a deletion (decrement stats)
+ * @param {Object} transaction - Optional Firestore transaction
+ */
+/**
+ * Helper to get cache references for pre-fetching in transactions
+ */
+export const getCollegeCacheRefs = (collegeId, sessionDate) => {
+  const yearMonth = getYearMonth(sessionDate);
+  return {
+    cacheRef: doc(db, COLLEGE_CACHE_COLLECTION, collegeId),
+    trendRef: doc(db, COLLEGE_CACHE_COLLECTION, collegeId, 'trends', yearMonth)
+  };
+};
+
+export const getTrainerCacheRefs = (trainerId, sessionDate) => {
+  const yearMonth = getYearMonth(sessionDate);
+  return {
+    cacheRef: doc(db, TRAINER_CACHE_COLLECTION, trainerId),
+    trendRef: doc(db, TRAINER_CACHE_COLLECTION, trainerId, 'trends', yearMonth)
+  };
+};
+
+/**
+ * Update college cache after session close
+ * @param {Object} session - The closed session object
+ * @param {Object} stats - Compiled stats from the session
+ * @param {boolean} isDelete - Whether this is a deletion (decrement stats)
+ * @param {Object} transaction - Optional Firestore transaction
+ * @param {Object} preFetchedDocs - Optional { cacheDoc, trendDoc } to avoid reads
+ */
+export const updateCollegeCache = async (session, stats, isDelete = false, transaction = null, preFetchedDocs = null) => {
   try {
     const collegeId = session.collegeId;
     const cacheRef = doc(db, COLLEGE_CACHE_COLLECTION, collegeId);
     
-    // Read: Use transaction if available
-    const cacheDoc = transaction ? await transaction.get(cacheRef) : await getDoc(cacheRef);
+    // Trend Refs
+    const sessionDate = session.sessionDate;
+    const yearMonth = getYearMonth(sessionDate);
+    const day = getDayOfMonth(sessionDate);
+    const trendRef = doc(db, COLLEGE_CACHE_COLLECTION, collegeId, 'trends', yearMonth);
+    
+    // ============ 1. READ PHASE ============
+    // Perform ALL reads before ANY writes
+    let cacheDoc, trendDoc;
+
+    if (preFetchedDocs) {
+        cacheDoc = preFetchedDocs.cacheDoc;
+        trendDoc = preFetchedDocs.trendDoc;
+    } else if (transaction) {
+      cacheDoc = await transaction.get(cacheRef);
+      trendDoc = await transaction.get(trendRef);
+    } else {
+      cacheDoc = await getDoc(cacheRef);
+      trendDoc = await getDoc(trendRef);
+    }
+    
+    // ============ 2. CALCULATION PHASE ============
 
     const { totalResponses, ratingDistribution, categoryAverages } = stats;
     
@@ -102,88 +156,69 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
     const yearName = session.year || '1';
     const batchName = session.batch || 'A';
     const domain = session.domain ? sanitizeFieldName(session.domain) : null;
+    const multiplier = isDelete ? -1 : 1;
 
+    // ============ 3. WRITE PHASE ============
+    
+    // --- Update College Main Cache ---
     if (cacheDoc.exists()) {
-      // Update existing cache with increments
-      const multiplier = isDelete ? -1 : 1;
+      // Collect all updates into a flat array [field, value, field, value...]
+      // capable of handling both strings and FieldPath objects.
+      const flatUpdates = [];
+      const addUpdate = (field, value) => flatUpdates.push(field, value);
 
-      const baseUpdates = {
-        totalSessions: increment(1 * multiplier),
-        totalResponses: increment(totalResponses * multiplier),
-        totalRatingsCount: increment(totalRatingsCount * multiplier),
-        ratingSum: increment(ratingSum * multiplier),
-        updatedAt: new Date().toISOString()
-      };
+      addUpdate('totalSessions', increment(1 * multiplier));
+      addUpdate('totalResponses', increment(totalResponses * multiplier));
+      addUpdate('totalRatingsCount', increment(totalRatingsCount * multiplier));
+      addUpdate('ratingSum', increment(ratingSum * multiplier));
+      addUpdate('updatedAt', new Date().toISOString());
 
       Object.entries(ratingDistribution || {}).forEach(([rating, count]) => {
-        baseUpdates[`ratingDistribution.${rating}`] = increment(count * multiplier);
+        addUpdate(`ratingDistribution.${rating}`, increment(count * multiplier));
       });
 
       Object.entries(categoryIncrements).forEach(([cat, data]) => {
         const safeCat = sanitizeFieldName(cat);
-        baseUpdates[`categoryData.${safeCat}.sum`] = increment(data.sum * multiplier);
-        baseUpdates[`categoryData.${safeCat}.count`] = increment(data.count * multiplier);
+        addUpdate(`categoryData.${safeCat}.sum`, increment(data.sum * multiplier));
+        addUpdate(`categoryData.${safeCat}.count`, increment(data.count * multiplier));
       });
 
       // Update Domain Stats
       if (domain) {
-        baseUpdates[`domains.${domain}.totalResponses`] = increment(totalResponses * multiplier);
-        baseUpdates[`domains.${domain}.totalRatingsCount`] = increment(totalRatingsCount * multiplier);
-        baseUpdates[`domains.${domain}.ratingSum`] = increment(ratingSum * multiplier);
+        addUpdate(`domains.${domain}.totalResponses`, increment(totalResponses * multiplier));
+        addUpdate(`domains.${domain}.totalRatingsCount`, increment(totalRatingsCount * multiplier));
+        addUpdate(`domains.${domain}.ratingSum`, increment(ratingSum * multiplier));
       }
 
-      if (transaction) {
-         transaction.update(cacheRef, baseUpdates);
-      } else {
-         await updateDoc(cacheRef, baseUpdates);
-      }
-
-      // Note: Nested FieldPath updates for 'courses' are complex in transactions because
-      // transaction.update() requires a flat object or strictly alternating varargs in some SDKs.
-      // JS SDK v9 transaction.update(ref, data) works similar to updateDoc.
-      // However, we'll strip the complex nested course updates from the transaction path for now 
-      // to reduce risk, as global stats are the priority. 
-      // Re-enabling with standard update approach if safe.
-      
+      // Course Hierarchy Updates (using FieldPath for safety with special chars in names)
       try {
-         // Construct nested update object
-         const nestedUpdates = {};
-         const addNested = (pathSegments, val) => {
-             // FieldPath not directly usable as key in simple JS object without computed property name
-             // but transaction.update takes an object map.
-             nestedUpdates[new FieldPath(...pathSegments)] = val;
-         };
-         
-         addNested(['courses', courseName, 'totalResponses'], increment(totalResponses * multiplier));
-         addNested(['courses', courseName, 'totalRatingsCount'], increment(totalRatingsCount * multiplier));
-         addNested(['courses', courseName, 'ratingSum'], increment(ratingSum * multiplier));
-         // ... deeper levels omitted for brevity/safety in transaction refactor, 
-         // can be re-added if critical. For now ensuring global consistency.
-         
-         // Only apply if we have something to update and IF we are not in a transaction 
-         // OR if we trust transaction.update handles FieldPath keys correctly (it usually does).
-         // Given the complexity/race risk, let's defer deep nested updates to non-critical path 
-         // or handle them carefully. To keep it simple, we WILL apply them.
-         
-         const courseUpdates = {
-              [new FieldPath('courses', courseName, 'totalResponses')]: increment(totalResponses * multiplier),
-              [new FieldPath('courses', courseName, 'totalRatingsCount')]: increment(totalRatingsCount * multiplier),
-              [new FieldPath('courses', courseName, 'ratingSum')]: increment(ratingSum * multiplier),
-              [new FieldPath('courses', courseName, 'years', yearName, 'totalResponses')]: increment(totalResponses * multiplier),
-              [new FieldPath('courses', courseName, 'years', yearName, 'totalRatingsCount')]: increment(totalRatingsCount * multiplier),
-              [new FieldPath('courses', courseName, 'years', yearName, 'ratingSum')]: increment(ratingSum * multiplier),
-              [new FieldPath('courses', courseName, 'years', yearName, 'batches', batchName, 'totalResponses')]: increment(totalResponses * multiplier),
-              [new FieldPath('courses', courseName, 'years', yearName, 'batches', batchName, 'totalRatingsCount')]: increment(totalRatingsCount * multiplier),
-              [new FieldPath('courses', courseName, 'years', yearName, 'batches', batchName, 'ratingSum')]: increment(ratingSum * multiplier)
-         };
-         
-         if (transaction) {
-             transaction.update(cacheRef, courseUpdates);
-         } else {
-             await updateDoc(cacheRef, courseUpdates);
-         }
+         const coursePath = (...segments) => new FieldPath('courses', courseName, ...segments);
+         const yearPath = (...segments) => new FieldPath('courses', courseName, 'years', yearName, ...segments);
+         const batchPath = (...segments) => new FieldPath('courses', courseName, 'years', yearName, 'batches', batchName, ...segments);
+
+         addUpdate(coursePath('totalResponses'), increment(totalResponses * multiplier));
+         addUpdate(coursePath('totalRatingsCount'), increment(totalRatingsCount * multiplier));
+         addUpdate(coursePath('ratingSum'), increment(ratingSum * multiplier));
+
+         addUpdate(yearPath('totalResponses'), increment(totalResponses * multiplier));
+         addUpdate(yearPath('totalRatingsCount'), increment(totalRatingsCount * multiplier));
+         addUpdate(yearPath('ratingSum'), increment(ratingSum * multiplier));
+
+         addUpdate(batchPath('totalResponses'), increment(totalResponses * multiplier));
+         addUpdate(batchPath('totalRatingsCount'), increment(totalRatingsCount * multiplier));
+         addUpdate(batchPath('ratingSum'), increment(ratingSum * multiplier));
+
       } catch (pathErr) {
-        console.warn('Could not update course hierarchy:', pathErr.message);
+        console.warn('Could not construct course paths:', pathErr.message);
+      }
+      
+      // Perform the update
+      if (flatUpdates.length > 0) {
+        if (transaction) {
+           transaction.update(cacheRef, ...flatUpdates);
+        } else {
+           await updateDoc(cacheRef, ...flatUpdates);
+        }
       }
 
     } else if (!isDelete) {
@@ -236,8 +271,24 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
       }
     }
 
-    // Update daily trend
-    await updateCollegeTrend(collegeId, session.sessionDate, totalResponses, isDelete, transaction);
+    // --- Update Daily Trend ---
+    // We already read trendDoc at the start, so we use that directly.
+    
+    if (trendDoc.exists()) {
+      const updates = {
+        [`dailyResponses.${day}`]: increment(totalResponses * multiplier),
+        [`dailySessions.${day}`]: increment(1 * multiplier)
+      };
+      if (transaction) transaction.update(trendRef, updates);
+      else await updateDoc(trendRef, updates);
+    } else if (!isDelete) {
+      const newData = {
+        dailyResponses: { [day]: totalResponses },
+        dailySessions: { [day]: 1 }
+      };
+      if (transaction) transaction.set(trendRef, newData);
+      else await setDoc(trendRef, newData);
+    }
 
   } catch (error) {
     console.error('Error updating college cache:', error);
@@ -246,44 +297,35 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
 };
 
 /**
- * Update college daily trend
- */
-const updateCollegeTrend = async (collegeId, sessionDate, responseCount, isDelete = false, transaction = null) => {
-  const yearMonth = getYearMonth(sessionDate);
-  const day = getDayOfMonth(sessionDate);
-  const multiplier = isDelete ? -1 : 1;
-  const trendRef = doc(db, COLLEGE_CACHE_COLLECTION, collegeId, 'trends', yearMonth);
-  
-  const trendDoc = transaction ? await transaction.get(trendRef) : await getDoc(trendRef);
-
-  if (trendDoc.exists()) {
-    const updates = {
-      [`dailyResponses.${day}`]: increment(responseCount * multiplier),
-      [`dailySessions.${day}`]: increment(1 * multiplier)
-    };
-    if (transaction) transaction.update(trendRef, updates);
-    else await updateDoc(trendRef, updates);
-  } else if (!isDelete) {
-    const newData = {
-      dailyResponses: { [day]: responseCount },
-      dailySessions: { [day]: 1 }
-    };
-    if (transaction) transaction.set(trendRef, newData);
-    else await setDoc(trendRef, newData);
-  }
-};
-
-/**
  * Update trainer cache after session close
  */
-export const updateTrainerCache = async (session, stats, isDelete = false, transaction = null) => {
+export const updateTrainerCache = async (session, stats, isDelete = false, transaction = null, preFetchedDocs = null) => {
   try {
     const trainerId = session.assignedTrainer?.id;
     if (!trainerId) return;
 
     const cacheRef = doc(db, TRAINER_CACHE_COLLECTION, trainerId);
-    const cacheDoc = transaction ? await transaction.get(cacheRef) : await getDoc(cacheRef);
+    
+    // Trend Refs
+    const sessionDate = session.sessionDate;
+    const yearMonth = getYearMonth(sessionDate);
+    const day = getDayOfMonth(sessionDate);
+    const trendRef = doc(db, TRAINER_CACHE_COLLECTION, trainerId, 'trends', yearMonth);
 
+    // ============ 1. READ PHASE ============
+    let cacheDoc, trendDoc;
+    if (preFetchedDocs) {
+        cacheDoc = preFetchedDocs.cacheDoc;
+        trendDoc = preFetchedDocs.trendDoc;
+    } else if (transaction) {
+      cacheDoc = await transaction.get(cacheRef);
+      trendDoc = await transaction.get(trendRef);
+    } else {
+      cacheDoc = await getDoc(cacheRef);
+      trendDoc = await getDoc(trendRef);
+    }
+
+    // ============ 2. CALCULATION PHASE ============
     const { totalResponses, ratingDistribution, categoryAverages } = stats;
     
     // Calculate sums...
@@ -296,22 +338,27 @@ export const updateTrainerCache = async (session, stats, isDelete = false, trans
 
     const categoryIncrements = {};
     Object.entries(categoryAverages || {}).forEach(([cat, avg]) => {
+      const catCount = totalResponses; 
       categoryIncrements[cat] = {
         sum: avg * totalResponses,
         count: totalResponses
       };
     });
 
+    const multiplier = isDelete ? -1 : 1;
+
+    // ============ 3. WRITE PHASE ============
+
+    // --- Update Trainer Main Cache ---
     if (cacheDoc.exists()) {
       const updates = {
-        totalSessions: increment(1 * (isDelete ? -1 : 1)),
-        totalResponses: increment(totalResponses * (isDelete ? -1 : 1)),
-        totalRatingsCount: increment(totalRatingsCount * (isDelete ? -1 : 1)),
-        ratingSum: increment(ratingSum * (isDelete ? -1 : 1)),
+        totalSessions: increment(1 * multiplier),
+        totalResponses: increment(totalResponses * multiplier),
+        totalRatingsCount: increment(totalRatingsCount * multiplier),
+        ratingSum: increment(ratingSum * multiplier),
         updatedAt: new Date().toISOString()
       };
 
-      const multiplier = isDelete ? -1 : 1;
       Object.entries(ratingDistribution || {}).forEach(([rating, count]) => {
         updates[`ratingDistribution.${rating}`] = increment(count * multiplier);
       });
@@ -341,40 +388,27 @@ export const updateTrainerCache = async (session, stats, isDelete = false, trans
        else await setDoc(cacheRef, newCache);
     }
 
-    // Update daily trend
-    await updateTrainerTrend(trainerId, session.sessionDate, totalResponses, isDelete, transaction);
+    // --- Update Daily Trend ---
+    // We already read trendDoc at the start, so we use that directly.
+    if (trendDoc.exists()) {
+      const updates = {
+        [`dailyResponses.${day}`]: increment(totalResponses * multiplier),
+        [`dailySessions.${day}`]: increment(1 * multiplier)
+      };
+      if (transaction) transaction.update(trendRef, updates);
+      else await updateDoc(trendRef, updates);
+    } else if (!isDelete) {
+      const newData = {
+        dailyResponses: { [day]: totalResponses },
+        dailySessions: { [day]: 1 }
+      };
+      if (transaction) transaction.set(trendRef, newData);
+      else await setDoc(trendRef, newData);
+    }
 
   } catch (error) {
     console.error('Error updating trainer cache:', error);
     throw error;
-  }
-};
-
-/**
- * Update trainer daily trend
- */
-const updateTrainerTrend = async (trainerId, sessionDate, responseCount, isDelete = false, transaction = null) => {
-  const yearMonth = getYearMonth(sessionDate);
-  const day = getDayOfMonth(sessionDate);
-  const multiplier = isDelete ? -1 : 1;
-  
-  const trendRef = doc(db, TRAINER_CACHE_COLLECTION, trainerId, 'trends', yearMonth);
-  const trendDoc = transaction ? await transaction.get(trendRef) : await getDoc(trendRef);
-
-  if (trendDoc.exists()) {
-    const updates = {
-      [`dailyResponses.${day}`]: increment(responseCount * multiplier),
-      [`dailySessions.${day}`]: increment(1 * multiplier)
-    };
-    if (transaction) transaction.update(trendRef, updates);
-    else await updateDoc(trendRef, updates);
-  } else if (!isDelete) {
-    const newData = {
-      dailyResponses: { [day]: responseCount },
-      dailySessions: { [day]: 1 }
-    };
-    if (transaction) transaction.set(trendRef, newData);
-    else await setDoc(trendRef, newData);
   }
 };
 

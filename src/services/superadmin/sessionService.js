@@ -240,18 +240,20 @@ export const closeSessionWithStats = async (id) => {
   try {
     // Import compileSessionStats dynamically to avoid circular dependency
     const { compileSessionStats } = await import('./responseService');
-    const { updateCollegeCache, updateTrainerCache } = await import('./cacheService');
+    const { 
+      updateCollegeCache, 
+      updateTrainerCache, 
+      getCollegeCacheRefs, 
+      getTrainerCacheRefs 
+    } = await import('./cacheService');
     const { runTransaction } = await import('firebase/firestore');
     
-    // 1. Compile statistics first (expensive read operation, do outside transaction if possible)
-    // NOTE: Ideally we want snapshot consistency, but since responses are appended and we are closing,
-    // minor shift in stats is less critical than double-counting the session itself.
-    // Calculating stats first avoids hitting transaction time limits or read limits if many responses.
+    // 1. Compile statistics first (outside transaction)
     const compiledStats = await compileSessionStats(id);
     
     let sessionDataForCache = null;
 
-    // 2. Run Transaction to securely update status and cache
+    // 2. Run Transaction
     await runTransaction(db, async (transaction) => {
         const docRef = doc(db, COLLECTION_NAME, id);
         const sessionDoc = await transaction.get(docRef);
@@ -262,25 +264,61 @@ export const closeSessionWithStats = async (id) => {
 
         const sessionData = sessionDoc.data();
         
-        // CRITICAL GUARD: Check if already inactive inside the lock
+        // CRITICAL GUARD
         if (sessionData.status === 'inactive') {
             throw new Error('Session is already closed. Updates aborted to prevent double-counting.');
         }
 
         const session = { id: sessionDoc.id, ...sessionData };
-        sessionDataForCache = session; // Capture for post-transaction use
+        sessionDataForCache = session;
+        
+        // ============ PRE-FETCH CACHE DOCS ============
+        // We must perform ALL reads before ANY writes to satisfy Firestore Transaction rules.
+        // We can't rely on updateCollegeCache/updateTrainerCache to read, because 
+        // updateCollegeCache would Write, preventing updateTrainerCache from Reading.
 
-        // Update session with status and compiled stats
+        const { cacheRef: cRef, trendRef: ctRef } = getCollegeCacheRefs(session.collegeId, session.sessionDate);
+        let tRef, ttRef;
+        const reads = [transaction.get(cRef), transaction.get(ctRef)];
+
+        if (session.assignedTrainer?.id) {
+           const { cacheRef, trendRef } = getTrainerCacheRefs(session.assignedTrainer.id, session.sessionDate);
+           tRef = cacheRef;
+           ttRef = trendRef;
+           reads.push(transaction.get(tRef));
+           reads.push(transaction.get(ttRef));
+        }
+
+        const snapshots = await Promise.all(reads);
+        
+        // Unpack snapshots
+        const collegeCacheDoc = snapshots[0];
+        const collegeTrendDoc = snapshots[1];
+        const trainerCacheDoc = session.assignedTrainer?.id ? snapshots[2] : null;
+        const trainerTrendDoc = session.assignedTrainer?.id ? snapshots[3] : null;
+
+        // ============ EXECUTE UPDATES ============
+        // Pass pre-fetched docs to update functions so they don't try to read again.
+
+        await updateCollegeCache(session, compiledStats, false, transaction, {
+           cacheDoc: collegeCacheDoc,
+           trendDoc: collegeTrendDoc
+        });
+
+        if (session.assignedTrainer?.id) {
+            await updateTrainerCache(session, compiledStats, false, transaction, {
+               cacheDoc: trainerCacheDoc,
+               trendDoc: trainerTrendDoc
+            });
+        }
+
+        // Update session with status and compiled stats (Write)
         transaction.update(docRef, {
             status: 'inactive',
             compiledStats,
             closedAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
-
-        // Update cache documents passing the transaction object (Critical Counters)
-        await updateCollegeCache(session, compiledStats, false, transaction);
-        await updateTrainerCache(session, compiledStats, false, transaction);
     });
     
     // 3. Post-Transaction: Update Qualitative Cache (Experience Data)
