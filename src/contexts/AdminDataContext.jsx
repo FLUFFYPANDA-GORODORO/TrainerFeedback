@@ -60,12 +60,53 @@ export const AdminDataProvider = ({ children }) => {
 
       // Load Cache & Trends concurrently with College info (lightweight)
       try {
-        const [cacheData, trendsData] = await Promise.all([
+        const today = new Date();
+        const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const isEarlyMonth = today.getDate() <= 7;
+        
+        const promises = [
              getCollegeCache(user.collegeId),
-             getCollegeTrends(user.collegeId)
-        ]);
+             getCollegeTrends(user.collegeId, currentYearMonth)
+        ];
+
+        // If currently in first week, fetch previous month too for trends
+        if (isEarlyMonth) {
+            const prevDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const prevYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+            promises.push(getCollegeTrends(user.collegeId, prevYearMonth));
+        }
+
+        const results = await Promise.all(promises);
+        const cacheData = results[0];
+        const currentTrends = results[1] || { dailyResponses: {}, dailySessions: {} };
+        const prevTrends = isEarlyMonth ? results[2] : null;
+
+        // Normalize trends into a single YYYY-MM-DD map
+        const normalizedTrends = {};
+        
+        const processTrendDoc = (trendDoc, yearMonth) => {
+           if (!trendDoc) return;
+           Object.entries(trendDoc.dailyResponses || {}).forEach(([day, count]) => {
+              const fullDate = `${yearMonth}-${day}`; // e.g. 2024-02-05
+              if (!normalizedTrends[fullDate]) normalizedTrends[fullDate] = { responses: 0, sessions: 0 };
+              normalizedTrends[fullDate].responses = count;
+           });
+           Object.entries(trendDoc.dailySessions || {}).forEach(([day, count]) => {
+              const fullDate = `${yearMonth}-${day}`;
+              if (!normalizedTrends[fullDate]) normalizedTrends[fullDate] = { responses: 0, sessions: 0 };
+              normalizedTrends[fullDate].sessions = count;
+           });
+        };
+
+        processTrendDoc(currentTrends, currentYearMonth);
+        if (prevTrends) {
+            const prevDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const prevYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+            processTrendDoc(prevTrends, prevYearMonth);
+        }
+
         setCache(cacheData);
-        setTrends(trendsData);
+        setTrends(normalizedTrends);
       } catch (e) {
         console.error("Failed to load college analytics cache", e);
       }

@@ -371,10 +371,19 @@ const CollegeOverviewTab = () => {
     for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
-        const dayNum = String(date.getDate()).padStart(2, '0'); // "01", "02" keys
+        
+        // Construct full YYYY-MM-DD key for lookup
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const lookupKey = `${year}-${month}-${day}`;
+        
         const displayKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
-        const responses = trends?.dailyResponses?.[dayNum] || 0;
+        // Lookup from normalized trends map
+        const data = trends?.[lookupKey];
+        const responses = data?.responses || 0;
+        
         days.push({ day: displayKey, responses: responses });
     }
 
