@@ -363,15 +363,17 @@ const CollegeOverviewTab = () => {
   }, [filteredSessions, cache, filters]);
 
   // Response trend - use cache trends data with day numbers like CollegeAnalytics
+  // Response trend - use normalized trends data (YYYY-MM-DD keys)
   const responseTrend = useMemo(() => {
-    if (!trends?.dailyResponses) return [];
+    if (!trends || Object.keys(trends).length === 0) return [];
     
-    return Object.entries(trends.dailyResponses)
-      .map(([day, count]) => ({
-        day: parseInt(day),
-        responses: count
+    return Object.entries(trends)
+      .map(([dateStr, data]) => ({
+        day: parseInt(dateStr.split('-')[2]),
+        responses: data.responses || 0,
+        fullDate: dateStr
       }))
-      .sort((a, b) => a.day - b.day);
+      .sort((a, b) => a.fullDate.localeCompare(b.fullDate));
   }, [trends]);
 
   // Category radar data
@@ -783,7 +785,7 @@ const CollegeOverviewTab = () => {
         <Card>
           <CardHeader>
             <CardTitle>Response Trend</CardTitle>
-            <CardDescription>X: Day | Y: Responses ({trends?.yearMonth || 'current month'})</CardDescription>
+            <CardDescription>X: Day | Y: Responses (Current Month)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -792,9 +794,12 @@ const CollegeOverviewTab = () => {
                   <LineChart data={responseTrend}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis 
-                      dataKey="day" 
+                      dataKey="fullDate" 
                       className="text-xs"
-                      tickFormatter={(day) => `${day}`}
+                      tickFormatter={(date) => {
+                        const d = new Date(date);
+                        return `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
+                      }}
                     />
                     <YAxis allowDecimals={false} className="text-xs" />
                     <Tooltip 
@@ -803,7 +808,10 @@ const CollegeOverviewTab = () => {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
-                      labelFormatter={(day) => `Day ${day}`}
+                      labelFormatter={(date) => {
+                        const d = new Date(date);
+                        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                      }}
                     />
                     <Line 
                       type="monotone" 
