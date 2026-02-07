@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { getAllColleges } from '@/services/superadmin/collegeService';
 import { getAllTrainers } from '@/services/superadmin/trainerService';
 import { getAllSessions, subscribeToSessions } from '@/services/superadmin/sessionService';
@@ -15,7 +15,21 @@ export const SuperAdminDataProvider = ({ children }) => {
   const [sessions, setSessions] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [admins, setAdmins] = useState([]);
-  
+
+  // Refs to always access the latest state values (fixes stale closure bug)
+  const collegesRef = useRef(colleges);
+  const trainersRef = useRef(trainers);
+  const sessionsRef = useRef(sessions);
+  const templatesRef = useRef(templates);
+  const adminsRef = useRef(admins);
+
+  // Keep refs in sync with state
+  useEffect(() => { collegesRef.current = colleges; }, [colleges]);
+  useEffect(() => { trainersRef.current = trainers; }, [trainers]);
+  useEffect(() => { sessionsRef.current = sessions; }, [sessions]);
+  useEffect(() => { templatesRef.current = templates; }, [templates]);
+  useEffect(() => { adminsRef.current = admins; }, [admins]);
+
   // Loading states
   const [loading, setLoading] = useState({
     colleges: false,
@@ -37,8 +51,9 @@ export const SuperAdminDataProvider = ({ children }) => {
 
   // Load colleges (with optional force refresh)
   const loadColleges = useCallback(async (force = false) => {
-    if (loaded.colleges && !force) return colleges;
-    
+    // Use ref to get latest value, avoiding stale closure bug
+    if (loaded.colleges && !force) return collegesRef.current;
+
     setLoading(prev => ({ ...prev, colleges: true }));
     try {
       const data = await getAllColleges();
@@ -52,12 +67,13 @@ export const SuperAdminDataProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, colleges: false }));
     }
-  }, [loaded.colleges, colleges]);
+  }, [loaded.colleges]);
 
   // Load trainers (with optional force refresh)
   const loadTrainers = useCallback(async (force = false) => {
-    if (loaded.trainers && !force) return trainers;
-    
+    // Use ref to get latest value, avoiding stale closure bug
+    if (loaded.trainers && !force) return trainersRef.current;
+
     setLoading(prev => ({ ...prev, trainers: true }));
     try {
       const result = await getAllTrainers(100); // Get all trainers
@@ -72,12 +88,13 @@ export const SuperAdminDataProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, trainers: false }));
     }
-  }, [loaded.trainers, trainers]);
+  }, [loaded.trainers]);
 
   // Load templates (with optional force refresh)
   const loadTemplates = useCallback(async (force = false) => {
-    if (loaded.templates && !force) return templates;
-    
+    // Use ref to get latest value, avoiding stale closure bug
+    if (loaded.templates && !force) return templatesRef.current;
+
     setLoading(prev => ({ ...prev, templates: true }));
     try {
       const data = await getAllTemplates();
@@ -91,12 +108,13 @@ export const SuperAdminDataProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, templates: false }));
     }
-  }, [loaded.templates, templates]);
+  }, [loaded.templates]);
 
   // Load admins (with optional force refresh)
   const loadAdmins = useCallback(async (force = false) => {
-    if (loaded.admins && !force) return admins;
-    
+    // Use ref to get latest value, avoiding stale closure bug
+    if (loaded.admins && !force) return adminsRef.current;
+
     setLoading(prev => ({ ...prev, admins: true }));
     try {
       const data = await getAllSystemUsers();
@@ -110,12 +128,13 @@ export const SuperAdminDataProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, admins: false }));
     }
-  }, [loaded.admins, admins]);
+  }, [loaded.admins]);
 
   // Load sessions (manual load, subscription handles real-time)
   const loadSessions = useCallback(async (force = false) => {
-    if (loaded.sessions && !force) return sessions;
-    
+    // Use ref to get latest value, avoiding stale closure bug
+    if (loaded.sessions && !force) return sessionsRef.current;
+
     setLoading(prev => ({ ...prev, sessions: true }));
     try {
       const data = await getAllSessions();
@@ -129,7 +148,7 @@ export const SuperAdminDataProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, sessions: false }));
     }
-  }, [loaded.sessions, sessions]);
+  }, [loaded.sessions]);
 
   // Refresh all data
   const refreshAll = useCallback(async () => {
@@ -190,7 +209,7 @@ export const SuperAdminDataProvider = ({ children }) => {
       setColleges(updater);
     }
   }, []);
-  
+
   const updateAdminsList = useCallback((updater) => {
     if (typeof updater === 'function') {
       setAdmins(updater);
@@ -206,11 +225,11 @@ export const SuperAdminDataProvider = ({ children }) => {
     sessions,
     templates,
     admins,
-    
+
     // Loading states
     loading,
     isInitialLoading: loading.initial,
-    
+
     // Load functions (with caching)
     loadColleges,
     loadTrainers,
@@ -218,7 +237,7 @@ export const SuperAdminDataProvider = ({ children }) => {
     loadTemplates,
     loadAdmins,
     refreshAll,
-    
+
     // Update functions (for local state updates)
     updateTrainersList,
     updateTemplatesList,
