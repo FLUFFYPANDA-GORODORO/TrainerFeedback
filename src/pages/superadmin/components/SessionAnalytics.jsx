@@ -25,7 +25,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
   RadarChart,
   Radar,
   PolarGrid,
@@ -34,8 +33,6 @@ import {
 } from 'recharts';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-
-const COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'];
 
 const SessionAnalytics = ({ session, onBack }) => {
   const handleExport = async () => {
@@ -69,8 +66,8 @@ const SessionAnalytics = ({ session, onBack }) => {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">No analytics data available for this session.</p>
-        <Button variant="outline" className="mt-4" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Sessions
+        <Button variant="outline" size="lg" className="mt-4 gap-2" onClick={onBack}>
+          <ArrowLeft className="h-5 w-5" /> Back to Sessions
         </Button>
       </div>
     );
@@ -78,12 +75,16 @@ const SessionAnalytics = ({ session, onBack }) => {
 
   const stats = session.compiledStats;
   
-  // Prepare chart data
-  const ratingData = Object.entries(stats.ratingDistribution || {}).map(([rating, count]) => ({
-    name: `${rating} Star`,
-    value: count,
-    rating: parseInt(rating)
-  }));
+  // Prepare chart data - all ratings for bar chart (including zeros)
+  const ratingDataAll = Object.entries(stats.ratingDistribution || {})
+    .map(([rating, count]) => ({
+      name: `${rating} Star`,
+      value: count,
+      rating: parseInt(rating)
+    }));
+  
+  // Filtered data for pie chart (exclude zeros)
+  const ratingDataFiltered = ratingDataAll.filter(item => item.value > 0);
 
   // Prepare radar chart data from category averages
   const categoryLabels = {
@@ -106,8 +107,9 @@ const SessionAnalytics = ({ session, onBack }) => {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="outline" size="lg" onClick={onBack} className="gap-2 px-4 py-2">
             <ArrowLeft className="h-5 w-5" />
+            Back
           </Button>
           <div>
             <h1 className="text-2xl font-bold">{session.topic}</h1>
@@ -125,112 +127,175 @@ const SessionAnalytics = ({ session, onBack }) => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Responses</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalResponses}</div>
+            <div className="text-3xl font-bold">{stats.totalResponses}</div>
+            <p className="text-xs text-muted-foreground mt-1">Student submissions</p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
             <Star className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.avgRating.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{stats.avgRating.toFixed(2)}</div>
             <div className="flex items-center gap-1 mt-1">
               {[1,2,3,4,5].map(i => (
                 <Star key={i} className={`h-3 w-3 ${i <= Math.round(stats.avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
               ))}
+              <span className="text-xs text-muted-foreground ml-1">out of 5.0</span>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Top Rating</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.topRating.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{stats.topRating.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Highest score</p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Lowest Rating</CardTitle>
             <TrendingDown className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.leastRating.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{stats.leastRating.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Needs improvement</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bar Chart */}
+      {/* Charts Section - Reordered: Rating Distribution, Category Performance, Rating Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 1. Rating Distribution Bar Chart */}
         <Card>
           <CardHeader>
             <CardTitle>Rating Distribution</CardTitle>
             <CardDescription>Number of responses per rating level</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-72">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={ratingData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <BarChart data={ratingDataAll}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
                   <XAxis dataKey="name" className="text-xs" />
                   <YAxis allowDecimals={false} className="text-xs" />
                   <Tooltip 
+                    cursor={false}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px'
                     }} 
+                    formatter={(value) => [value, 'Responses']}
                   />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {ratingData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[entry.rating - 1]} />
-                    ))}
-                  </Bar>
+                  <Bar 
+                    dataKey="value" 
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        {/* Pie Chart */}
+        {/* 2. Category Performance Radar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Category Performance</CardTitle>
+            <CardDescription>Average scores across evaluation categories</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              {radarData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis 
+                      dataKey="category" 
+                      tick={{ fill: 'hsl(var(--foreground))', fontSize: 10 }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={[0, 5]} 
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                      tickCount={6}
+                    />
+                    <Radar
+                      name="Score"
+                      dataKey="score"
+                      stroke="hsl(var(--primary))"
+                      fill="hsl(var(--primary))"
+                      fillOpacity={0.4}
+                      strokeWidth={2}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value) => [parseFloat(value).toFixed(2), 'Score']}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  No category data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 3. Rating Breakdown Pie Chart */}
         <Card>
           <CardHeader>
             <CardTitle>Rating Breakdown</CardTitle>
             <CardDescription>Percentage distribution of ratings</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-72">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={ratingData}
+                    data={ratingDataFiltered}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
+                    innerRadius={50}
+                    outerRadius={80}
                     paddingAngle={2}
                     dataKey="value"
                     label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                     labelLine={false}
                   >
-                    {ratingData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[entry.rating - 1]} />
+                    {ratingDataFiltered.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={`hsl(var(--primary) / ${0.4 + (index * 0.15)})`}
+                      />
                     ))}
                   </Pie>
-                  <Tooltip />
-                  <Legend />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -238,7 +303,7 @@ const SessionAnalytics = ({ session, onBack }) => {
         </Card>
       </div>
 
-      {/* Comments Section */}
+      {/* Comments Section - Clean with no backgrounds */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Top Comments */}
         <Card>
@@ -254,7 +319,7 @@ const SessionAnalytics = ({ session, onBack }) => {
               <p className="text-sm text-muted-foreground">No comments available</p>
             ) : (
               stats.topComments.map((c, i) => (
-                <div key={i} className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900">
+                <div key={i} className="p-3 rounded-lg border">
                   <p className="text-sm">{c.text}</p>
                   <div className="flex items-center gap-1 mt-2">
                     <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -270,7 +335,7 @@ const SessionAnalytics = ({ session, onBack }) => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-blue-500" />
+              <MessageSquare className="h-5 w-5 text-primary" />
               Average Comments
             </CardTitle>
             <CardDescription>From mid-rated responses</CardDescription>
@@ -280,7 +345,7 @@ const SessionAnalytics = ({ session, onBack }) => {
               <p className="text-sm text-muted-foreground">No comments available</p>
             ) : (
               stats.avgComments.map((c, i) => (
-                <div key={i} className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
+                <div key={i} className="p-3 rounded-lg border">
                   <p className="text-sm">{c.text}</p>
                   <div className="flex items-center gap-1 mt-2">
                     <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -306,7 +371,7 @@ const SessionAnalytics = ({ session, onBack }) => {
               <p className="text-sm text-muted-foreground">No comments available</p>
             ) : (
               stats.leastRatedComments.map((c, i) => (
-                <div key={i} className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900">
+                <div key={i} className="p-3 rounded-lg border">
                   <p className="text-sm">{c.text}</p>
                   <div className="flex items-center gap-1 mt-2">
                     <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -318,56 +383,6 @@ const SessionAnalytics = ({ session, onBack }) => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Radar Chart - Category Performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Category Performance</CardTitle>
-          <CardDescription>Average scores across different evaluation categories (spider/radar chart)</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80">
-            {radarData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                  <PolarGrid stroke="hsl(var(--border))" />
-                  <PolarAngleAxis 
-                    dataKey="category" 
-                    tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-                  />
-                  <PolarRadiusAxis 
-                    angle={90} 
-                    domain={[0, 5]} 
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                    tickCount={6}
-                  />
-                  <Radar
-                    name="Score"
-                    dataKey="score"
-                    stroke="hsl(var(--primary))"
-                    fill="hsl(var(--primary))"
-                    fillOpacity={0.4}
-                    strokeWidth={2}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value) => [value.toFixed(2), 'Score']}
-                  />
-                  <Legend />
-                </RadarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                No category data available. Assign categories to rating questions in templates.
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
