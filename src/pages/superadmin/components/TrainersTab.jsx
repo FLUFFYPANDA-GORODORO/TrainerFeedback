@@ -44,6 +44,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 const TrainersTab = () => {
@@ -337,11 +344,20 @@ const TrainersTab = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Domain</Label>
-                    <Input
-                      value={currentTrainer.domain}
-                      onChange={(e) => setCurrentTrainer({ ...currentTrainer, domain: e.target.value })}
-                      placeholder="Please specify domain"
-                    />
+                    <Select 
+                      value={currentTrainer.domain} 
+                      onValueChange={(value) => setCurrentTrainer({ ...currentTrainer, domain: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Domain" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Technical">Technical</SelectItem>
+                        <SelectItem value="Soft Skills">Soft Skills</SelectItem>
+                        <SelectItem value="Aptitude">Aptitude</SelectItem>
+                        <SelectItem value="Tools">Tools</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Specialisation</Label>

@@ -52,16 +52,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import { createSession, deleteSession, updateSession, closeSessionWithStats } from '@/services/superadmin/sessionService';
 import { getAcademicConfig } from '@/services/superadmin/academicService';
@@ -288,13 +278,6 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
       setSessionToExport(null);
     }
   };
-
-
-
-  // Render Wizard Steps
-
-
-
 
   const uniqueCourses = [...new Set(sessions.map(s => s.course))].filter(Boolean);
   const uniqueDomains = [...new Set(sessions.map(s => s.domain))].filter(Boolean);
@@ -578,36 +561,36 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
       </div>
 
       {/* Export Confirmation Dialog */}
-      <AlertDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
+      <Modal open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <div className="p-6">
+          <ModalHeader>
+            <ModalTitle className="flex items-center gap-2">
               <Download className="h-5 w-5" />
               Export Feedback Report
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
+            </ModalTitle>
+            <ModalDescription className="space-y-2 mt-2">
               <p>You are about to export feedback data for:</p>
               <div className="bg-muted p-3 rounded-lg text-sm">
                 <p className="font-medium text-foreground">{sessionToExport?.topic}</p>
                 <p>{sessionToExport?.collegeName} • {sessionToExport?.sessionDate}</p>
               </div>
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 p-3 rounded-lg mt-2">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" />
                 <p className="text-sm">
                   This report contains <strong>{sessionToExport?.compiledStats?.totalResponses || 0}</strong> responses.
                 </p>
               </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmExport} className="gradient-hero text-primary-foreground">
+            </ModalDescription>
+          </ModalHeader>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>Cancel</Button>
+            <Button onClick={confirmExport} className="gradient-hero text-primary-foreground">
               <Download className="h-4 w-4 mr-2" />
               Export to Excel
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

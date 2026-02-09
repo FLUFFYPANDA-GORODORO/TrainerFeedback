@@ -362,23 +362,18 @@ const CollegeOverviewTab = () => {
     };
   }, [filteredSessions, cache, filters]);
 
-  // Response trend (Last 7 days) - ordered oldest to newest
+  // Response trend - use cache trends data with day numbers like CollegeAnalytics
+  // Response trend - use normalized trends data (YYYY-MM-DD keys)
   const responseTrend = useMemo(() => {
-    const today = new Date();
-    const days = [];
+    if (!trends || Object.keys(trends).length === 0) return [];
     
-    // Build array from 6 days ago to today (oldest first)
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        const dayNum = String(date.getDate()).padStart(2, '0'); // "01", "02" keys
-        const displayKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
-        const responses = trends?.dailyResponses?.[dayNum] || 0;
-        days.push({ day: displayKey, responses: responses });
-    }
-
-    return days;
+    return Object.entries(trends)
+      .map(([dateStr, data]) => ({
+        day: parseInt(dateStr.split('-')[2]),
+        responses: data.responses || 0,
+        fullDate: dateStr
+      }))
+      .sort((a, b) => a.fullDate.localeCompare(b.fullDate));
   }, [trends]);
 
   // Category radar data
@@ -790,31 +785,48 @@ const CollegeOverviewTab = () => {
         <Card>
           <CardHeader>
             <CardTitle>Response Trend</CardTitle>
-            <CardDescription>X: Date | Y: Responses (Last 7 days)</CardDescription>
+            <CardDescription>X: Day | Y: Responses (Current Month)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={responseTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="day" className="text-xs" />
-                  <YAxis allowDecimals={false} className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="responses" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {responseTrend.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={responseTrend}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="fullDate" 
+                      className="text-xs"
+                      tickFormatter={(date) => {
+                        const d = new Date(date);
+                        return `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
+                      }}
+                    />
+                    <YAxis allowDecimals={false} className="text-xs" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      labelFormatter={(date) => {
+                        const d = new Date(date);
+                        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="responses" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  No trend data available for this month yet.
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
