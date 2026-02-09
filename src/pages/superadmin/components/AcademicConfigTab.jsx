@@ -1,55 +1,211 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Save, 
-  Plus, 
-  Trash2, 
-  ChevronRight, 
-  ChevronDown, 
-  GraduationCap, 
-  BookOpen, 
-  Calendar, 
+import {
+  Save,
+  Plus,
+  Trash2,
+  ChevronRight,
+  ChevronDown,
+  GraduationCap,
+  BookOpen,
+  Calendar,
   Users,
-  AlertCircle
+  AlertCircle,
+  Edit
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { 
-  saveAcademicConfig, 
-  getAcademicConfig 
+import {
+  saveAcademicConfig,
+  getAcademicConfig
 } from '@/services/superadmin/academicService';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
+
+// Helper Component for adding items
+const Adder = ({ placeholder, onAdd, size = 'default', minimal = false, buttonLabel = null }) => {
+  const [val, setVal] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAdd = () => {
+    if (val.trim()) {
+      onAdd(val);
+      setVal('');
+      setIsAdding(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleAdd();
+    if (e.key === 'Escape') {
+      setVal('');
+      setIsAdding(false);
+    }
+  };
+
+  const height = size === 'xs' ? 'h-6 text-xs' : size === 'sm' ? 'h-8 text-sm' : 'h-10';
+  const width = minimal ? 'w-20' : 'w-48';
+
+  if (buttonLabel && !isAdding) {
+    return (
+      <Button variant="outline" size="sm" onClick={() => setIsAdding(true)} className="gap-1">
+        <Plus className="h-3 w-3" />
+        {buttonLabel}
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className={`${height} ${width} bg-background/50`}
+        autoFocus={buttonLabel ? true : false}
+      />
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={handleAdd}
+        className={`${height} w-${size === 'xs' ? '6' : '8'}`}
+        disabled={!val.trim()}
+      >
+        <Plus className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
 
 const AcademicConfigTab = ({ colleges }) => {
   const [selectedCollegeId, setSelectedCollegeId] = useState('');
   const [config, setConfig] = useState({ courses: {} });
   const [loading, setLoading] = useState(false);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [expandedCourses, setExpandedCourses] = useState({});
 
-  // Load Config
+  // Edit modal state - replaces browser prompts with professional modal
+  const [editModal, setEditModal] = useState({
+    open: false,
+    type: '', // 'course', 'department', 'batch'
+    currentValue: '',
+    newValue: '',
+    // Context for the edit operation
+    courseName: '',
+    deptName: '',
+    year: '',
+    batch: ''
+  });
+
+  // Open edit modal for different types
+  const openEditModal = (type, currentValue, context = {}) => {
+    setEditModal({
+      open: true,
+      type,
+      currentValue,
+      newValue: currentValue,
+      ...context
+    });
+  };
+
+  // Close edit modal
+  const closeEditModal = () => {
+    setEditModal({
+      open: false,
+      type: '',
+      currentValue: '',
+      newValue: '',
+      courseName: '',
+      deptName: '',
+      year: '',
+      batch: ''
+    });
+  };
+
+  // Handle edit modal save
+  const handleEditSave = () => {
+    const { type, currentValue, newValue, courseName, deptName, year, batch } = editModal;
+
+    if (!newValue.trim() || newValue === currentValue) {
+      closeEditModal();
+      return;
+    }
+
+    switch (type) {
+      case 'course':
+        renameCourse(currentValue, newValue);
+        break;
+      case 'department':
+        renameDept(courseName, currentValue, newValue);
+        break;
+      case 'batch':
+        renameBatch(courseName, deptName, year, batch, newValue);
+        break;
+    }
+
+    closeEditModal();
+  };
+
+  // Load Config when college changes
   useEffect(() => {
     if (selectedCollegeId) {
       loadConfig(selectedCollegeId);
     } else {
       setConfig({ courses: {} });
+      setExpandedCourses({});
     }
   }, [selectedCollegeId]);
+
+  // Auto-select first college on mount
+  useEffect(() => {
+    if (colleges.length > 0 && !selectedCollegeId) {
+      setSelectedCollegeId(colleges[0].id);
+    }
+  }, [colleges]);
 
   const loadConfig = async (collegeId) => {
     setLoading(true);
     try {
       const data = await getAcademicConfig(collegeId);
       setConfig(data || { courses: {} });
+      // Expand all courses by default
+      if (data?.courses) {
+        const expanded = {};
+        Object.keys(data.courses).forEach(course => {
+          expanded[course] = true;
+        });
+        setExpandedCourses(expanded);
+      }
     } catch (error) {
       toast.error('Failed to load config');
+      setConfig({ courses: {} });
     } finally {
       setLoading(false);
     }
@@ -57,15 +213,19 @@ const AcademicConfigTab = ({ colleges }) => {
 
   const handleSave = async () => {
     if (!selectedCollegeId) return;
+    setLoading(true);
     try {
       await saveAcademicConfig(selectedCollegeId, config);
       toast.success('Configuration saved successfully');
+      setConfigModalOpen(false);
     } catch (error) {
       toast.error('Failed to save configuration');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // --- Recursive/Nested Update Handlers ---
+  // --- CRUD Handlers ---
 
   const addCourse = (name) => {
     if (!name.trim()) return;
@@ -76,6 +236,7 @@ const AcademicConfigTab = ({ colleges }) => {
         [name]: { departments: {} }
       }
     }));
+    setExpandedCourses(prev => ({ ...prev, [name]: true }));
   };
 
   const removeCourse = (courseName) => {
@@ -215,123 +376,154 @@ const AcademicConfigTab = ({ colleges }) => {
     }));
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Academic Structure</h1>
-          <p className="text-muted-foreground">Define courses, departments, years, and batches</p>
-        </div>
-        <div>
-          <Button 
-            onClick={handleSave} 
-            disabled={!selectedCollegeId || loading}
-            className="gap-2 gradient-hero text-primary-foreground"
-          >
-            <Save className="h-4 w-4" />
-            Save Structure
-          </Button>
-        </div>
-      </div>
+  // --- Rename Handlers ---
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Select College</CardTitle>
-          <CardDescription>Choose the college to configure</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Select value={selectedCollegeId} onValueChange={setSelectedCollegeId}>
-            <SelectTrigger className="max-w-md">
-              <SelectValue placeholder="Select a college..." />
-            </SelectTrigger>
-            <SelectContent>
-              {colleges.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+  const renameCourse = (oldName, newName) => {
+    if (!newName.trim() || newName === oldName) return;
+    if (config.courses[newName]) {
+      toast.error('A course with this name already exists');
+      return;
+    }
+    const newCourses = {};
+    Object.entries(config.courses).forEach(([key, value]) => {
+      if (key === oldName) {
+        newCourses[newName] = value;
+      } else {
+        newCourses[key] = value;
+      }
+    });
+    setConfig({ ...config, courses: newCourses });
+    // Update expanded state
+    setExpandedCourses(prev => {
+      const newExpanded = { ...prev };
+      newExpanded[newName] = newExpanded[oldName];
+      delete newExpanded[oldName];
+      return newExpanded;
+    });
+    // Update selected years
+    setSelectedYears(prev => {
+      const newYears = { ...prev };
+      newYears[newName] = newYears[oldName];
+      delete newYears[oldName];
+      return newYears;
+    });
+  };
 
-      {selectedCollegeId && (
-        <div className="space-y-4 animate-fade-up">
-          {/* Root Level: Courses */}
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
+  const renameDept = (courseName, oldName, newName) => {
+    if (!newName.trim() || newName === oldName) return;
+    if (config.courses[courseName].departments[newName]) {
+      toast.error('A department with this name already exists');
+      return;
+    }
+    const newDepts = {};
+    Object.entries(config.courses[courseName].departments).forEach(([key, value]) => {
+      if (key === oldName) {
+        newDepts[newName] = value;
+      } else {
+        newDepts[key] = value;
+      }
+    });
+    setConfig(prev => ({
+      ...prev,
+      courses: {
+        ...prev.courses,
+        [courseName]: {
+          ...prev.courses[courseName],
+          departments: newDepts
+        }
+      }
+    }));
+  };
+
+  const renameBatch = (courseName, deptName, year, oldBatch, newBatch) => {
+    if (!newBatch.trim() || newBatch === oldBatch) return;
+    const currentBatches = config.courses[courseName].departments[deptName].years[year].batches || [];
+    if (currentBatches.includes(newBatch)) {
+      toast.error('A batch with this name already exists');
+      return;
+    }
+    const newBatches = currentBatches.map(b => b === oldBatch ? newBatch : b);
+    setConfig(prev => ({
+      ...prev,
+      courses: {
+        ...prev.courses,
+        [courseName]: {
+          ...prev.courses[courseName],
+          departments: {
+            ...prev.courses[courseName].departments,
+            [deptName]: {
+              ...prev.courses[courseName].departments[deptName],
+              years: {
+                ...prev.courses[courseName].departments[deptName].years,
+                [year]: {
+                  ...prev.courses[courseName].departments[deptName].years[year],
+                  batches: newBatches
+                }
+              }
+            }
+          }
+        }
+      }
+    }));
+  };
+
+  const toggleCourseExpand = (courseName) => {
+    setExpandedCourses(prev => ({ ...prev, [courseName]: !prev[courseName] }));
+  };
+
+  // Read-only view of the structure
+  const renderReadOnlyView = () => {
+    const courses = config.courses || {};
+    if (Object.keys(courses).length === 0) {
+      return (
+        <div className="text-muted-foreground text-center py-8">
+          No academic structure configured yet. Click "Configure Structure" to start.
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {Object.entries(courses).map(([courseName, courseData]) => (
+          <div key={courseName} className="border-l-4 border-primary pl-4">
+            {/* Course Header */}
+            <div
+              className="flex items-center gap-2 cursor-pointer py-2"
+              onClick={() => toggleCourseExpand(courseName)}
+            >
+              {expandedCourses[courseName] ? (
+                <ChevronDown className="h-4 w-4 text-primary" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-primary" />
+              )}
               <GraduationCap className="h-5 w-5 text-primary" />
-              Courses
-            </h2>
-            <Adder placeholder="New Course (e.g. B.Tech)" onAdd={addCourse} />
-          </div>
+              <span className="font-bold text-lg text-primary">{courseName}</span>
+            </div>
 
-          <div className="space-y-4 ml-2 border-l-2 border-primary/20 pl-4 py-2">
-            {Object.entries(config.courses || {}).map(([courseName, courseData]) => (
-              <div key={courseName} className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-xl font-bold text-foreground">{courseName}</h3>
-                  <Button variant="ghost" size="icon" onClick={() => removeCourse(courseName)} className="h-6 w-6 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+            {/* Departments */}
+            {expandedCourses[courseName] && Object.entries(courseData.departments || {}).map(([deptName, deptData]) => (
+              <div key={deptName} className="ml-6 border-l-2 border-muted pl-4 py-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-primary">{deptName}</span>
                 </div>
 
-                {/* Departments */}
-                <div className="ml-4 pl-4 border-l-2 border-indigo-500/20 space-y-4">
-                  <div className="flex items-center gap-2">
-                     <span className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                        <BookOpen className="h-4 w-4" /> Departments
-                     </span>
-                     <Adder placeholder="Add Dept (e.g. CSE)" onAdd={(val) => addDept(courseName, val)} size="sm" />
-                  </div>
-
-                  {Object.entries(courseData.departments || {}).map(([deptName, deptData]) => (
-                    <div key={deptName} className="bg-secondary/10 rounded-lg p-4 border border-border/50">
-                      <div className="flex items-center gap-2 mb-3">
-                        <h4 className="font-semibold text-lg text-primary">{deptName}</h4>
-                        <Button variant="ghost" size="icon" onClick={() => removeDept(courseName, deptName)} className="h-6 w-6 text-muted-foreground hover:text-destructive">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                {/* Years - displayed side by side */}
+                <div className="flex flex-wrap gap-4 ml-4">
+                  {Object.entries(deptData.years || {}).map(([year, yearData]) => (
+                    <div key={year} className="bg-secondary/20 rounded-lg p-3 border border-border/50 min-w-[150px]">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-semibold">Year {year}</span>
                       </div>
 
-                      {/* Years */}
-                      <div className="ml-4 space-y-3">
-                        <div className="flex items-center gap-2">
-                           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                              <Calendar className="h-3 w-3" /> Years
-                           </span>
-                           <Adder placeholder="Add Year (e.g. 1)" onAdd={(val) => addYear(courseName, deptName, val)} size="xs" />
-                        </div>
-
-                        {Object.entries(deptData.years || {}).map(([year, yearData]) => (
-                          <div key={year} className="flex items-start gap-4 p-2 rounded-md bg-background/50 border border-border/50">
-                             <div className="flex items-center gap-2 min-w-[100px]">
-                                <span className="font-medium text-sm">Year {year}</span>
-                                <Button variant="ghost" size="icon" onClick={() => removeYear(courseName, deptName, year)} className="h-5 w-5 text-muted-foreground hover:text-destructive">
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                             </div>
-
-                             {/* Batches */}
-                             <div className="flex-1 flex flex-wrap gap-2 items-center">
-                                <div className="flex items-center gap-1 border-r border-border pr-2 mr-2">
-                                  <Users className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-xs text-muted-foreground">Batches:</span>
-                                </div>
-                                {(yearData.batches || []).map((batch) => (
-                                  <Badge key={batch} variant="secondary" className="hover:bg-destructive/10 cursor-default group">
-                                    {batch}
-                                    <button onClick={() => removeBatch(courseName, deptName, year, batch)} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Trash2 className="h-3 w-3 text-destructive" />
-                                    </button>
-                                  </Badge>
-                                ))}
-                                <Adder 
-                                  placeholder="+ Batch" 
-                                  onAdd={(val) => addBatch(courseName, deptName, year, val)} 
-                                  size="xs" 
-                                  minimal 
-                                />
-                             </div>
-                          </div>
+                      {/* Batches */}
+                      <div className="flex flex-wrap gap-1">
+                        {(yearData.batches || []).map((batch) => (
+                          <span key={batch} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-secondary/30 border rounded">
+                            <Users className="h-3 w-3" />
+                            {batch}
+                          </span>
                         ))}
                       </div>
                     </div>
@@ -339,61 +531,437 @@ const AcademicConfigTab = ({ colleges }) => {
                 </div>
               </div>
             ))}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
-            {Object.keys(config.courses || {}).length === 0 && (
-              <div className="text-muted-foreground italic text-sm">No courses defined. Add a course to start.</div>
+  // State for tracking selected year tab per course+department
+  const [selectedYears, setSelectedYears] = useState({});
+
+  // Get all unique years across departments for a course
+  const getYearsForCourse = (courseData) => {
+    const yearsSet = new Set();
+    Object.values(courseData.departments || {}).forEach(dept => {
+      Object.keys(dept.years || {}).forEach(year => yearsSet.add(year));
+    });
+    return Array.from(yearsSet).sort((a, b) => parseInt(a) - parseInt(b));
+  };
+
+  // Get stats for a course
+  const getCourseStats = (courseData) => {
+    const years = getYearsForCourse(courseData);
+    const deptCount = Object.keys(courseData.departments || {}).length;
+    return { yearCount: years.length, deptCount };
+  };
+
+  // Editable tree view for the modal - matches reference design
+  const renderEditableTree = () => {
+    return (
+      <div className="space-y-4">
+        {/* Header with Add Course button */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[#1e3a5f]">Academic Structure Tree</h2>
+          <Adder placeholder="New Course (e.g. B.Tech)" onAdd={addCourse} buttonLabel="Add Course" />
+        </div>
+
+        {/* Course Cards */}
+        <div className="space-y-6">
+          {Object.entries(config.courses || {}).map(([courseName, courseData]) => {
+            const stats = getCourseStats(courseData);
+            const years = getYearsForCourse(courseData);
+            const selectedYear = selectedYears[courseName] || years[0] || '1';
+
+            return (
+              <div key={courseName} className="border rounded-xl bg-card shadow-sm overflow-hidden">
+                {/* Course Header */}
+                <div className="p-4 border-b bg-secondary/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => toggleCourseExpand(courseName)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {expandedCourses[courseName] ? (
+                          <ChevronDown className="h-5 w-5" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5" />
+                        )}
+                      </button>
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
+                        <GraduationCap className="h-5 w-5 text-amber-700" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-[#1e3a5f]">{courseName}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {stats.yearCount} Years • {stats.deptCount} Departments
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Adder
+                        placeholder="Year (e.g. 1)"
+                        onAdd={(val) => {
+                          // Add year to all departments, or show message if no departments
+                          const depts = Object.keys(courseData.departments || {});
+                          if (depts.length === 0) {
+                            toast.info('Add a department first, then add years');
+                            return;
+                          }
+                          depts.forEach(deptName => {
+                            addYear(courseName, deptName, val);
+                          });
+                          // Auto-select the new year
+                          setSelectedYears(prev => ({ ...prev, [courseName]: val }));
+                        }}
+                        buttonLabel="Add Year"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditModal('course', courseName, { courseName })}
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        title="Edit course name"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeCourse(courseName)}
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        title="Delete course"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Year Tabs */}
+                  {expandedCourses[courseName] && years.length > 0 && (
+                    <div className="flex mt-4 border-b">
+                      {years.map((year, idx) => (
+                        <button
+                          key={year}
+                          onClick={() => setSelectedYears(prev => ({ ...prev, [courseName]: year }))}
+                          className={`px-6 py-2 text-sm font-medium transition-colors relative ${selectedYear === year
+                            ? 'text-white bg-[#1e3a5f] rounded-t-lg'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                            }`}
+                        >
+                          Year {year}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Course Content */}
+                {expandedCourses[courseName] && (
+                  <div className="p-4">
+                    {/* Year Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#1e3a5f] text-white flex items-center justify-center text-sm font-bold">
+                          {selectedYear}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground">Year {selectedYear}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {Object.keys(courseData.departments || {}).length} Departments
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Adder
+                          placeholder="Department (e.g. CSE)"
+                          onAdd={(val) => {
+                            addDept(courseName, val);
+                            // Auto-add existing years to the new department
+                            setTimeout(() => {
+                              years.forEach(year => {
+                                addYear(courseName, val, year);
+                              });
+                            }, 0);
+                          }}
+                          buttonLabel="Add Department"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            // Remove selected year from all departments
+                            Object.keys(courseData.departments || {}).forEach(deptName => {
+                              removeYear(courseName, deptName, selectedYear);
+                            });
+                            // Select the first remaining year
+                            const remainingYears = years.filter(y => y !== selectedYear);
+                            if (remainingYears.length > 0) {
+                              setSelectedYears(prev => ({ ...prev, [courseName]: remainingYears[0] }));
+                            }
+                          }}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          title="Delete this year from all departments"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Department Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Object.entries(courseData.departments || {}).map(([deptName, deptData]) => {
+                        const yearData = deptData.years?.[selectedYear];
+                        const batches = yearData?.batches || [];
+
+                        return (
+                          <div key={deptName} className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow">
+                            {/* Department Header */}
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <BookOpen className="h-4 w-4 text-[#1e3a5f]" />
+                                <h5 className="font-semibold text-[#1e3a5f]">{deptName}</h5>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openEditModal('department', deptName, { courseName })}
+                                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                  title="Edit department name"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeDept(courseName, deptName)}
+                                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                  title="Delete department"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Batches Section */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">
+                                  Batches ({batches.length})
+                                </span>
+                                {!yearData && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => addYear(courseName, deptName, selectedYear)}
+                                    className="h-6 text-xs gap-1"
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                    Enable Year
+                                  </Button>
+                                )}
+                              </div>
+
+                              {yearData ? (
+                                <div className="bg-secondary/10 rounded-lg p-3 border border-border/50">
+                                  <div className="flex flex-wrap gap-2">
+                                    {batches.map((batch) => (
+                                      <div
+                                        key={batch}
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-background border rounded-md text-sm group"
+                                      >
+                                        <span className="font-medium">{batch}</span>
+                                        <button
+                                          onClick={() => openEditModal('batch', batch, { courseName, deptName, year: selectedYear, batch })}
+                                          className="text-muted-foreground hover:text-foreground"
+                                          title="Edit batch name"
+                                        >
+                                          <Edit className="h-3 w-3" />
+                                        </button>
+                                        <button
+                                          onClick={() => removeBatch(courseName, deptName, selectedYear, batch)}
+                                          className="text-muted-foreground hover:text-destructive"
+                                          title="Delete batch"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="mt-2 pt-2 border-t border-border/50">
+                                    <Adder
+                                      placeholder="Batch name (e.g. A)"
+                                      onAdd={(val) => addBatch(courseName, deptName, selectedYear, val)}
+                                      size="xs"
+                                      buttonLabel="Add Batch"
+                                    />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-muted-foreground italic p-2 bg-secondary/10 rounded">
+                                  Year not configured for this department
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {Object.keys(courseData.departments || {}).length === 0 && (
+                        <div className="col-span-full text-center text-muted-foreground py-8">
+                          No departments added yet. Click "Add Department" to start.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {Object.keys(config.courses || {}).length === 0 && (
+            <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-xl">
+              <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">No courses defined</p>
+              <p className="text-sm">Click "Add Course" to get started</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="font-display text-2xl font-bold text-foreground">Academic Configuration</h1>
+        <p className="text-muted-foreground">Configure the academic structure: Course - Department - Year - Batch</p>
+      </div>
+
+      {/* College Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Select College</CardTitle>
+          <CardDescription>Choose the college to configure</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <Select value={selectedCollegeId} onValueChange={setSelectedCollegeId}>
+              <SelectTrigger className="max-w-md">
+                <SelectValue placeholder="Select a college..." />
+              </SelectTrigger>
+              <SelectContent>
+                {colleges.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {selectedCollegeId && (
+              <Button
+                onClick={() => setConfigModalOpen(true)}
+                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Edit className="h-4 w-4" />
+                Configure Structure
+              </Button>
             )}
           </div>
-        </div>
+        </CardContent>
+      </Card>
+
+      {/* Read-only View of Current Structure */}
+      {selectedCollegeId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Current Academic Structure</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-muted-foreground text-center py-8">Loading configuration...</div>
+            ) : (
+              renderReadOnlyView()
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {!selectedCollegeId && (
-         <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground bg-secondary/20 rounded-xl border border-dashed">
-           <AlertCircle className="h-12 w-12 mb-4 opacity-50" />
-           <h3 className="text-lg font-medium">No College Selected</h3>
-           <p>Please select a college above to view and edit its academic configuration.</p>
-         </div>
-       )}
-    </div>
-  );
-};
+        <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground bg-secondary/20 rounded-xl border border-dashed">
+          <AlertCircle className="h-12 w-12 mb-4 opacity-50" />
+          <h3 className="text-lg font-medium">No College Selected</h3>
+          <p>Please select a college above to view and edit its academic configuration.</p>
+        </div>
+      )}
 
-// Helper Component for adding items
-const Adder = ({ placeholder, onAdd, size = 'default', minimal = false }) => {
-  const [val, setVal] = useState('');
-  
-  const handleAdd = () => {
-    if (val.trim()) {
-      onAdd(val);
-      setVal('');
-    }
-  };
+      {/* Configure Structure Modal */}
+      <Dialog open={configModalOpen} onOpenChange={setConfigModalOpen}>
+        <DialogContent className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Academic Configuration</DialogTitle>
+            <DialogDescription>
+              Configure the academic structure: Course - Department - Year - Batch
+            </DialogDescription>
+          </DialogHeader>
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') handleAdd();
-  };
+          <div className="py-4">
+            {renderEditableTree()}
+          </div>
 
-  const height = size === 'xs' ? 'h-6 text-xs' : size === 'sm' ? 'h-8 text-sm' : 'h-10';
-  const width = minimal ? 'w-20' : 'w-48';
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfigModalOpen(false)} disabled={loading}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={loading} className="gap-2">
+              <Save className="h-4 w-4" />
+              {loading ? 'Saving...' : 'Save Configuration'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-  return (
-    <div className="flex items-center gap-1">
-      <Input
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        className={`${height} ${width} bg-background/50`}
-      />
-      <Button 
-        size="icon" 
-        variant="ghost" 
-        onClick={handleAdd} 
-        className={`${height} w-${size === 'xs' ? '6' : '8'}`}
-        disabled={!val.trim()}
-      >
-        <Plus className="h-4 w-4" />
-      </Button>
+      {/* Edit Name Modal - replaces browser prompts */}
+      <Dialog open={editModal.open} onOpenChange={(open) => !open && closeEditModal()}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editModal.type === 'course' && 'Edit Course Name'}
+              {editModal.type === 'department' && 'Edit Department Name'}
+              {editModal.type === 'batch' && 'Edit Batch Name'}
+            </DialogTitle>
+            <DialogDescription>
+              Enter the new name below. This will update all references.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={editModal.newValue}
+              onChange={(e) => setEditModal(prev => ({ ...prev, newValue: e.target.value }))}
+              placeholder={`Enter new ${editModal.type} name`}
+              className="w-full"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleEditSave();
+                if (e.key === 'Escape') closeEditModal();
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEditModal}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSave}
+              disabled={!editModal.newValue.trim() || editModal.newValue === editModal.currentValue}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
