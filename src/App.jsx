@@ -11,6 +11,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 // Pages
 import { Landing } from "@/pages/Landing";
 import { Login } from "@/pages/Login";
+import { NewLogin } from "@/pages/NewLogin";
 import { SuperAdminDashboard } from "@/pages/superadmin/SuperAdminDashboard";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import SessionResponses from "@/pages/admin/SessionResponses";
@@ -34,6 +35,7 @@ const App = () => {
                 {/* Public Routes */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/newLogin" element={<NewLogin />} />
                 <Route path="/feedback/anonymous/:sessionId" element={<AnonymousFeedback />} />
                 <Route path="/seed-data" element={<SeedData />} />
 
