@@ -1,7 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, Users, Shield, BarChart3, ClipboardCheck, Building2 } from 'lucide-react';
+import { Shield, LogIn, ClipboardCheck, BarChart3, Building2, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+const collegeLogos = [
+  "Collegelogo1.png", "College logo2.png", "Collegelogo3.png", "Collegelogo4.png",
+  "Collegelogo5.png", "Collegelogo6.png", "Collegelogo7.png", "Collegelogo8.png",
+  "Collegelogo9.png", "Collegelogo10.png", "Collegelogo11.png", "Collegelogo12.png",
+  "Collegelogo13.png", "Collegelogo14.png", "Collegelogo15.png", "Collegelogo16.png",
+  "Collegelogo17.png", "Collegelogo18.avif", "Collegelogo19.avif", "Collegelogo20.avif",
+  "Collegelogo21.avif", "Collegelogo22.avif", "Collegelogo23.avif", "Collegelogo24.avif",
+  "Collegelogo25.avif", "Collegelogo26.avif", "Collegelogo27.avif", "Collegelogo28.avif",
+  "Collegelogo29.png"
+].map(name => `/CollegeLogo/${name}`);
 
 const features = [
   {
@@ -21,71 +32,90 @@ const features = [
   },
   {
     icon: Building2,
-    title: 'Multi-College Support',
-    description: 'Manage multiple colleges and track trainer performance across institutions.',
+    title: 'Department Management',
+    description: 'Organize faculty by departments and track performance across the institution.',
   },
 ];
 
 export const Landing = () => {
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+      {/* 100vh Hero Section Wrapper */}
+      <section className="h-screen flex flex-col relative overflow-hidden">
+        {/* Navigation */}
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-primary shadow-md">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="Gryphon Academy" className="h-20 w-auto object-contain" />
+              </div>
 
-              <img src="/gryphon_logo.png" alt="Gryphon Academy" className="h-14 w-auto object-cover" />
-             
-
-            </div>
-
-            <div>
-              <Link to="/login">
-                <Button variant="outline" size="sm">
-                  Staff Login
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
-        <div className="container mx-auto relative">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8 animate-fade-up">
-              <Shield className="h-4 w-4" />
-              Secure & Anonymous Feedback Platform
-            </div>
-
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-              Elevate Training Excellence Through
-              <br />
-              <span className="text-white bg-primary rounded-3xl px-4 py-1 mt-4 inline-block">
-                Meaningful Feedback
-              </span>
-            </h1>
-
-            <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: '0.2s' }}>
-              Empower your institution with a comprehensive feedback system that bridges the gap between students and trainers, fostering continuous improvement in education.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.3s' }}>
-            
+              <div>
+                <Link to="/login">
+                  <Button className="bg-white text-primary hover:bg-white/90 px-8 py-2 font-medium">
+                    Login <LogIn className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        </nav>
 
-        {/* Decorative elements */}
-        <div className="absolute top-1/2 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        {/* Main Content Area (Hero) */}
+        <main className="flex-1 flex flex-col justify-center items-center relative z-10 pt-20">
+           {/* Background Decoration */}
+           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+           <div className="absolute top-1/2 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+           <div className="absolute top-1/3 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="container mx-auto px-6 text-center max-w-4xl">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8 animate-fade-up">
+                <Shield className="h-4 w-4" />
+                Secure & Anonymous Feedback Platform
+              </div>
+
+              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+                Elevate Training Excellence Through
+                <br />
+                <span className="text-white bg-primary rounded-3xl px-4 py-1 mt-4 inline-block">
+                  Meaningful Feedback
+                </span>
+              </h1>
+
+              <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: '0.2s' }}>
+                Empower your institution with a comprehensive feedback system that bridges the gap between students and trainers, fostering continuous improvement in education.
+              </p>
+          </div>
+        </main>
+
+         {/* Marquee Section */}
+        <div className="bg-secondary/30 pt-8 pb-12 border-t border-border z-20">
+           <h3 className="text-center font-display text-xl font-semibold mb-8 text-muted-foreground">Trusted by Leading Institutions</h3>
+           <div className="w-full overflow-hidden">
+              <div className="flex w-max animate-marquee">
+                  {/* First Set of Logos */}
+                  <div className="flex items-center gap-8 px-3">
+                     {collegeLogos.map((logo, index) => (
+                       <div key={`l1-${index}`} className="h-24 w-auto flex-shrink-0 transition-all duration-300 hover:scale-105 bg-white rounded-3xl border-4 border-white shadow-sm overflow-hidden">
+                         <img src={logo} alt={`College Logo ${index}`} className="h-full w-auto object-contain" />
+                       </div>
+                     ))}
+                  </div>
+                   {/* Duplicate Set for Seamless Loop */}
+                  <div className="flex items-center gap-8 px-3">
+                     {collegeLogos.map((logo, index) => (
+                       <div key={`l2-${index}`} className="h-24 w-auto flex-shrink-0 transition-all duration-300 hover:scale-105 bg-white rounded-3xl border-4 border-white shadow-sm overflow-hidden">
+                         <img src={logo} alt={`College Logo ${index}`} className="h-full w-auto object-contain" />
+                       </div>
+                     ))}
+                  </div>
+              </div>
+           </div>
+        </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 px-6 bg-secondary/30">
+      {/* Features Section (Restored) */}
+      <section id="features" className="py-20 px-6 bg-background">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -100,11 +130,10 @@ export const Landing = () => {
             {features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="glass-card rounded-xl p-6 animate-fade-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
+                className="glass-card rounded-xl p-6 hover:shadow-lg transition-all duration-300"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg gradient-hero mb-4">
-                  <feature.icon className="h-6 w-6 text-primary-foreground" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-white mb-4">
+                  <feature.icon className="h-6 w-6" />
                 </div>
                 <h3 className="font-display text-lg font-semibold text-foreground mb-2">
                   {feature.title}
@@ -118,18 +147,14 @@ export const Landing = () => {
         </div>
       </section>
 
-
-      {/* Footer */}
-      <footer className="border-t border-border py-12 px-6">
+      {/* Footer (Restored) */}
+      <footer className="border-t border-border py-12 px-6 bg-primary text-white">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero">
-                <GraduationCap className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <span className="font-display text-lg font-semibold text-foreground">Gryphon Academy</span>
+              <img src="/logo.png" alt="Gryphon Academy" className="h-20 w-auto object-contain" />
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-white/70">
               © {new Date().getFullYear()} Gryphon Academy Pvt Ltd. All rights reserved.
             </p>
           </div>
