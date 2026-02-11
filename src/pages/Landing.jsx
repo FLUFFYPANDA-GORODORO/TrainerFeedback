@@ -34,22 +34,13 @@ export const Landing = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-hero">
-                <GraduationCap className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <span className="font-display text-xl font-semibold text-foreground">Gryphon</span>
-                <span className="ml-2 text-sm text-muted-foreground">Feedback System</span>
-              </div>
+
+              <img src="/gryphon_logo.png" alt="Gryphon Academy" className="h-14 w-auto object-cover" />
+             
+
             </div>
 
-            <div className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </a>
-              <a href="#about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                About
-              </a>
+            <div>
               <Link to="/login">
                 <Button variant="outline" size="sm">
                   Staff Login
@@ -83,12 +74,7 @@ export const Landing = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.3s' }}>
-              <Link to="/login">
-                <Button size="lg" className="gap-2 px-8 h-12 gradient-hero text-primary-foreground hover:opacity-90">
-                  <Users className="h-5 w-5" />
-                  Staff Login
-                </Button>
-              </Link>
+            
             </div>
           </div>
         </div>
