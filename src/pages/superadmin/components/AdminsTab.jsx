@@ -13,15 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription, 
-  DialogFooter,
-  DialogTrigger
-} from '@/components/ui/dialog';
+
 import {
   Select,
   SelectContent,
@@ -168,95 +160,103 @@ const AdminsTab = ({ colleges, onRefresh }) => {
           <h1 className="font-display text-2xl font-bold text-foreground">System Admins</h1>
           <p className="text-muted-foreground">Manage Super Admins and College Admins</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-                <Button 
-                className="gap-2 gradient-hero text-primary-foreground hover:opacity-90"
-                onClick={openCreateDialog}
-                >
-                <Plus className="h-4 w-4" />
-                Add Admin
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Edit User' : 'Add New Admin'}</DialogTitle>
-                    <DialogDescription>
-                        {isEditing ? 'Update user details' : 'Create a new system administrator or college admin'}
-                    </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>Name</Label>
-                        <Input 
-                            value={formData.name}
-                            onChange={(e) => setFormData({...formData, name: e.target.value})}
-                            placeholder="Full Name"
-                        />
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <Label>Email</Label>
-                        <Input 
-                            value={formData.email}
-                            onChange={(e) => setFormData({...formData, email: e.target.value})}
-                            placeholder="email@example.com"
-                            disabled={isEditing} // Email usually immutable in this context
-                        />
-                    </div>
+        <Button 
+          className="gap-2 gradient-hero text-primary-foreground hover:opacity-90"
+          onClick={openCreateDialog}
+        >
+          <Plus className="h-4 w-4" />
+          Add Admin
+        </Button>
 
-                    {!isEditing && (
+        {dialogOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+             <div className="bg-background rounded-xl shadow-xl w-full max-w-lg border border-border animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                
+                {/* Header */}
+                <div className="flex flex-col space-y-1.5 p-6 pb-4 text-center sm:text-left">
+                  <h2 className="text-lg font-semibold leading-none tracking-tight">
+                    {isEditing ? 'Edit User' : 'Add New Admin'}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {isEditing ? 'Update user details' : 'Create a new system administrator or college admin'}
+                  </p>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 pt-0 overflow-y-auto">
+                    <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label>Password</Label>
+                            <Label>Name</Label>
                             <Input 
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                placeholder="******"
+                                value={formData.name}
+                                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                placeholder="Full Name"
                             />
                         </div>
-                    )}
+                        
+                        <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input 
+                                value={formData.email}
+                                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                placeholder="email@example.com"
+                                disabled={isEditing} 
+                            />
+                        </div>
 
-                    <div className="space-y-2">
-                        <Label>Role</Label>
-                        <Select 
-                            value={formData.role} 
-                            onValueChange={(val) => setFormData({...formData, role: val})}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select Role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="superAdmin">Super Admin</SelectItem>
-                                <SelectItem value="collegeAdmin">College Admin</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                        {!isEditing && (
+                            <div className="space-y-2">
+                                <Label>Password</Label>
+                                <Input 
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                    placeholder="******"
+                                />
+                            </div>
+                        )}
 
-                    {formData.role === 'collegeAdmin' && (
-                        <div className="space-y-2 animate-fade-in">
-                            <Label>College</Label>
+                        <div className="space-y-2">
+                            <Label>Role</Label>
                             <Select 
-                                value={formData.collegeId} 
-                                onValueChange={(val) => setFormData({...formData, collegeId: val})}
+                                value={formData.role} 
+                                onValueChange={(val) => setFormData({...formData, role: val})}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select College" />
+                                    <SelectValue placeholder="Select Role" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {colleges.map(college => (
-                                        <SelectItem key={college.id} value={college.id}>
-                                            {college.name}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="superAdmin">Super Admin</SelectItem>
+                                    <SelectItem value="collegeAdmin">College Admin</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                    )}
+
+                        {formData.role === 'collegeAdmin' && (
+                            <div className="space-y-2 animate-fade-in">
+                                <Label>College</Label>
+                                <Select 
+                                    value={formData.collegeId} 
+                                    onValueChange={(val) => setFormData({...formData, collegeId: val})}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select College" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {colleges.map(college => (
+                                            <SelectItem key={college.id} value={college.id}>
+                                                {college.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <DialogFooter>
+                {/* Footer */}
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 pt-0">
                     <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
                     <Button 
                         onClick={handleSave} 
@@ -266,9 +266,10 @@ const AdminsTab = ({ colleges, onRefresh }) => {
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isEditing ? 'Update' : 'Create'}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </div>
+             </div>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -292,13 +293,7 @@ const AdminsTab = ({ colleges, onRefresh }) => {
                      <div className="flex-1 min-w-0 space-y-1.5">
                         <div className="flex items-center gap-3">
                             <h3 className="font-bold text-lg text-foreground leading-none">{user.name}</h3>
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
-                                user.role === 'superAdmin'
-                                ? 'bg-primary/5 text-primary border-primary/10'
-                                : 'bg-muted text-muted-foreground border-border'
-                            }`}>
-                                {user.role === 'superAdmin' ? 'Super Admin' : 'College Admin'}
-                            </span>
+
                         </div>
                         
                         <p className="text-sm text-muted-foreground leading-none">{user.email}</p>

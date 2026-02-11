@@ -15,15 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
+
 import { toast } from 'sonner';
 import {
   addTrainer,
@@ -243,163 +235,112 @@ const TrainersTab = () => {
           <p className="text-muted-foreground mt-1">Manage faculty, track performance, and organize expertise.</p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Batch Import Dialog */}
-          <Dialog open={batchDialogOpen} onOpenChange={setBatchDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2 shadow-sm border-dashed">
-                <Upload className="h-4 w-4" />
-                <span className="hidden md:inline">Batch Import</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Batch Import Trainers</DialogTitle>
-                <DialogDescription>
-                  Upload a JSON file containing an array of trainer objects.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4 space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm font-medium">Select File</p>
-                  <a
-                    href="/sample-trainers.json"
-                    download="sample-trainers.json"
-                    className="text-xs text-primary hover:underline flex items-center gap-1"
-                  >
-                    Download Sample JSON
-                  </a>
-                </div>
-                <Input
-                  type="file"
-                  accept=".json"
-                  onChange={handleBatchFileChange}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Format: JSON array of objects with trainer_id, name, etc.
-                </p>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setBatchDialogOpen(false)}>Cancel</Button>
-                <Button
-                  onClick={handleBatchUpload}
-                  disabled={!batchFile || isUploading}
-                  className="gradient-hero text-primary-foreground"
-                >
-                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Upload
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {/* Batch Import Button */}
+          <Button 
+            variant="outline" 
+            className="gap-2 shadow-sm border-dashed"
+            onClick={() => setBatchDialogOpen(true)}
+          >
+            <Upload className="h-4 w-4" />
+            <span className="hidden md:inline">Batch Import</span>
+          </Button>
 
-          {/* Add Trainer Dialog */}
-          <Dialog open={trainerDialogOpen} onOpenChange={setTrainerDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                className="gap-2 gradient-hero text-primary-foreground shadow-md hover:shadow-lg transition-all"
-                onClick={openCreateDialog}
-              >
-                <Plus className="h-4 w-4" />
-                Add Trainer
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg" onOpenAutoFocus={(e) => e.preventDefault()}>
-              <DialogHeader>
-                <DialogTitle>{isEditing ? 'Edit Trainer' : 'Add New Trainer'}</DialogTitle>
-                <DialogDescription>
-                  {isEditing ? 'Update trainer details' : 'Add a new trainer to the platform'}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Trainer ID *</Label>
-                    <Input
-                      value={currentTrainer.trainer_id}
-                      onChange={(e) => setCurrentTrainer({ ...currentTrainer, trainer_id: e.target.value })}
-                      disabled={isEditing}
-                      placeholder="TR-1001"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Full Name *</Label>
-                    <Input
-                      value={currentTrainer.name}
-                      onChange={(e) => setCurrentTrainer({ ...currentTrainer, name: e.target.value })}
-                      placeholder="John Doe"
-                    />
-                  </div>
-                </div>
+          {/* Add Trainer Button */}
+          <Button
+            className="gap-2 gradient-hero text-primary-foreground shadow-md hover:shadow-lg transition-all"
+            onClick={openCreateDialog}
+          >
+            <Plus className="h-4 w-4" />
+            Add Trainer
+          </Button>
 
-                <div className="space-y-2">
-                  <Label>Email *</Label>
-                  <Input
-                    type="email"
-                    value={currentTrainer.email}
-                    onChange={(e) => setCurrentTrainer({ ...currentTrainer, email: e.target.value })}
-                    placeholder="john@example.com"
-                  />
+          {/* Batch Import Modal */}
+          {batchDialogOpen && (
+             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="bg-background rounded-xl shadow-xl w-full max-w-lg border border-border animate-in zoom-in-95 duration-200 flex flex-col">
+                   <div className="flex flex-col space-y-1.5 p-6 pb-4">
+                      <h2 className="text-lg font-semibold leading-none tracking-tight">Batch Import Trainers</h2>
+                      <p className="text-sm text-muted-foreground">Upload a JSON file containing an array of trainer objects.</p>
+                   </div>
+                   <div className="p-6 pt-0 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm font-medium">Select File</p>
+                        <a href="/sample-trainers.json" download="sample-trainers.json" className="text-xs text-primary hover:underline flex items-center gap-1">Download Sample JSON</a>
+                      </div>
+                      <Input type="file" accept=".json" onChange={handleBatchFileChange} />
+                      <p className="text-xs text-muted-foreground">Format: JSON array of objects with trainer_id, name, etc.</p>
+                   </div>
+                   <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 pt-0">
+                      <Button variant="outline" onClick={() => setBatchDialogOpen(false)}>Cancel</Button>
+                      <Button onClick={handleBatchUpload} disabled={!batchFile || isUploading} className="gradient-hero text-primary-foreground">
+                        {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        Upload
+                      </Button>
+                   </div>
                 </div>
+             </div>
+          )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Domain</Label>
-                    <Select 
-                      value={currentTrainer.domain} 
-                      onValueChange={(value) => setCurrentTrainer({ ...currentTrainer, domain: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Domain" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Technical">Technical</SelectItem>
-                        <SelectItem value="Soft Skills">Soft Skills</SelectItem>
-                        <SelectItem value="Aptitude">Aptitude</SelectItem>
-                        <SelectItem value="Tools">Tools</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Specialisation</Label>
-                    <Input
-                      value={currentTrainer.specialisation}
-                      onChange={(e) => setCurrentTrainer({ ...currentTrainer, specialisation: e.target.value })}
-                      placeholder="Core expertise"
-                    />
-                  </div>
+          {/* Add/Edit Trainer Modal */}
+          {trainerDialogOpen && (
+             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="bg-background rounded-xl shadow-xl w-full max-w-lg border border-border animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                   <div className="flex flex-col space-y-1.5 p-6 pb-4">
+                      <h2 className="text-lg font-semibold leading-none tracking-tight">{isEditing ? 'Edit Trainer' : 'Add New Trainer'}</h2>
+                      <p className="text-sm text-muted-foreground">{isEditing ? 'Update trainer details' : 'Add a new trainer to the platform'}</p>
+                   </div>
+                   <div className="p-6 pt-0 overflow-y-auto space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Trainer ID *</Label>
+                          <Input value={currentTrainer.trainer_id} onChange={(e) => setCurrentTrainer({ ...currentTrainer, trainer_id: e.target.value })} disabled={isEditing} placeholder="TR-1001" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Full Name *</Label>
+                          <Input value={currentTrainer.name} onChange={(e) => setCurrentTrainer({ ...currentTrainer, name: e.target.value })} placeholder="John Doe" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email *</Label>
+                        <Input type="email" value={currentTrainer.email} onChange={(e) => setCurrentTrainer({ ...currentTrainer, email: e.target.value })} placeholder="john@example.com" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Domain</Label>
+                          <Select value={currentTrainer.domain} onValueChange={(value) => setCurrentTrainer({ ...currentTrainer, domain: value })}>
+                            <SelectTrigger><SelectValue placeholder="Select Domain" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Technical">Technical</SelectItem>
+                              <SelectItem value="Soft Skills">Soft Skills</SelectItem>
+                              <SelectItem value="Aptitude">Aptitude</SelectItem>
+                              <SelectItem value="Tools">Tools</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Specialisation</Label>
+                          <Input value={currentTrainer.specialisation} onChange={(e) => setCurrentTrainer({ ...currentTrainer, specialisation: e.target.value })} placeholder="Core expertise" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Topics (comma separated)</Label>
+                        <Textarea value={currentTrainer.topics} onChange={(e) => setCurrentTrainer({ ...currentTrainer, topics: e.target.value })} placeholder="Java, Python, React, System Design" rows={3} />
+                      </div>
+                      {!isEditing && (
+                        <div className="space-y-2">
+                          <Label>Password (Initial)</Label>
+                          <Input type="password" value={currentTrainer.password} onChange={(e) => setCurrentTrainer({ ...currentTrainer, password: e.target.value })} placeholder="******" />
+                          <p className="text-xs text-muted-foreground">Account will be created with this password.</p>
+                        </div>
+                      )}
+                   </div>
+                   <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 pt-0">
+                      <Button variant="outline" onClick={() => setTrainerDialogOpen(false)}>Cancel</Button>
+                      <Button onClick={handleSaveTrainer} className="gradient-hero text-primary-foreground">{isEditing ? 'Update' : 'Create'}</Button>
+                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Topics (comma separated)</Label>
-                  <Textarea
-                    value={currentTrainer.topics}
-                    onChange={(e) => setCurrentTrainer({ ...currentTrainer, topics: e.target.value })}
-                    placeholder="Java, Python, React, System Design"
-                    rows={3}
-                  />
-                </div>
-
-                {!isEditing && (
-                  <div className="space-y-2">
-                    <Label>Password (Initial)</Label>
-                    <Input
-                      type="password"
-                      value={currentTrainer.password}
-                      onChange={(e) => setCurrentTrainer({ ...currentTrainer, password: e.target.value })}
-                      placeholder="******"
-                    />
-                    <p className="text-xs text-muted-foreground">Account will be created with this password.</p>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setTrainerDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleSaveTrainer} className="gradient-hero text-primary-foreground">
-                  {isEditing ? 'Update' : 'Create'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+             </div>
+          )}
         </div>
       </div>
 

@@ -132,27 +132,6 @@ export const Landing = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-20 px-6">
-        <div className="container mx-auto">
-          <div className="gradient-hero rounded-2xl p-12 text-center">
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="animate-fade-up">
-                <p className="font-display text-4xl font-bold text-primary-foreground mb-2">10,000+</p>
-                <p className="text-primary-foreground/80">Feedback Submissions</p>
-              </div>
-              <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-                <p className="font-display text-4xl font-bold text-primary-foreground mb-2">500+</p>
-                <p className="text-primary-foreground/80">Trainers</p>
-              </div>
-              <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-                <p className="font-display text-4xl font-bold text-primary-foreground mb-2">25+</p>
-                <p className="text-primary-foreground/80">Partner Institutions</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="border-t border-border py-12 px-6">
