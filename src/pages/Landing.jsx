@@ -75,9 +75,11 @@ export const Landing = () => {
               </div>
 
               <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-                Elevate Training Excellence Through
+                Elevate Training
                 <br />
-                <span className="text-white bg-primary rounded-3xl px-4 py-1 mt-4 inline-block">
+                Excellence Through
+                <br />
+                <span className="text-white bg-primary rounded-3xl px-6 py-2 mt-4 inline-block">
                   Meaningful Feedback
                 </span>
               </h1>
