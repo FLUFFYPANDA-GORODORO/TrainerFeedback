@@ -3,6 +3,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { updateSession, closeSessionWithStats } from '@/services/superadmin/sessionService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -52,8 +60,14 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh }) => {
   
   // UI State
   const [selectedSession, setSelectedSession] = useState(null); // For Analytics
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'active', 'inactive'
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filters State
+  const [filters, setFilters] = useState({
+    collegeId: 'all',
+    course: 'all',
+    domain: 'all',
+    topic: ''
+  });
   
   // Export State
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -67,21 +81,31 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh }) => {
     return { total, active, inactive };
   }, [sessions]);
 
+  // Derived unique filter options
+  const uniqueColleges = useMemo(() => {
+    const map = new Map();
+    sessions.forEach(s => {
+      if (s.collegeId && s.collegeName) map.set(s.collegeId, s.collegeName);
+    });
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [sessions]);
+  const uniqueCourses = useMemo(() => [...new Set(sessions.map(s => s.course))].filter(Boolean), [sessions]);
+  const uniqueDomains = useMemo(() => [...new Set(sessions.map(s => s.domain))].filter(Boolean), [sessions]);
+
   // Filter Logic
   const filteredSessions = useMemo(() => {
     return sessions.filter(session => {
-      // Tab filter
-      if (activeTab === 'active' && session.status !== 'active') return false;
-      if (activeTab === 'inactive' && session.status !== 'inactive') return false;
+      // Dropdown filters
+      if (filters.collegeId !== 'all' && session.collegeId !== filters.collegeId) return false;
+      if (filters.course !== 'all' && session.course !== filters.course) return false;
+      if (filters.domain !== 'all' && session.domain !== filters.domain) return false;
 
-      // Search filter
-      const matchSearch = !searchQuery || 
-        session.topic?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        session.course?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      return matchSearch;
+      // Topic search
+      if (filters.topic && !session.topic?.toLowerCase().includes(filters.topic.toLowerCase())) return false;
+
+      return true;
     }).sort((a, b) => new Date(b.sessionDate) - new Date(a.sessionDate));
-  }, [sessions, activeTab, searchQuery]);
+  }, [sessions, filters]);
 
   // Actions
   const copyLink = (sessionId) => {
@@ -223,26 +247,38 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh }) => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex p-1 bg-muted/30 rounded-xl border border-border/50">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={cn("flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all", activeTab === 'all' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:bg-muted/50')}
-          >
-            All Sessions ({sessionStats.total})
-          </button>
-          <button
-            onClick={() => setActiveTab('active')}
-            className={cn("flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all", activeTab === 'active' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:bg-muted/50')}
-          >
-            Active Sessions ({sessionStats.active})
-          </button>
-          <button
-            onClick={() => setActiveTab('inactive')}
-            className={cn("flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-all", activeTab === 'inactive' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:bg-muted/50')}
-          >
-            Inactive Sessions ({sessionStats.inactive})
-          </button>
+
+      {/* Filters Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-muted/20 p-4 rounded-lg border">
+        <Select value={filters.collegeId} onValueChange={v => setFilters({ ...filters, collegeId: v })}>
+          <SelectTrigger><SelectValue placeholder="All Colleges" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Colleges</SelectItem>
+            {uniqueColleges.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={filters.course} onValueChange={v => setFilters({ ...filters, course: v })}>
+          <SelectTrigger><SelectValue placeholder="All Courses" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Courses</SelectItem>
+            {uniqueCourses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={filters.domain} onValueChange={v => setFilters({ ...filters, domain: v })}>
+          <SelectTrigger><SelectValue placeholder="All Domains" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Domains</SelectItem>
+            {uniqueDomains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Input
+          placeholder="Search Topic..."
+          value={filters.topic}
+          onChange={e => setFilters({ ...filters, topic: e.target.value })}
+        />
       </div>
 
       {/* Table */}
@@ -292,50 +328,16 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh }) => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        
-                        {session.status === 'active' && (
-                          <>
-                            <DropdownMenuItem onClick={() => copyLink(session.id)}>
-                              <Share2 className="mr-2 h-4 w-4" /> Share Link
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onEdit && onEdit(session)}>
-                              <Pencil className="mr-2 h-4 w-4" /> Update
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setSelectedSession(session)}>
-                              <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExportResponses(session)}>
-                              <Download className="mr-2 h-4 w-4" /> Export to Excel
-                            </DropdownMenuItem>
-                            {/* Deactivate disabled for trainers as requested 
-                            <DropdownMenuItem onClick={() => handleToggleStatus(session)}>
-                              <Power className="mr-2 h-4 w-4" /> Deactivate
-                            </DropdownMenuItem>
-                            */}
-                          </>
-                        )}
-                        
-                        {session.status === 'inactive' && (
-                           <>
-                             <DropdownMenuItem onClick={() => handleToggleStatus(session)}>
-                               <PlayCircle className="mr-2 h-4 w-4" /> Activate
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => onEdit && onEdit(session)}>
-                               <Pencil className="mr-2 h-4 w-4" /> Update
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => copyLink(session.id)}>
-                               <Share2 className="mr-2 h-4 w-4" /> Share Link
-                             </DropdownMenuItem>
-                             <DropdownMenuSeparator />
-                             <DropdownMenuItem onClick={() => setSelectedSession(session)}>
-                               <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => handleExportResponses(session)}>
-                               <Download className="mr-2 h-4 w-4" /> Export to Excel
-                             </DropdownMenuItem>
-                           </>
-                        )}
+                        <DropdownMenuItem onClick={() => copyLink(session.id)}>
+                          <Share2 className="mr-2 h-4 w-4" /> Share Link
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setSelectedSession(session)}>
+                          <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportResponses(session)}>
+                          <Download className="mr-2 h-4 w-4" /> Export to Excel
+                        </DropdownMenuItem>
                         
                       </DropdownMenuContent>
                     </DropdownMenu>

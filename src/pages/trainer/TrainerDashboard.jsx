@@ -293,11 +293,13 @@ const TrainerDashboard = () => {
           
           {/* Right: Action Buttons */}
           <div className="flex items-center gap-2">
+            {/* Create Session button hidden
             {activeTab === 'sessions' && (
               <Button onClick={handleCreateClick} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
                 <Plus className="h-4 w-4" /> Create Session
               </Button>
             )}
+            */}
             <Button variant="outline" onClick={loadData} className="gap-2">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
@@ -309,7 +311,7 @@ const TrainerDashboard = () => {
         <main className="flex-1 overflow-y-auto bg-muted/5 p-6 scroll-smooth">
           <div className={`max-w-8xl mx-auto transition-all duration-300 ${isSidebarCollapsed ? 'px-6' : 'px-0'}`}>
 
-            {/* Session Form Modal (Shared for Create/Edit) */}
+            {/* Session Form Modal (Shared for Create/Edit) - HIDDEN
             <Modal open={isSessionFormOpen} onOpenChange={setIsSessionFormOpen} className="sm:max-w-[600px]">
                 <ModalClose onClose={() => {
                     setIsSessionFormOpen(false);
@@ -344,6 +346,7 @@ const TrainerDashboard = () => {
                     />
                 </div>
             </Modal>
+            */}
 
             {/* Content Tabs */}
             {activeTab === 'overview' && (
