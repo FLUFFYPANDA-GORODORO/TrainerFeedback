@@ -47,7 +47,7 @@ export const Landing = () => {
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="Gryphon Academy" className="h-20 w-auto object-contain" />
+                <img src="/logo.png" alt="Gryphon Academy" className="h-12 md:h-16 w-auto object-contain" />
               </div>
 
               <div>
@@ -69,49 +69,49 @@ export const Landing = () => {
            <div className="absolute top-1/3 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="container mx-auto px-6 text-center max-w-4xl">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8 animate-fade-up">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-3 md:mb-4 animate-fade-up">
                 <Shield className="h-4 w-4" />
                 Secure & Anonymous Feedback Platform
               </div>
 
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-4 animate-fade-up" style={{ animationDelay: '0.1s' }}>
                 Elevate Training
                 <br />
                 Excellence Through
                 <br />
-                <span className="text-white bg-primary rounded-3xl px-6 py-2 mt-4 inline-block">
+                <span className="text-white bg-primary rounded-3xl px-6 py-2 mt-2 inline-block">
                   Meaningful Feedback
                 </span>
               </h1>
 
-              <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: '0.2s' }}>
+              <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: '0.2s' }}>
                 Empower your institution with a comprehensive feedback system that bridges the gap between students and trainers, fostering continuous improvement in education.
               </p>
           </div>
         </main>
 
          {/* Marquee Section */}
-        <div className="bg-secondary/30 pt-8 pb-12 border-t border-border z-20">
-           <h3 className="text-center font-display text-xl font-semibold mb-8 text-muted-foreground">Trusted by Leading Institutions</h3>
-           <div className="w-full overflow-hidden">
-              <div className="flex w-max animate-marquee">
-                  {/* First Set of Logos */}
-                  <div className="flex items-center gap-8 px-3">
-                     {collegeLogos.map((logo, index) => (
-                       <div key={`l1-${index}`} className="h-24 w-auto flex-shrink-0 transition-all duration-300 hover:scale-105 bg-white rounded-3xl border-4 border-white shadow-sm overflow-hidden">
-                         <img src={logo} alt={`College Logo ${index}`} className="h-full w-auto object-contain" />
-                       </div>
-                     ))}
-                  </div>
-                   {/* Duplicate Set for Seamless Loop */}
-                  <div className="flex items-center gap-8 px-3">
-                     {collegeLogos.map((logo, index) => (
-                       <div key={`l2-${index}`} className="h-24 w-auto flex-shrink-0 transition-all duration-300 hover:scale-105 bg-white rounded-3xl border-4 border-white shadow-sm overflow-hidden">
-                         <img src={logo} alt={`College Logo ${index}`} className="h-full w-auto object-contain" />
-                       </div>
-                     ))}
-                  </div>
-              </div>
+        <div className="bg-secondary/30 pt-4 pb-8 border-t border-border z-20">
+           <h3 className="text-center font-display text-xl font-semibold mb-4 text-muted-foreground">Trusted by Leading Institutions</h3>
+                        <div className="w-full overflow-hidden">
+               <div className="flex w-max animate-marquee">
+                   {/* First Set of Logos */}
+                   <div className="flex items-center gap-8 px-3">
+                      {collegeLogos.map((logo, index) => (
+                        <div key={`l1-${index}`} className="h-20 w-auto flex-shrink-0 transition-all duration-300 hover:scale-105 bg-white rounded-3xl border-4 border-white shadow-sm overflow-hidden">
+                          <img src={logo} alt={`College Logo ${index}`} className="h-full w-auto object-contain" />
+                        </div>
+                      ))}
+                   </div>
+                    {/* Duplicate Set for Seamless Loop */}
+                   <div className="flex items-center gap-8 px-3">
+                      {collegeLogos.map((logo, index) => (
+                        <div key={`l2-${index}`} className="h-20 w-auto flex-shrink-0 transition-all duration-300 hover:scale-105 bg-white rounded-3xl border-4 border-white shadow-sm overflow-hidden">
+                          <img src={logo} alt={`College Logo ${index}`} className="h-full w-auto object-contain" />
+                        </div>
+                      ))}
+                   </div>
+               </div>
            </div>
         </div>
       </section>
