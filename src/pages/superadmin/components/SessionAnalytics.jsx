@@ -38,28 +38,95 @@ const SessionAnalytics = ({ session, onBack }) => {
   const handleExport = async () => {
     if (!session?.compiledStats) return;
     
-    const stats = session.compiledStats;
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Gryphon Academy';
+    try {
+      toast.loading('Exporting report...');
+      const stats = session.compiledStats;
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Gryphon Academy';
 
-    // Summary Sheet
-    const summarySheet = workbook.addWorksheet('Summary');
-    summarySheet.columns = [
-      { header: 'Field', key: 'field', width: 25 },
-      { header: 'Value', key: 'value', width: 40 }
-    ];
-    summarySheet.addRows([
-      { field: 'Session Topic', value: session.topic },
-      { field: 'College', value: session.collegeName },
-      { field: 'Trainer', value: session.assignedTrainer?.name || 'N/A' },
-      { field: 'Total Responses', value: stats.totalResponses },
-      { field: 'Average Rating', value: stats.avgRating },
-    ]);
+      // [NEW] Fetch detailed responses
+      const { getResponses } = await import('@/services/superadmin/responseService');
+      const responses = await getResponses(session.id);
 
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `analytics_${session.topic.replace(/[^a-z0-9]/gi, '_')}.xlsx`);
-    toast.success('Report exported');
+      // --- SHEET 1: RESPONSES ---
+      const responsesSheet = workbook.addWorksheet('Responses');
+      const questions = session.questions || [];
+      const columns = [
+        { header: 'Response ID', key: 'id', width: 20 },
+        { header: 'Submitted At', key: 'submittedAt', width: 20 },
+        { header: 'Device ID', key: 'deviceId', width: 20 },
+        ...questions.map((q, i) => ({ 
+            header: `Q${i+1}: ${q.text || q.question}`, 
+            key: `q_${q.id}`, 
+            width: 30 
+        }))
+      ];
+      responsesSheet.columns = columns;
+
+      const rows = responses.map(resp => {
+        const row = {
+          id: resp.id,
+          submittedAt: resp.submittedAt?.toDate ? resp.submittedAt.toDate().toLocaleString() : new Date(resp.submittedAt).toLocaleString(),
+          deviceId: resp.deviceId
+        };
+        if (resp.answers) {
+            resp.answers.forEach(ans => {
+                row[`q_${ans.questionId}`] = ans.value;
+            });
+        }
+        return row;
+      });
+      responsesSheet.addRows(rows);
+      responsesSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      responsesSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+
+      // --- SHEET 2: SUMMARY ---
+      const summarySheet = workbook.addWorksheet('Summary Stats');
+      summarySheet.columns = [
+        { header: 'Field', key: 'field', width: 25 },
+        { header: 'Value', key: 'value', width: 40 }
+      ];
+      summarySheet.addRows([
+        { field: 'Session Topic', value: session.topic },
+        { field: 'College', value: session.collegeName },
+        { field: 'Trainer', value: session.assignedTrainer?.name || 'N/A' },
+        { field: 'Total Responses', value: stats.totalResponses },
+        { field: 'Average Rating', value: stats.avgRating },
+      ]);
+      summarySheet.getRow(1).font = { bold: true };
+      summarySheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
+      summarySheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+      // --- SHEET 3: COMMENTS ---
+      const commentsSheet = workbook.addWorksheet('Comments');
+      commentsSheet.columns = [
+        { header: 'Category', key: 'category', width: 20 },
+        { header: 'Comment', key: 'comment', width: 60 },
+        { header: 'Avg Rating', key: 'avgRating', width: 15 }
+      ];
+      (stats.topComments || []).forEach(c => {
+        commentsSheet.addRow({ category: 'Top Rated', comment: c.text, avgRating: c.avgRating });
+      });
+      (stats.avgComments || []).forEach(c => {
+        commentsSheet.addRow({ category: 'Average', comment: c.text, avgRating: c.avgRating });
+      });
+      (stats.leastRatedComments || []).forEach(c => {
+        commentsSheet.addRow({ category: 'Least Rated', comment: c.text, avgRating: c.avgRating });
+      });
+      commentsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      commentsSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `analytics_${session.topic.replace(/[^a-z0-9]/gi, '_')}.xlsx`);
+      
+      toast.dismiss();
+      toast.success('Report exported');
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.dismiss();
+      toast.error("Export failed");
+    }
   };
 
   if (!session?.compiledStats) {

@@ -55,7 +55,7 @@ import { saveAs } from 'file-saver';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import SessionAnalytics from '@/pages/superadmin/components/SessionAnalytics';
 
-const TrainerSessions = ({ sessions, loading, onEdit, onRefresh }) => {
+const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = [] }) => {
   const { user } = useAuth();
   
   // UI State
@@ -66,7 +66,8 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh }) => {
     collegeId: 'all',
     course: 'all',
     domain: 'all',
-    topic: ''
+    topic: '',
+    projectCode: 'all'
   });
   
   // Export State
@@ -89,8 +90,10 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh }) => {
     });
     return Array.from(map, ([id, name]) => ({ id, name }));
   }, [sessions]);
-  const uniqueCourses = useMemo(() => [...new Set(sessions.map(s => s.course))].filter(Boolean), [sessions]);
-  const uniqueDomains = useMemo(() => [...new Set(sessions.map(s => s.domain))].filter(Boolean), [sessions]);
+  const uniqueCourses = useMemo(() => [...new Set(sessions.map(s => s.course).filter(Boolean))], [sessions]);
+  const uniqueDomains = useMemo(() => [...new Set(sessions.map(s => s.domain).filter(Boolean))], [sessions]);
+  // [NEW] Unique Project Codes from sessions (for filtering relevant ones)
+  const uniqueProjectCodes = useMemo(() => [...new Set(sessions.map(s => s.projectCode).filter(Boolean))], [sessions]);
 
   // Filter Logic
   const filteredSessions = useMemo(() => {
@@ -99,9 +102,9 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh }) => {
       if (filters.collegeId !== 'all' && session.collegeId !== filters.collegeId) return false;
       if (filters.course !== 'all' && session.course !== filters.course) return false;
       if (filters.domain !== 'all' && session.domain !== filters.domain) return false;
-
+      if (filters.projectCode !== 'all' && session.projectCode !== filters.projectCode) return false;
       // Topic search
-      if (filters.topic && !session.topic?.toLowerCase().includes(filters.topic.toLowerCase())) return false;
+      if (filters.topic && !session.topic.toLowerCase().includes(filters.topic.toLowerCase())) return false;
 
       return true;
     }).sort((a, b) => new Date(b.sessionDate) - new Date(a.sessionDate));
@@ -272,6 +275,19 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh }) => {
             <SelectItem value="all">All Domains</SelectItem>
             {uniqueDomains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
           </SelectContent>
+        </Select>
+
+
+
+        <Select value={filters.projectCode} onValueChange={v => setFilters({ ...filters, projectCode: v })}>
+            <SelectTrigger><SelectValue placeholder="All Project Codes" /></SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Project Codes</SelectItem>
+                {/* Only show matched codes */}
+                {uniqueProjectCodes
+                    .filter(code => projectCodes.some(pc => pc.code === code && pc.collegeId))
+                    .map(pc => <SelectItem key={pc} value={pc}>{pc}</SelectItem>)}
+            </SelectContent>
         </Select>
 
         <Input

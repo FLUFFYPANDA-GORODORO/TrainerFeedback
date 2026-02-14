@@ -24,6 +24,7 @@ const SessionWizard = ({
   session = null, 
   colleges = [], 
   trainers = [], // Pass filtered valid trainers for this context 
+  projectCodes = [], // [NEW] Accept project codes
   defaultCollegeId = null,
   defaultDomain = null,
   defaultTrainerId = null,
@@ -38,6 +39,9 @@ const SessionWizard = ({
   const [academicOptions, setAcademicOptions] = useState(null); // To store current college's config
   const [templates, setTemplates] = useState([]);
   const [filteredTrainers, setFilteredTrainers] = useState([]);
+
+  // [NEW] Project Code Selection
+  const [selectedProjectCode, setSelectedProjectCode] = useState(session?.projectCode || '');
 
   const [formData, setFormData] = useState({
     collegeId: session?.collegeId || defaultCollegeId || '',
@@ -55,7 +59,8 @@ const SessionWizard = ({
     sessionDuration: session?.sessionDuration || 60,
     questions: session?.questions || [],
     templateId: session?.templateId || '',
-    ttl: session?.ttl || '24' 
+    ttl: session?.ttl || '24',
+    projectCode: session?.projectCode || '' // [NEW] Verify storage
   });
 
   // Load Templates on Mount
@@ -126,10 +131,39 @@ const SessionWizard = ({
 
   // Handlers
   const handleCollegeSelect = (collegeId) => {
+    // If project code was selected but user changes college manually, clear project code
+    if (selectedProjectCode && collegeId !== formData.collegeId) {
+        setSelectedProjectCode('');
+        setFormData(prev => ({ ...prev, projectCode: '' }));
+    }
+
     setFormData(prev => ({ 
       ...prev, 
       collegeId, 
       course: '', branch: '', year: '', batch: '' // Reset dependents
+    }));
+  };
+
+  const handleProjectCodeSelect = (codeString) => {
+    const code = projectCodes.find(c => c.code === codeString);
+    if (!code) return;
+
+    setSelectedProjectCode(codeString);
+    
+    // Auto-fill fields from project code
+    // If collegeId is present in code (matched), use it. Else keep current or clear.
+    
+    setFormData(prev => ({
+        ...prev,
+        projectCode: codeString,
+        collegeId: code.collegeId || prev.collegeId,
+        collegeName: code.collegeName || prev.collegeName,
+        course: code.course || prev.course,
+        year: code.year || prev.year,
+        academicYear: code.academicYear || prev.academicYear,
+        // Reset dependent fields that are NOT in project code
+        branch: '', 
+        batch: ''
     }));
   };
 
@@ -196,7 +230,30 @@ const SessionWizard = ({
 
     return (
       <div className="space-y-4 py-2">
+        {/* [NEW] Project Code Selection */}
         <div className="space-y-2">
+            {/* Select Project Code */}
+            <Label>Project Code (Optional)</Label>
+            <Select
+                value={selectedProjectCode}
+                onValueChange={handleProjectCodeSelect}
+                disabled={!projectCodes.length}
+            >
+                <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Project Code to Auto-fill" />
+                </SelectTrigger>
+                <SelectContent>
+                    {projectCodes.filter(code => code.collegeId).map((code) => (
+                        <SelectItem key={code.id} value={code.code}>
+                            {code.code}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Selecting a project code will auto-fill College, Course, Year and Academic Year.</p>
+        </div>
+
+        <div className="space-y-2 border-t pt-4">
           <Label>College *</Label>
             {defaultCollegeId ? (
                <Input 
@@ -226,7 +283,7 @@ const SessionWizard = ({
               value={formData.academicYear}
               onChange={e => setFormData({ ...formData, academicYear: e.target.value })}
               placeholder="2025-26"
-              disabled={!formData.collegeId}
+              disabled={!formData.collegeId || !!selectedProjectCode} // Disable if project code selected (it sets this)
             />
           </div>
 
@@ -236,7 +293,7 @@ const SessionWizard = ({
               <Select
                 value={formData.course}
                 onValueChange={v => setFormData({ ...formData, course: v, branch: '', year: '', batch: '' })}
-                disabled={!formData.collegeId || !academicOptions}
+                disabled={!formData.collegeId || !academicOptions || !!selectedProjectCode} // Disable if project code sets this
               >
                 <SelectTrigger><SelectValue placeholder="Select Course" /></SelectTrigger>
                 <SelectContent>
@@ -248,7 +305,13 @@ const SessionWizard = ({
               <Label>Branch/Dept *</Label>
               <Select
                 value={formData.branch}
-                onValueChange={v => setFormData({ ...formData, branch: v, year: '', batch: '' })}
+                onValueChange={v => setFormData({ 
+                    ...formData, 
+                    branch: v, 
+                    // Preserve year if already set (e.g. by project code)
+                    year: formData.year || '', 
+                    batch: '' 
+                })}
                 disabled={!formData.course}
               >
                 <SelectTrigger><SelectValue placeholder="Select Branch" /></SelectTrigger>
@@ -265,7 +328,7 @@ const SessionWizard = ({
               <Select
                 value={formData.year}
                 onValueChange={v => setFormData({ ...formData, year: v, batch: '' })}
-                disabled={!formData.branch}
+                disabled={!formData.branch || !!selectedProjectCode} // Disable if project code sets this
               >
                 <SelectTrigger><SelectValue placeholder="Select Year" /></SelectTrigger>
                 <SelectContent>

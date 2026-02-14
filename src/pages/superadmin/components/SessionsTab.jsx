@@ -66,7 +66,7 @@ import { useSuperAdminData } from '@/contexts/SuperAdminDataContext';
 
 const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
   // Get data from context (cached, real-time subscribed)
-  const { sessions, trainers, templates, loadSessions } = useSuperAdminData();
+  const { sessions, trainers, templates, projectCodes, loadSessions } = useSuperAdminData();
   const [loading, setLoading] = useState(false);
 
   // Session Tab State (All, Active, Past)
@@ -78,7 +78,12 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
     course: 'all',
     domain: 'all',
     topic: '',
-    trainerId: 'all'
+    collegeId: 'all',
+    course: 'all',
+    domain: 'all',
+    topic: '',
+    trainerId: 'all',
+    projectCode: 'all' // [NEW]
   });
 
   // Session stats for cards
@@ -126,6 +131,7 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
       if (filters.course !== 'all' && session.course !== filters.course) return false;
       if (filters.domain !== 'all' && session.domain !== filters.domain) return false;
       if (filters.trainerId !== 'all' && session.assignedTrainer?.id !== filters.trainerId) return false;
+      if (filters.projectCode !== 'all' && session.projectCode !== filters.projectCode) return false; // [NEW]
       if (filters.topic && !session.topic.toLowerCase().includes(filters.topic.toLowerCase())) return false;
       
       return true;
@@ -191,14 +197,57 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
         return;
       }
 
-      toast.loading('Generating Excel report...');
+      toast.loading('Fetching responses and generating Excel report...');
+
+      // [NEW] Fetch detailed responses
+      const { getResponses } = await import('@/services/superadmin/responseService');
+      const responses = await getResponses(session.id);
 
       const workbook = new ExcelJS.Workbook();
       workbook.creator = 'Gryphon Academy';
       workbook.created = new Date();
 
-      // Summary Sheet
-      const summarySheet = workbook.addWorksheet('Summary');
+      // --- SHEET 1: RESPONSES ---
+      const responsesSheet = workbook.addWorksheet('Responses');
+      
+      // Dynamic columns based on questions
+      const questions = session.questions || [];
+      const columns = [
+        { header: 'Response ID', key: 'id', width: 20 },
+        { header: 'Submitted At', key: 'submittedAt', width: 20 },
+        { header: 'Device ID', key: 'deviceId', width: 20 },
+        ...questions.map((q, i) => ({ 
+            header: `Q${i+1}: ${q.text || q.question}`, 
+            key: `q_${q.id}`, 
+            width: 30 
+        }))
+      ];
+      responsesSheet.columns = columns;
+
+      // Add rows
+      const rows = responses.map(resp => {
+        const row = {
+          id: resp.id,
+          submittedAt: resp.submittedAt?.toDate ? resp.submittedAt.toDate().toLocaleString() : new Date(resp.submittedAt).toLocaleString(),
+          deviceId: resp.deviceId
+        };
+        // Map answers to columns
+        if (resp.answers) {
+            resp.answers.forEach(ans => {
+                row[`q_${ans.questionId}`] = ans.value;
+            });
+        }
+        return row;
+      });
+      responsesSheet.addRows(rows);
+      
+      // Style Header
+      responsesSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      responsesSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+
+
+      // --- SHEET 2: SUMMARY ---
+      const summarySheet = workbook.addWorksheet('Summary Stats');
       summarySheet.columns = [
         { header: 'Field', key: 'field', width: 25 },
         { header: 'Value', key: 'value', width: 40 }
@@ -223,7 +272,12 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
       summarySheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
       summarySheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
 
-      // Rating Distribution Sheet
+      // Append classic stats (Rating Dist, Comments) to Summary Sheet or separate sheets? 
+      // User asked for "second sheet will contain the summary stats with the comments and stuff entire stats"
+      // So I'll put everything else in subsequent sheets or append to Summary.
+      // Let's create separate sheets for clarity as per previous design, but keep Summary as Sheet 2.
+      
+      // ... (Existing Rating Distribution Logic) ...
       const ratingSheet = workbook.addWorksheet('Rating Distribution');
       ratingSheet.columns = [
         { header: 'Rating', key: 'rating', width: 15 },
@@ -238,11 +292,10 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
           percentage: totalRatings > 0 ? `${((count / totalRatings) * 100).toFixed(1)}%` : '0%'
         });
       });
-      ratingSheet.getRow(1).font = { bold: true };
-      ratingSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
       ratingSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      ratingSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
 
-      // Comments Sheet
+      // ... (Existing Comments Logic) ...
       const commentsSheet = workbook.addWorksheet('Comments');
       commentsSheet.columns = [
         { header: 'Category', key: 'category', width: 20 },
@@ -258,9 +311,8 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
       (stats.leastRatedComments || []).forEach(c => {
         commentsSheet.addRow({ category: 'Least Rated', comment: c.text, avgRating: c.avgRating });
       });
-      commentsSheet.getRow(1).font = { bold: true };
-      commentsSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
       commentsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      commentsSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
 
       // Generate and download
       const buffer = await workbook.xlsx.writeBuffer();
@@ -330,6 +382,7 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
                 session={editingSessionId ? sessions.find(s => s.id === editingSessionId) : null}
                 colleges={colleges}
                 trainers={trainers}
+                projectCodes={projectCodes} // [NEW]
                 onSuccess={() => {
                     setSessionDialogOpen(false);
                     setEditingSessionId(null);
@@ -439,6 +492,16 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
           <SelectContent>
             <SelectItem value="all">All Trainers</SelectItem>
             {trainers.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+
+
+        <Select value={filters.projectCode} onValueChange={v => setFilters({ ...filters, projectCode: v })}>
+          <SelectTrigger><SelectValue placeholder="All Project Codes" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Project Codes</SelectItem>
+            {projectCodes.filter(pc => pc.collegeId).map(pc => <SelectItem key={pc.id} value={pc.code}>{pc.code}</SelectItem>)}
           </SelectContent>
         </Select>
 

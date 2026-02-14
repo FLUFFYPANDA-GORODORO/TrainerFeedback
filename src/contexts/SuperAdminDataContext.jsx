@@ -4,6 +4,12 @@ import { getAllTrainers } from '@/services/superadmin/trainerService';
 import { getAllSessions, subscribeToSessions } from '@/services/superadmin/sessionService';
 import { getAllTemplates } from '@/services/superadmin/templateService';
 import { getAllSystemUsers } from '@/services/superadmin/userService';
+import { 
+  getAllProjectCodes, 
+  addProjectCodes as addProjectCodesService, 
+  deleteProjectCode as deleteProjectCodeService,
+  rerunCollegeMatching as rerunCollegeMatchingService
+} from '@/services/superadmin/projectCodeService';
 import { toast } from 'sonner';
 
 const SuperAdminDataContext = createContext(null);
@@ -15,6 +21,7 @@ export const SuperAdminDataProvider = ({ children }) => {
   const [sessions, setSessions] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [admins, setAdmins] = useState([]);
+  const [projectCodes, setProjectCodes] = useState([]);
 
   // Refs to always access the latest state values (fixes stale closure bug)
   const collegesRef = useRef(colleges);
@@ -22,6 +29,7 @@ export const SuperAdminDataProvider = ({ children }) => {
   const sessionsRef = useRef(sessions);
   const templatesRef = useRef(templates);
   const adminsRef = useRef(admins);
+  const projectCodesRef = useRef(projectCodes);
 
   // Keep refs in sync with state
   useEffect(() => { collegesRef.current = colleges; }, [colleges]);
@@ -29,6 +37,7 @@ export const SuperAdminDataProvider = ({ children }) => {
   useEffect(() => { sessionsRef.current = sessions; }, [sessions]);
   useEffect(() => { templatesRef.current = templates; }, [templates]);
   useEffect(() => { adminsRef.current = admins; }, [admins]);
+  useEffect(() => { projectCodesRef.current = projectCodes; }, [projectCodes]);
 
   // Loading states
   const [loading, setLoading] = useState({
@@ -37,6 +46,7 @@ export const SuperAdminDataProvider = ({ children }) => {
     sessions: false,
     templates: false,
     admins: false,
+    projectCodes: false,
     initial: true
   });
 
@@ -46,7 +56,8 @@ export const SuperAdminDataProvider = ({ children }) => {
     trainers: false,
     sessions: false,
     templates: false,
-    admins: false
+    admins: false,
+    projectCodes: false
   });
 
   // Load colleges (with optional force refresh)
@@ -130,6 +141,84 @@ export const SuperAdminDataProvider = ({ children }) => {
     }
   }, [loaded.admins]);
 
+  // Load project codes (with optional force refresh)
+  const loadProjectCodes = useCallback(async (force = false) => {
+    // Use ref to get latest value, avoiding stale closure bug
+    if (loaded.projectCodes && !force) return projectCodesRef.current;
+
+    setLoading(prev => ({ ...prev, projectCodes: true }));
+    try {
+      const data = await getAllProjectCodes();
+      setProjectCodes(data);
+      setLoaded(prev => ({ ...prev, projectCodes: true }));
+      return data;
+    } catch (error) {
+      console.error('Failed to load project codes:', error);
+      toast.error('Failed to load project codes');
+      return [];
+    } finally {
+      setLoading(prev => ({ ...prev, projectCodes: false }));
+    }
+  }, [loaded.projectCodes]);
+
+  // Add project codes
+  const addProjectCodes = useCallback(async (rawCodes) => {
+    setLoading(prev => ({ ...prev, projectCodes: true }));
+    try {
+      // Pass current colleges for matching
+      const result = await addProjectCodesService(rawCodes, collegesRef.current);
+      
+      // Reload to get new data
+      const newData = await getAllProjectCodes();
+      setProjectCodes(newData);
+      
+      toast.success(`Added ${result.added} codes, skipped ${result.skipped} duplicates`);
+      return result;
+    } catch (error) {
+      console.error('Failed to add project codes:', error);
+      toast.error('Failed to add project codes');
+      throw error;
+    } finally {
+      setLoading(prev => ({ ...prev, projectCodes: false }));
+    }
+  }, []);
+
+  // Delete project code
+  const deleteProjectCode = useCallback(async (id) => {
+    try {
+      await deleteProjectCodeService(id);
+      setProjectCodes(prev => prev.filter(c => c.id !== id));
+      toast.success('Project code deleted');
+    } catch (error) {
+      console.error('Failed to delete project code:', error);
+      toast.error('Failed to delete project code');
+      throw error;
+    }
+  }, []);
+
+  // Rerun matching
+  const rerunMatching = useCallback(async () => {
+    setLoading(prev => ({ ...prev, projectCodes: true }));
+    try {
+      const count = await rerunCollegeMatchingService(collegesRef.current);
+      if (count > 0) {
+        toast.success(`Updated ${count} project codes with college matches`);
+        // Reload data
+        const newData = await getAllProjectCodes();
+        setProjectCodes(newData);
+      } else {
+        toast.info('No new matches found');
+      }
+      return count;
+    } catch (error) {
+      console.error('Failed to rerun matching:', error);
+      toast.error('Failed to rerun matching');
+      throw error;
+    } finally {
+      setLoading(prev => ({ ...prev, projectCodes: false }));
+    }
+  }, []);
+
   // Load sessions (manual load, subscription handles real-time)
   const loadSessions = useCallback(async (force = false) => {
     // Use ref to get latest value, avoiding stale closure bug
@@ -158,7 +247,8 @@ export const SuperAdminDataProvider = ({ children }) => {
       loadTrainers(true),
       loadSessions(true),
       loadTemplates(true),
-      loadAdmins(true)
+      loadAdmins(true),
+      loadProjectCodes(true)
     ]);
     setLoading(prev => ({ ...prev, initial: false }));
   }, [loadColleges, loadTrainers, loadSessions, loadTemplates, loadAdmins]);
@@ -170,7 +260,8 @@ export const SuperAdminDataProvider = ({ children }) => {
         loadColleges(),
         loadTrainers(),
         loadTemplates(),
-        loadAdmins()
+        loadAdmins(),
+        loadProjectCodes()
       ]);
       setLoading(prev => ({ ...prev, initial: false }));
     };
@@ -225,6 +316,7 @@ export const SuperAdminDataProvider = ({ children }) => {
     sessions,
     templates,
     admins,
+    projectCodes,
 
     // Loading states
     loading,
@@ -236,7 +328,13 @@ export const SuperAdminDataProvider = ({ children }) => {
     loadSessions,
     loadTemplates,
     loadAdmins,
+    loadProjectCodes,
     refreshAll,
+
+    // Project Code Actions
+    addProjectCodes,
+    deleteProjectCode,
+    rerunMatching,
 
     // Update functions (for local state updates)
     updateTrainersList,

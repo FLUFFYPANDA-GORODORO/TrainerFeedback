@@ -147,6 +147,19 @@ const AdminsTab = ({ colleges, onRefresh }) => {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!formData.email) return;
+    if (!confirm(`Send password reset email to ${formData.email}?`)) return;
+    
+    try {
+        const { sendPasswordReset } = await import('@/services/authService');
+        await sendPasswordReset(formData.email);
+        toast.success(`Password reset email sent to ${formData.email}`);
+    } catch (error) {
+        toast.error("Failed to send reset email: " + error.message);
+    }
+  };
+
   // Helper to get college name
   const getCollegeName = (id) => {
     const college = colleges.find(c => c.id === id);
@@ -203,6 +216,26 @@ const AdminsTab = ({ colleges, onRefresh }) => {
                                 disabled={isEditing} 
                             />
                         </div>
+
+                        {isEditing && (
+                            <div className="p-3 bg-muted/30 border rounded-lg space-y-2">
+                                <Label className="text-xs font-semibold uppercase text-muted-foreground">Security</Label>
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm">
+                                        <p className="font-medium">Password Reset</p>
+                                        <p className="text-xs text-muted-foreground">Send a password reset email to this user.</p>
+                                    </div>
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={handlePasswordReset}
+                                    >
+                                        Send Reset Email
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
 
                         {!isEditing && (
                             <div className="space-y-2">

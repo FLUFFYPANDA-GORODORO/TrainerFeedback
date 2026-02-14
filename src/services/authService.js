@@ -64,3 +64,16 @@ export const logoutUser = async () => {
     throw error;
   }
 };
+/**
+ * Send Password Reset Email
+ */
+export const sendPasswordReset = async (email) => {
+  try {
+    const { sendPasswordResetEmail } = await import('firebase/auth');
+    await sendPasswordResetEmail(auth, email);
+    return true;
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw error;
+  }
+};

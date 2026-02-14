@@ -14,13 +14,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Database
+  Database,
+  HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDataProvider, useAdminData } from '@/contexts/AdminDataContext';
 import CollegeOverviewTab from './components/CollegeOverviewTab';
 import TrainerFeedbackTab from './components/TrainerFeedbackTab';
 import CollegeSessionsTab from './components/CollegeSessionsTab';
+import HelpTab from '@/components/shared/HelpTab';
 
 // Inner component to consume context
 const AdminDashboardContent = () => {
@@ -37,6 +39,7 @@ const AdminDashboardContent = () => {
     if (path === 'dashboard') return 'overview';
     if (path === 'sessions') return 'sessions';
     if (path === 'feedback') return 'feedback';
+    if (path === 'help') return 'help';
     return 'overview';
   };
   const activeTab = getActiveTab(currentSection);
@@ -181,6 +184,12 @@ const AdminDashboardContent = () => {
             icon={Calendar} 
             path="/admin/sessions" 
           />
+          <NavItem 
+            id="help" 
+            label="Help & Support" 
+            icon={HelpCircle} 
+            path="/admin/help" 
+          />
         </nav>
 
         {/* Sign Out at Bottom */}
@@ -220,6 +229,7 @@ const AdminDashboardContent = () => {
               {activeTab === 'overview' && 'Dashboard Overview'}
               {activeTab === 'sessions' && 'Session Management'}
               {activeTab === 'feedback' && 'Trainer Feedback'}
+              {activeTab === 'help' && 'Help & Support'}
             </h2>
             <p className="text-sm text-muted-foreground">
               {college?.name || ''}
@@ -245,6 +255,7 @@ const AdminDashboardContent = () => {
              {activeTab === 'overview' && <CollegeOverviewTab />}
              {activeTab === 'feedback' && <TrainerFeedbackTab />}
              {activeTab === 'sessions' && <CollegeSessionsTab />}
+             {activeTab === 'help' && <HelpTab />}
           </div>
         </main>
 

@@ -37,7 +37,8 @@ export const createSession = async (sessionData) => {
         sessionDuration = 60, // minutes
         questions = [], 
         ttl = 24, // hours until expiry
-        projectId = ''
+        projectId = '',
+        projectCode = ''
     } = sessionData;
 
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
@@ -56,6 +57,7 @@ export const createSession = async (sessionData) => {
       sessionDuration,
       questions,
       projectId,
+      projectCode,
       status: 'active',
       templateId: sessionData.templateId || null,
       createdAt: serverTimestamp()

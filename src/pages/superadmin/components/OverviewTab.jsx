@@ -47,7 +47,7 @@ import { getCollegeTrends, getCollegeCache } from '@/services/superadmin/cacheSe
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-const OverviewTab = ({ colleges, admins }) => {
+const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
   const { sessions, trainers } = useSuperAdminData();
 
   // Filter state
@@ -255,6 +255,7 @@ const OverviewTab = ({ colleges, admins }) => {
       // Only include closed sessions with compiled stats
       if (session.status !== 'inactive' || !session.compiledStats) return false;
       
+      if (filters.projectCode !== 'all' && session.projectCode !== filters.projectCode) return false;
       if (filters.collegeId !== 'all' && session.collegeId !== filters.collegeId) return false;
       if (filters.trainerId !== 'all' && session.assignedTrainer?.id !== filters.trainerId) return false;
       if (filters.course !== 'all' && session.course !== filters.course) return false;
@@ -566,12 +567,19 @@ const OverviewTab = ({ colleges, admins }) => {
             {/* Project Code - Disabled for now */}
             <div className="space-y-1">
               <Label className="text-xs">Project</Label>
-              <Select value={filters.projectCode} disabled>
-                <SelectTrigger className="opacity-50">
+              <Select value={filters.projectCode} onValueChange={v => {
+                  setFilters({ ...filters, projectCode: v });
+              }}>
+                <SelectTrigger>
                   <SelectValue placeholder="All Projects" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Projects</SelectItem>
+                  {projectCodes.filter(pc => pc.collegeId).map(pc => (
+                    <SelectItem key={pc.code} value={pc.code}>
+                        {pc.code}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSessionsByTrainer } from '@/services/superadmin/sessionService';
 import { getCollegeById, getAllColleges } from '@/services/superadmin/collegeService';
+import { getAllProjectCodes } from '@/services/superadmin/projectCodeService'; // [NEW] Import service
 import { Button } from '@/components/ui/button';
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalClose } from '@/components/ui/modal';
 import SessionWizard from '@/components/shared/SessionWizard';
@@ -15,11 +16,13 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  Download
+  Download,
+  HelpCircle
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import TrainerOverview from './components/TrainerOverview';
 import TrainerSessions from './components/TrainerSessions';
+import HelpTab from '@/components/shared/HelpTab';
 
 const TrainerDashboard = () => {
   const { user, logout } = useAuth();
@@ -29,6 +32,7 @@ const TrainerDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [sessions, setSessions] = useState([]);
   const [colleges, setColleges] = useState([]);
+  const [projectCodes, setProjectCodes] = useState([]); // [NEW] Project codes state
   const [isSessionFormOpen, setIsSessionFormOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null); // Track session being edited
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -39,6 +43,7 @@ const TrainerDashboard = () => {
     switch (section) {
       case 'dashboard': return 'overview';
       case 'sessions': return 'sessions';
+      case 'help': return 'help';
       default: return 'overview';
     }
   };
@@ -80,7 +85,17 @@ const TrainerDashboard = () => {
         const trainerId = user.uid || user.id; 
         const sessionData = await getSessionsByTrainer(trainerId);
         setSessions(sessionData);
-      }
+
+
+        // 3. Load Project Codes
+        // Trainers need project codes for filtering and session creation
+        try {
+            const codes = await getAllProjectCodes();
+            setProjectCodes(codes || []);
+        } catch (e) {
+            console.error("Failed to load project codes", e);
+        }
+        }
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
@@ -246,6 +261,7 @@ const TrainerDashboard = () => {
         <nav className="flex-1 p-3 space-y-1 mt-2">
           <NavItem id="overview" label="Dashboard" icon={LayoutDashboard} path="/trainer/dashboard" />
           <NavItem id="sessions" label="Sessions" icon={RefreshCw} path="/trainer/sessions" />
+          <NavItem id="help" label="Help & Support" icon={HelpCircle} path="/trainer/help" />
         </nav>
 
         {/* Sign Out at Bottom */}
@@ -284,10 +300,12 @@ const TrainerDashboard = () => {
             <h2 className="text-xl font-bold tracking-tight text-foreground">
               {activeTab === 'overview' && 'Trainer Dashboard'}
               {activeTab === 'sessions' && 'My Sessions'}
+              {activeTab === 'help' && 'Help & Support'}
             </h2>
             <p className="text-sm text-muted-foreground">
               {activeTab === 'overview' && 'Manage your sessions and view feedback'}
               {activeTab === 'sessions' && 'View and manage your training sessions'}
+              {activeTab === 'help' && 'Report issues or request features'}
             </p>
           </div>
           
@@ -328,15 +346,10 @@ const TrainerDashboard = () => {
                         session={editingSession}
                         colleges={colleges}
                         defaultCollegeId={user.collegeId || null}
-                        trainers={[{
-                          id: user.uid,
-                          name: user.displayName || user.name || 'Me',
-                          specialisation: user.specialisation || 'Trainer',
-                          domain: user.domain || ''
-                        }]}
+                        trainers={user ? [{ id: user.uid || user.id, name: user.name }] : []}
                         defaultDomain={user.domain || ''}
-                        defaultTrainerId={user.uid}
-                        currentUserId={user.uid}
+                        defaultTrainerId={user?.uid || user?.id}
+                        currentUserId={user?.uid || user?.id}
                         currentUserName={user.name}
                         onSuccess={handleSessionSaved}
                         onCancel={() => {
@@ -346,7 +359,6 @@ const TrainerDashboard = () => {
                     />
                 </div>
             </Modal>
-            */}
 
             {/* Content Tabs */}
             {activeTab === 'overview' && (
@@ -360,8 +372,13 @@ const TrainerDashboard = () => {
                     loading={isLoading} 
                     onEdit={handleEditSession}
                     onRefresh={loadData}
+                    projectCodes={projectCodes}
                 />
                 </div>
+            )}
+
+            {activeTab === 'help' && (
+                <HelpTab />
             )}
           </div>
         </main>

@@ -21,7 +21,9 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
-  LayoutDashboard
+  LayoutDashboard,
+  Barcode,
+  Ticket
 } from 'lucide-react';
 
 // Import Tab Components
@@ -32,6 +34,8 @@ import SessionsTab from './components/SessionsTab';
 import AcademicConfigTab from './components/AcademicConfigTab';
 import TrainersTab from './components/TrainersTab';
 import TemplatesTab from './components/TemplatesTab';
+import ProjectCodesTab from './components/ProjectCodesTab';
+import TicketsTab from './components/TicketsTab';
 import SessionResponses from '../admin/SessionResponses';
 
 // Inner dashboard component that consumes context
@@ -49,6 +53,7 @@ const SuperAdminDashboardInner = () => {
     trainers, 
     sessions, 
     templates,
+    projectCodes, // [NEW] Get project codes
     isInitialLoading,
     refreshAll 
   } = useSuperAdminData();
@@ -68,6 +73,8 @@ const SuperAdminDashboardInner = () => {
       case 'trainers': return 'trainers';
       case 'sessions': return 'sessions';
       case 'templates': return 'templates';
+      case 'project-codes': return 'project-codes';
+      case 'tickets': return 'tickets';
       case 'academic-config': return 'config';
       case 'analytics': return 'analytics';
       default: return 'overview';
@@ -146,6 +153,8 @@ const SuperAdminDashboardInner = () => {
       case 'trainers': return 'Trainers Management';
       case 'sessions': return 'Sessions Management';
       case 'templates': return 'Templates Management';
+      case 'project-codes': return 'Project Codes';
+      case 'tickets': return 'Support Tickets';
       default: return 'Super Admin Dashboard';
     }
   };
@@ -228,6 +237,8 @@ const SuperAdminDashboardInner = () => {
           <NavItem id="trainers" label="Trainers" icon={Users} path="/super-admin/trainers" />
           <NavItem id="sessions" label="Sessions" icon={Shield} path="/super-admin/sessions" />
           <NavItem id="templates" label="Templates" icon={FileText} path="/super-admin/templates" />
+          <NavItem id="project-codes" label="Project Codes" icon={Barcode} path="/super-admin/project-codes" />
+          <NavItem id="tickets" label="Tickets" icon={Ticket} path="/super-admin/tickets" />
         </nav>
 
         {/* Sign Out at Bottom */}
@@ -288,6 +299,7 @@ const SuperAdminDashboardInner = () => {
                 colleges={colleges} 
                 admins={admins} 
                 sessions={sessions}
+                projectCodes={projectCodes} // [NEW] Pass project codes
               />
             )}
 
@@ -328,6 +340,14 @@ const SuperAdminDashboardInner = () => {
 
             {activeTab === 'templates' && (
               <TemplatesTab />
+            )}
+
+            {activeTab === 'project-codes' && (
+              <ProjectCodesTab />
+            )}
+
+            {activeTab === 'tickets' && (
+              <TicketsTab />
             )}
           </div>
         </main>

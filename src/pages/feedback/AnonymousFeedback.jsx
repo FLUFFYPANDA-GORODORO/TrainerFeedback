@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useParams } from 'react-router-dom';
 import { getSessionById } from '@/services/superadmin/sessionService';
 import { addResponse } from '@/services/superadmin/responseService';
@@ -213,8 +214,72 @@ export const AnonymousFeedback = () => {
 
   const questions = session?.questions || [];
 
+  const handleSeedData = async () => {
+    if (!session || !session.questions) return;
+    
+    setIsSubmitting(true);
+    try {
+      const promises = [];
+      const feedbacksToGenerate = 10;
+      
+      const comments = [
+        "Great session!", "Very informative.", "Trainer was knowledgeable.", 
+        "Could be better.", "Pace was too fast.", "Excellent examples.",
+        "Good interaction.", "Need more practicals.", "Satisfied.", "Average."
+      ];
+
+      for (let i = 0; i < feedbacksToGenerate; i++) {
+        const answers = session.questions.map(q => {
+          let value;
+          const type = q.type || 'rating';
+          
+          if (type === 'rating') {
+            // Weighted random to favor 4s and 5s slightly for realism
+            const rand = Math.random();
+            if (rand > 0.6) value = 5;
+            else if (rand > 0.3) value = 4;
+            else if (rand > 0.15) value = 3;
+            else value = Math.floor(Math.random() * 2) + 1; // 1 or 2
+          } else if (type === 'mcq' && q.options) {
+             value = q.options[Math.floor(Math.random() * q.options.length)];
+          } else {
+             value = comments[Math.floor(Math.random() * comments.length)];
+          }
+
+          return {
+            questionId: q.id,
+            value,
+            type
+          };
+        });
+
+        const deviceId = `seed_${Date.now()}_${i}`;
+        
+        // Add minimal delay to avoid write contention triggers if any
+        promises.push(addResponse(sessionId, { deviceId, answers }));
+      }
+
+      await Promise.all(promises);
+      toast.success(`Seeded ${feedbacksToGenerate} responses!`);
+      
+    } catch (err) {
+      console.error("Seeding failed:", err);
+      toast.error("Seeding failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-background to-purple-50 dark:from-background dark:via-background dark:to-background">
+      {/* Debug Seeder Button */}
+      <Button 
+        className="fixed bottom-4 right-4 z-50 bg-red-600 hover:bg-red-700 shadow-lg text-white font-bold"
+        onClick={handleSeedData}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? 'Seeding...' : 'DEBUG: Seed 10 Responses'}
+      </Button>
       {/* Google Forms-style Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-card/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
