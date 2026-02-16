@@ -1,53 +1,70 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { getSessionsByTrainer } from '@/services/superadmin/sessionService';
-import { getCollegeById, getAllColleges } from '@/services/superadmin/collegeService';
-import { getAllProjectCodes } from '@/services/superadmin/projectCodeService'; // [NEW] Import service
-import { Button } from '@/components/ui/button';
-import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalClose } from '@/components/ui/modal';
-import SessionWizard from '@/components/shared/SessionWizard';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSessionsByTrainer } from "@/services/superadmin/sessionService";
+import {
+  getCollegeById,
+  getAllColleges,
+} from "@/services/superadmin/collegeService";
+import { getAllProjectCodes } from "@/services/superadmin/projectCodeService"; // [NEW] Import service
+import { Button } from "@/components/ui/button";
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalClose,
+} from "@/components/ui/modal";
+import SessionWizard from "@/components/shared/SessionWizard";
+import { toast } from "sonner";
 import {
   LayoutDashboard,
   RefreshCw,
   LogOut,
   GraduationCap,
   Plus,
-  ChevronLeft,
-  ChevronRight,
   Download,
   HelpCircle,
-  User
-} from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-import TrainerOverview from './components/TrainerOverview';
-import TrainerSessions from './components/TrainerSessions';
-import HelpTab from '@/components/shared/HelpTab';
-import ProfilePage from '@/components/shared/ProfilePage';
+  User,
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import TrainerOverview from "./components/TrainerOverview";
+import TrainerSessions from "./components/TrainerSessions";
+import HelpTab from "@/components/shared/HelpTab";
+import ProfilePage from "@/components/shared/ProfilePage";
 
 const TrainerDashboard = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [sessions, setSessions] = useState([]);
   const [colleges, setColleges] = useState([]);
   const [projectCodes, setProjectCodes] = useState([]); // [NEW] Project codes state
   const [isSessionFormOpen, setIsSessionFormOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null); // Track session being edited
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   // Get current section from URL
-  const currentSection = location.pathname.split('/').pop() || 'dashboard';
+  const currentSection = location.pathname.split("/").pop() || "dashboard";
   const getActiveTab = (section) => {
     switch (section) {
-      case 'dashboard': return 'overview';
-      case 'sessions': return 'sessions';
-      case 'help': return 'help';
-      case 'profile': return 'profile';
-      default: return 'overview';
+      case "dashboard":
+        return "overview";
+      case "sessions":
+        return "sessions";
+      case "help":
+        return "help";
+      case "profile":
+        return "profile";
+      default:
+        return "overview";
     }
   };
   const activeTab = getActiveTab(currentSection);
@@ -56,7 +73,7 @@ const TrainerDashboard = () => {
     if (user) {
       loadData();
     } else {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }, [user]);
 
@@ -66,42 +83,41 @@ const TrainerDashboard = () => {
       if (user) {
         // 1. Load College(s)
         if (user.collegeId) {
-             // Trainer has assigned college - load just that one
-             try {
-                const colData = await getCollegeById(user.collegeId);
-                if (colData) setColleges([colData]);
-             } catch (e) {
-                console.error("College load failed", e);
-             }
+          // Trainer has assigned college - load just that one
+          try {
+            const colData = await getCollegeById(user.collegeId);
+            if (colData) setColleges([colData]);
+          } catch (e) {
+            console.error("College load failed", e);
+          }
         } else {
-             // No assigned college - load all colleges for selection
-             try {
-                const allColleges = await getAllColleges();
-                setColleges(allColleges || []);
-             } catch (e) {
-                console.error("Failed to load colleges", e);
-             }
+          // No assigned college - load all colleges for selection
+          try {
+            const allColleges = await getAllColleges();
+            setColleges(allColleges || []);
+          } catch (e) {
+            console.error("Failed to load colleges", e);
+          }
         }
 
         // 2. Load Sessions (Firestore)
         // Use uid (Firebase Auth ID) primarily, fallback to id if needed
-        const trainerId = user.uid || user.id; 
+        const trainerId = user.uid || user.id;
         const sessionData = await getSessionsByTrainer(trainerId);
         setSessions(sessionData);
-
 
         // 3. Load Project Codes
         // Trainers need project codes for filtering and session creation
         try {
-            const codes = await getAllProjectCodes();
-            setProjectCodes(codes || []);
+          const codes = await getAllProjectCodes();
+          setProjectCodes(codes || []);
         } catch (e) {
-            console.error("Failed to load project codes", e);
+          console.error("Failed to load project codes", e);
         }
-        }
+      }
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Failed to load data');
+      console.error("Error loading data:", error);
+      toast.error("Failed to load data");
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +125,15 @@ const TrainerDashboard = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
+  };
+
+  const handleMouseEnter = () => {
+    setIsSidebarCollapsed(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsSidebarCollapsed(true);
   };
 
   const handleSessionSaved = () => {
@@ -134,20 +158,27 @@ const TrainerDashboard = () => {
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="text-center">
           <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-foreground mb-2">Please Login</h1>
-          <Button onClick={() => navigate('/login')}>Go to Login</Button>
+          <h1 className="text-xl font-semibold text-foreground mb-2">
+            Please Login
+          </h1>
+          <Button onClick={() => navigate("/login")}>Go to Login</Button>
         </div>
       </div>
     );
   }
 
-  if (user.role !== 'trainer' && user.role !== 'superAdmin') { // Allow superAdmin for testing
-     return (
+  if (user.role !== "trainer" && user.role !== "superAdmin") {
+    // Allow superAdmin for testing
+    return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="text-center">
           <GraduationCap className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-foreground mb-2">Access Denied</h1>
-          <p className="text-muted-foreground">You don't have permission to access this page.</p>
+          <h1 className="text-xl font-semibold text-foreground mb-2">
+            Access Denied
+          </h1>
+          <p className="text-muted-foreground">
+            You don't have permission to access this page.
+          </p>
         </div>
       </div>
     );
@@ -170,10 +201,11 @@ const TrainerDashboard = () => {
             <Button
               variant="ghost"
               className={`w-full justify-start h-10 mb-1 ${
-                isSidebarCollapsed ? 'px-2 justify-center' : 'px-3 gap-3'
-              } ${isActive 
-                  ? 'bg-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary' 
-                  : 'text-primary-foreground hover:bg-primary/80'
+                isSidebarCollapsed ? "px-2 justify-center" : "px-3 gap-3"
+              } ${
+                isActive
+                  ? "bg-primary-foreground text-primary hover:bg-primary-foreground hover:text-primary"
+                  : "text-primary-foreground hover:bg-primary/80"
               }`}
               onClick={() => navigate(path)}
             >
@@ -193,97 +225,105 @@ const TrainerDashboard = () => {
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
-      
       {/* Full-Height Sidebar */}
-      <aside 
+      <aside
         className={`bg-primary text-primary-foreground border-r border-primary/80 flex flex-col transition-all duration-300 ease-in-out h-screen ${
-          isSidebarCollapsed ? 'w-20' : 'w-64'
+          isSidebarCollapsed ? "w-20" : "w-64"
         }`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* Logo Section at Top - Full Width */}
-        <div className={`h-28 border-b border-primary-foreground/20 flex items-center justify-center ${isSidebarCollapsed ? 'px-2' : 'px-3'}`}>
+        <div
+          className={`h-28 border-b border-primary-foreground/20 flex items-center justify-center ${isSidebarCollapsed ? "px-2" : "px-3"}`}
+        >
           {!isSidebarCollapsed ? (
-            <img 
-              src="/logo.png" 
-              alt="Logo" 
-              className="h-20 w-full object-contain" 
-              onError={(e) => e.target.style.display = 'none'} 
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="h-20 w-full object-contain"
+              onError={(e) => (e.target.style.display = "none")}
             />
           ) : (
             <div className="h-10 w-10 rounded-full bg-white p-1 shadow-md overflow-hidden flex items-center justify-center">
-              <img 
-                src="/shortlogo.png" 
-                alt="Logo" 
-                className="h-full w-full object-contain" 
-                onError={(e) => e.target.style.display = 'none'} 
+              <img
+                src="/shortlogo.png"
+                alt="Logo"
+                className="h-full w-full object-contain"
+                onError={(e) => (e.target.style.display = "none")}
               />
             </div>
           )}
         </div>
 
         {/* Trainer Profile Section */}
-        <div className={`py-4 border-b border-primary-foreground/20 ${isSidebarCollapsed ? 'px-2 flex flex-col items-center gap-2' : 'px-4'}`}>
+        <div
+          className={`py-4 border-b border-primary-foreground/20 ${isSidebarCollapsed ? "px-2 flex flex-col items-center gap-2" : "px-4"}`}
+        >
           {!isSidebarCollapsed ? (
-            <div className="flex items-center justify-between">
-              <div 
+            <div className="flex items-center justify-start">
+              <div
                 className="flex items-center gap-3 cursor-pointer hover:bg-primary-foreground/10 p-2 -ml-2 rounded-md transition-colors"
-                onClick={() => navigate('/trainer/profile')}
+                onClick={() => navigate("/trainer/profile")}
                 title="Go to Profile"
               >
                 <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0">
                   {user?.name?.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <p className="text-sm font-semibold text-primary-foreground truncate">{user?.name}</p>
+                  <p className="text-sm font-semibold text-primary-foreground truncate">
+                    {user?.name}
+                  </p>
                   <p className="text-xs text-primary-foreground/70">Trainer</p>
                 </div>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="h-8 w-8 bg-white text-black hover:bg-gray-200 hover:scale-105 rounded-full shadow-sm transition-all"
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
             </div>
           ) : (
-            <>
-              <div 
-                className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform"
-                onClick={() => navigate('/trainer/profile')}
-                title="Go to Profile"
-              >
-                {user?.name?.charAt(0).toUpperCase()}
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="h-8 w-8 bg-white text-black hover:bg-gray-200 hover:scale-105 rounded-full shadow-sm transition-all"
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </>
+            <div
+              className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform"
+              onClick={() => navigate("/trainer/profile")}
+              title="Go to Profile"
+            >
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
           )}
         </div>
-         
+
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 mt-2">
-          <NavItem id="overview" label="Dashboard" icon={LayoutDashboard} path="/trainer/dashboard" />
-          <NavItem id="sessions" label="Sessions" icon={RefreshCw} path="/trainer/sessions" />
-          <NavItem id="help" label="Help & Support" icon={HelpCircle} path="/trainer/help" />
+          <NavItem
+            id="overview"
+            label="Dashboard"
+            icon={LayoutDashboard}
+            path="/trainer/dashboard"
+          />
+          <NavItem
+            id="sessions"
+            label="Sessions"
+            icon={RefreshCw}
+            path="/trainer/sessions"
+          />
+          <NavItem
+            id="help"
+            label="Help & Support"
+            icon={HelpCircle}
+            path="/trainer/help"
+          />
         </nav>
 
         {/* Sign Out at Bottom */}
-        <div className={`p-3 border-t border-primary-foreground/20 ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
+        <div
+          className={`p-3 border-t border-primary-foreground/20 ${isSidebarCollapsed ? "flex justify-center" : ""}`}
+        >
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
+                <Button
                   variant="ghost"
                   className={`text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground ${
-                    isSidebarCollapsed ? 'h-10 w-10 p-0' : 'w-full justify-start gap-3'
+                    isSidebarCollapsed
+                      ? "h-10 w-10 p-0"
+                      : "w-full justify-start gap-3"
                   }`}
                   onClick={handleLogout}
                 >
@@ -303,25 +343,26 @@ const TrainerDashboard = () => {
 
       {/* Main Content Area with Navbar */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        
         {/* Top Navbar */}
         <header className="h-28 flex-shrink-0 border-b bg-white flex items-center justify-between z-20 shadow-sm px-6">
           {/* Left: Page Title */}
           <div className="flex flex-col gap-0.5">
             <h2 className="text-xl font-bold tracking-tight text-foreground">
-              {activeTab === 'overview' && 'Trainer Dashboard'}
-              {activeTab === 'sessions' && 'My Sessions'}
-              {activeTab === 'help' && 'Help & Support'}
-              {activeTab === 'profile' && 'My Profile'}
+              {activeTab === "overview" && "Trainer Dashboard"}
+              {activeTab === "sessions" && "My Sessions"}
+              {activeTab === "help" && "Help & Support"}
+              {activeTab === "profile" && "My Profile"}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {activeTab === 'overview' && 'Manage your sessions and view feedback'}
-              {activeTab === 'sessions' && 'View and manage your training sessions'}
-              {activeTab === 'help' && 'Report issues or request features'}
-              {activeTab === 'profile' && 'Update your profile and password'}
+              {activeTab === "overview" &&
+                "Manage your sessions and view feedback"}
+              {activeTab === "sessions" &&
+                "View and manage your training sessions"}
+              {activeTab === "help" && "Report issues or request features"}
+              {activeTab === "profile" && "Update your profile and password"}
             </p>
           </div>
-          
+
           {/* Right: Action Buttons */}
           <div className="flex items-center gap-2">
             {/* Create Session button hidden
@@ -332,7 +373,9 @@ const TrainerDashboard = () => {
             )}
             */}
             <Button variant="outline" onClick={loadData} className="gap-2">
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
           </div>
@@ -340,8 +383,9 @@ const TrainerDashboard = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-muted/5 p-6 scroll-smooth">
-          <div className={`max-w-8xl mx-auto transition-all duration-300 ${isSidebarCollapsed ? 'px-6' : 'px-0'}`}>
-
+          <div
+            className={`max-w-8xl mx-auto transition-all duration-300 ${isSidebarCollapsed ? "px-6" : "px-0"}`}
+          >
             {/* Session Form Modal (Shared for Create/Edit) - HIDDEN
             <Modal open={isSessionFormOpen} onOpenChange={setIsSessionFormOpen} className="sm:max-w-[600px]">
                 <ModalClose onClose={() => {
@@ -374,32 +418,25 @@ const TrainerDashboard = () => {
             </Modal>
 
             {/* Content Tabs */}
-            {activeTab === 'overview' && (
-                <TrainerOverview />
-            )}
+            {activeTab === "overview" && <TrainerOverview />}
 
-            {activeTab === 'sessions' && (
-                <div className="space-y-6 animate-in fade-in-50 duration-500">
-                <TrainerSessions 
-                    sessions={sessions} 
-                    loading={isLoading} 
-                    onEdit={handleEditSession}
-                    onRefresh={loadData}
-                    projectCodes={projectCodes}
+            {activeTab === "sessions" && (
+              <div className="space-y-6 animate-in fade-in-50 duration-500">
+                <TrainerSessions
+                  sessions={sessions}
+                  loading={isLoading}
+                  onEdit={handleEditSession}
+                  onRefresh={loadData}
+                  projectCodes={projectCodes}
                 />
-                </div>
+              </div>
             )}
 
-            {activeTab === 'help' && (
-                <HelpTab />
-            )}
+            {activeTab === "help" && <HelpTab />}
 
-            {activeTab === 'profile' && (
-                <ProfilePage />
-            )}
+            {activeTab === "profile" && <ProfilePage />}
           </div>
         </main>
-
       </div>
     </div>
   );
