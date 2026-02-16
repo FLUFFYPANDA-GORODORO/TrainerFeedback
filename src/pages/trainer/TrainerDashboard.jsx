@@ -17,12 +17,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  HelpCircle
+  HelpCircle,
+  User
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import TrainerOverview from './components/TrainerOverview';
 import TrainerSessions from './components/TrainerSessions';
 import HelpTab from '@/components/shared/HelpTab';
+import ProfilePage from '@/components/shared/ProfilePage';
 
 const TrainerDashboard = () => {
   const { user, logout } = useAuth();
@@ -44,6 +46,7 @@ const TrainerDashboard = () => {
       case 'dashboard': return 'overview';
       case 'sessions': return 'sessions';
       case 'help': return 'help';
+      case 'profile': return 'profile';
       default: return 'overview';
     }
   };
@@ -222,7 +225,11 @@ const TrainerDashboard = () => {
         <div className={`py-4 border-b border-primary-foreground/20 ${isSidebarCollapsed ? 'px-2 flex flex-col items-center gap-2' : 'px-4'}`}>
           {!isSidebarCollapsed ? (
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-primary-foreground/10 p-2 -ml-2 rounded-md transition-colors"
+                onClick={() => navigate('/trainer/profile')}
+                title="Go to Profile"
+              >
                 <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0">
                   {user?.name?.charAt(0).toUpperCase()}
                 </div>
@@ -242,7 +249,11 @@ const TrainerDashboard = () => {
             </div>
           ) : (
             <>
-              <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md">
+              <div 
+                className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform"
+                onClick={() => navigate('/trainer/profile')}
+                title="Go to Profile"
+              >
                 {user?.name?.charAt(0).toUpperCase()}
               </div>
               <Button 
@@ -301,11 +312,13 @@ const TrainerDashboard = () => {
               {activeTab === 'overview' && 'Trainer Dashboard'}
               {activeTab === 'sessions' && 'My Sessions'}
               {activeTab === 'help' && 'Help & Support'}
+              {activeTab === 'profile' && 'My Profile'}
             </h2>
             <p className="text-sm text-muted-foreground">
               {activeTab === 'overview' && 'Manage your sessions and view feedback'}
               {activeTab === 'sessions' && 'View and manage your training sessions'}
               {activeTab === 'help' && 'Report issues or request features'}
+              {activeTab === 'profile' && 'Update your profile and password'}
             </p>
           </div>
           
@@ -379,6 +392,10 @@ const TrainerDashboard = () => {
 
             {activeTab === 'help' && (
                 <HelpTab />
+            )}
+
+            {activeTab === 'profile' && (
+                <ProfilePage />
             )}
           </div>
         </main>

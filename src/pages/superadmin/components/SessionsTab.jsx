@@ -348,8 +348,6 @@ const SessionsTab = ({ colleges, academicConfig: globalConfig, onRefresh }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Feedback Sessions</h1>
-          <p className="text-muted-foreground">Monitor and manage all feedback sessions across colleges</p>
         </div>
         <Button 
             onClick={() => {

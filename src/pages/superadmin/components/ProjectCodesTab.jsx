@@ -164,8 +164,6 @@ const ProjectCodesTab = () => {
       {/* Header & Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h2 className="text-2xl font-bold tracking-tight">Project Codes</h2>
-            <p className="text-muted-foreground text-sm">Convert raw project codes into structured data</p>
         </div>
         <div className="flex gap-2">
             <Button 

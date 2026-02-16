@@ -170,8 +170,6 @@ const AdminsTab = ({ colleges, onRefresh }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">System Admins</h1>
-          <p className="text-muted-foreground">Manage Super Admins and College Admins</p>
         </div>
         <Button 
           className="gap-2 gradient-hero text-primary-foreground hover:opacity-90"

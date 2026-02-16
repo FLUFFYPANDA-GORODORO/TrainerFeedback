@@ -120,8 +120,6 @@ const CollegesTab = ({ colleges, admins, onRefresh }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Colleges</h1>
-          <p className="text-muted-foreground">Manage educational institutions</p>
         </div>
         <Dialog open={collegeDialogOpen} onOpenChange={setCollegeDialogOpen}>
           <DialogTrigger asChild>

@@ -15,7 +15,8 @@ import {
   ChevronRight,
   Menu,
   Database,
-  HelpCircle
+  HelpCircle,
+  User
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminDataProvider, useAdminData } from '@/contexts/AdminDataContext';
@@ -23,6 +24,7 @@ import CollegeOverviewTab from './components/CollegeOverviewTab';
 import TrainerFeedbackTab from './components/TrainerFeedbackTab';
 import CollegeSessionsTab from './components/CollegeSessionsTab';
 import HelpTab from '@/components/shared/HelpTab';
+import ProfilePage from '@/components/shared/ProfilePage';
 
 // Inner component to consume context
 const AdminDashboardContent = () => {
@@ -40,6 +42,7 @@ const AdminDashboardContent = () => {
     if (path === 'sessions') return 'sessions';
     if (path === 'feedback') return 'feedback';
     if (path === 'help') return 'help';
+    if (path === 'profile') return 'profile';
     return 'overview';
   };
   const activeTab = getActiveTab(currentSection);
@@ -135,7 +138,11 @@ const AdminDashboardContent = () => {
         <div className={`py-4 border-b border-primary-foreground/20 ${isSidebarCollapsed ? 'px-2 flex flex-col items-center gap-2' : 'px-4'}`}>
           {!isSidebarCollapsed ? (
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-primary-foreground/10 p-2 -ml-2 rounded-md transition-colors"
+                onClick={() => navigate('/admin/profile')}
+                title="Go to Profile"
+              >
                 <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
@@ -155,7 +162,11 @@ const AdminDashboardContent = () => {
             </div>
           ) : (
             <>
-              <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md">
+              <div 
+                className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform"
+                onClick={() => navigate('/admin/profile')}
+                title="Go to Profile"
+              >
                 {user.name.charAt(0).toUpperCase()}
               </div>
               <Button 
@@ -230,6 +241,7 @@ const AdminDashboardContent = () => {
               {activeTab === 'sessions' && 'Session Management'}
               {activeTab === 'feedback' && 'Trainer Feedback'}
               {activeTab === 'help' && 'Help & Support'}
+              {activeTab === 'profile' && 'My Profile'}
             </h2>
             <p className="text-sm text-muted-foreground">
               {college?.name || ''}
@@ -256,6 +268,7 @@ const AdminDashboardContent = () => {
              {activeTab === 'feedback' && <TrainerFeedbackTab />}
              {activeTab === 'sessions' && <CollegeSessionsTab />}
              {activeTab === 'help' && <HelpTab />}
+             {activeTab === 'profile' && <ProfilePage />}
           </div>
         </main>
 

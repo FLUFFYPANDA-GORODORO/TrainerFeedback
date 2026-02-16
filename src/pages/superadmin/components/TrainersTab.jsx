@@ -231,8 +231,7 @@ const TrainersTab = () => {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">Trainers</h1>
-          <p className="text-muted-foreground mt-1">Manage faculty, track performance, and organize expertise.</p>
+          
         </div>
         <div className="flex items-center gap-3">
           {/* Batch Import Button */}

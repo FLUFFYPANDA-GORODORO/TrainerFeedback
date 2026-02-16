@@ -835,12 +835,6 @@ const AcademicConfigTab = ({ colleges }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="font-display text-2xl font-bold text-foreground">Academic Configuration</h1>
-        <p className="text-muted-foreground">Configure the academic structure: Course - Department - Year - Batch</p>
-      </div>
-
       {/* College Selection */}
       <Card>
         <CardHeader>

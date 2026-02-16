@@ -1,5 +1,5 @@
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { app, auth } from './firebase';
 
 // Helper to get config from existing app
@@ -74,6 +74,33 @@ export const sendPasswordReset = async (email) => {
     return true;
   } catch (error) {
     console.error('Error sending password reset email:', error);
+    throw error;
+  }
+};
+
+export const changePassword = async (currentPassword, newPassword) => {
+  try {
+    const user = auth.currentUser;
+
+    if (!user || !user.email) {
+      throw new Error("No authenticated user found");
+    }
+
+    // 🔹 Re-authenticate with current password
+    const credential = EmailAuthProvider.credential(
+      user.email,
+      currentPassword
+    );
+
+    await reauthenticateWithCredential(user, credential);
+
+    // 🔹 Update password
+    await updatePassword(user, newPassword);
+
+    return true;
+
+  } catch (error) {
+    console.error('Error changing password:', error);
     throw error;
   }
 };

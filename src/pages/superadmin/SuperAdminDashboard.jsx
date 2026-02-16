@@ -23,7 +23,8 @@ import {
   ChevronRight,
   LayoutDashboard,
   Barcode,
-  Ticket
+  Ticket,
+  User
 } from 'lucide-react';
 
 // Import Tab Components
@@ -37,6 +38,7 @@ import TemplatesTab from './components/TemplatesTab';
 import ProjectCodesTab from './components/ProjectCodesTab';
 import TicketsTab from './components/TicketsTab';
 import SessionResponses from '../admin/SessionResponses';
+import ProfilePage from '@/components/shared/ProfilePage';
 
 // Inner dashboard component that consumes context
 const SuperAdminDashboardInner = () => {
@@ -77,6 +79,7 @@ const SuperAdminDashboardInner = () => {
       case 'tickets': return 'tickets';
       case 'academic-config': return 'config';
       case 'analytics': return 'analytics';
+      case 'profile': return 'profile';
       default: return 'overview';
     }
   };
@@ -155,6 +158,7 @@ const SuperAdminDashboardInner = () => {
       case 'templates': return 'Templates Management';
       case 'project-codes': return 'Project Codes';
       case 'tickets': return 'Support Tickets';
+      case 'profile': return 'My Profile';
       default: return 'Super Admin Dashboard';
     }
   };
@@ -193,7 +197,11 @@ const SuperAdminDashboardInner = () => {
         <div className={`py-4 border-b border-primary-foreground/20 ${isSidebarCollapsed ? 'px-2 flex flex-col items-center gap-2' : 'px-4'}`}>
           {!isSidebarCollapsed ? (
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-primary-foreground/10 p-2 -ml-2 rounded-md transition-colors"
+                onClick={() => navigate('/super-admin/profile')}
+                title="Go to Profile"
+              >
                 <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0">
                   {user?.name?.charAt(0).toUpperCase()}
                 </div>
@@ -213,7 +221,11 @@ const SuperAdminDashboardInner = () => {
             </div>
           ) : (
             <>
-              <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md">
+              <div 
+                className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform"
+                onClick={() => navigate('/super-admin/profile')}
+                title="Go to Profile"
+              >
                 {user?.name?.charAt(0).toUpperCase()}
               </div>
               <Button 
@@ -348,6 +360,10 @@ const SuperAdminDashboardInner = () => {
 
             {activeTab === 'tickets' && (
               <TicketsTab />
+            )}
+
+            {activeTab === 'profile' && (
+              <ProfilePage />
             )}
           </div>
         </main>

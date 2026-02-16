@@ -51,6 +51,7 @@ const App = () => {
                 <Route path="/super-admin/project-codes" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
                 <Route path="/super-admin/academic-config" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
                 <Route path="/super-admin/tickets" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super-admin/profile" element={<ProtectedRoute allowedRoles={['superAdmin']}><SuperAdminDashboard /></ProtectedRoute>} />
 
                 {/* College Admin Routes - has its own built-in layout */}
                 <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
@@ -59,6 +60,7 @@ const App = () => {
                 <Route path="/admin/feedback" element={<ProtectedRoute allowedRoles={['collegeAdmin']}><AdminDashboard /></ProtectedRoute>} />
                 <Route path="/admin/sessions/:sessionId/responses" element={<ProtectedRoute allowedRoles={['collegeAdmin']}><AdminDashboard /></ProtectedRoute>} />
                 <Route path="/admin/help" element={<ProtectedRoute allowedRoles={['collegeAdmin']}><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={['collegeAdmin']}><AdminDashboard /></ProtectedRoute>} />
 
                 {/* Trainer Routes - has its own built-in layout */}
                 <Route path="/trainer" element={<Navigate to="/trainer/dashboard" replace />} />
@@ -66,6 +68,7 @@ const App = () => {
                 <Route path="/trainer/sessions" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
                 <Route path="/trainer/feedback" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
                 <Route path="/trainer/help" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
+                <Route path="/trainer/profile" element={<ProtectedRoute allowedRoles={['trainer']}><TrainerDashboard /></ProtectedRoute>} />
 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />

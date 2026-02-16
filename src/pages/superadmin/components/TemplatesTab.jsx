@@ -553,8 +553,6 @@ const TemplatesTab = () => {
           {/* Top Header - Only shown when NOT in builder */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-display text-2xl font-bold text-foreground">Feedback Templates</h1>
-              <p className="text-muted-foreground">Manage and customize feedback forms</p>
             </div>
             <div className="flex gap-2">
               {/* Import JSON Dialog */}
