@@ -181,55 +181,68 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
     return Object.keys(academicOptions.courses);
   }, [academicOptions]);
 
-  const availableDepartments = useMemo(() => {
-    if (!academicOptions?.courses || filters.course === 'all') return [];
-    const course = academicOptions.courses[filters.course];
-    return course?.departments ? Object.keys(course.departments) : [];
-  }, [academicOptions, filters.course]);
+  // New Structure: Course -> Year -> Department -> Batch
 
   const availableYears = useMemo(() => {
     if (!academicOptions?.courses || filters.course === 'all') return [];
-    const yearsSet = new Set();
-    const course = academicOptions.courses[filters.course];
     
-    if (filters.department !== 'all') {
-      const dept = course.departments?.[filters.department];
-      if (dept?.years) Object.keys(dept.years).forEach(year => yearsSet.add(year));
-    } else if (course?.departments) {
-      Object.values(course.departments).forEach(dept => {
-        if (dept?.years) Object.keys(dept.years).forEach(year => yearsSet.add(year));
-      });
+    // Years are directly under courses
+    const course = academicOptions.courses[filters.course];
+    if (course?.years) {
+        return Object.keys(course.years).sort();
     }
-    return [...yearsSet].sort();
-  }, [academicOptions, filters.course, filters.department]);
+    return [];
+  }, [academicOptions, filters.course]);
+
+  const availableDepartments = useMemo(() => {
+    if (!academicOptions?.courses || filters.course === 'all') return [];
+    const allDepts = new Set();
+    const course = academicOptions.courses[filters.course];
+
+    if (course?.years) {
+        // If year is selected, get depts for that year
+        if (filters.year !== 'all') {
+            const yearData = course.years[filters.year];
+            if (yearData?.departments) {
+                Object.keys(yearData.departments).forEach(d => allDepts.add(d));
+            }
+        } else {
+            // Aggregate from all years
+            Object.values(course.years).forEach(yearData => {
+                 if (yearData?.departments) {
+                    Object.keys(yearData.departments).forEach(d => allDepts.add(d));
+                 }
+            });
+        }
+    }
+    return [...allDepts].sort();
+  }, [academicOptions, filters.course, filters.year]);
 
   const availableBatches = useMemo(() => {
     if (!academicOptions?.courses || filters.course === 'all') return [];
     const allBatches = new Set();
     const course = academicOptions.courses[filters.course];
     
-    const collectFromYear = (yearObj) => {
-       if (yearObj?.batches) yearObj.batches.forEach(b => allBatches.add(b));
-    };
+    if (course?.years) {
+        // Filter by Year
+        const yearsToScan = filters.year !== 'all' ? [filters.year] : Object.keys(course.years);
 
-    if (filters.department !== 'all') {
-       const dept = course.departments?.[filters.department];
-       if (filters.year !== 'all') {
-          collectFromYear(dept?.years?.[filters.year]);
-       } else if (dept?.years) {
-          Object.values(dept.years).forEach(collectFromYear);
-       }
-    } else if (course?.departments) {
-      Object.values(course.departments).forEach(dept => {
-        if (dept?.years) {
-          if (filters.year !== 'all') {
-             collectFromYear(dept.years[filters.year]);
-          } else {
-             Object.values(dept.years).forEach(collectFromYear);
-          }
-        }
-      });
+        yearsToScan.forEach(yearKey => {
+            const yearData = course.years[yearKey];
+            if (!yearData?.departments) return;
+
+            // Filter by Department
+            const deptsToScan = filters.department !== 'all' ? [filters.department] : Object.keys(yearData.departments);
+
+            deptsToScan.forEach(deptKey => {
+                const deptData = yearData.departments[deptKey];
+                if (deptData?.batches) {
+                    deptData.batches.forEach(b => allBatches.add(b));
+                }
+            });
+        });
     }
+
     return [...allBatches].sort();
   }, [academicOptions, filters.course, filters.department, filters.year]);
 

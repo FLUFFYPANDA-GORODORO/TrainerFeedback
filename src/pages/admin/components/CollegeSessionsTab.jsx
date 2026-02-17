@@ -76,15 +76,34 @@ const CollegeSessionsTab = () => {
      return { total, active, inactive };
   }, [sessions]);
 
-  // Derived Filter Options
+  // Derived Filter Options (Cascading)
   const filterOptions = useMemo(() => {
-    return {
-      courses: [...new Set(sessions.map(s => s.course).filter(Boolean))],
-      departments: [...new Set(sessions.map(s => s.branch).filter(Boolean))],
-      years: [...new Set(sessions.map(s => s.year).filter(Boolean))],
-      batches: [...new Set(sessions.map(s => s.batch).filter(Boolean))],
-    };
-  }, [sessions]);
+    // 1. Courses (Always all available)
+    const courses = [...new Set(sessions.map(s => s.course).filter(Boolean))].sort();
+
+    // 2. Years (Dependent on Course)
+    let yearSessions = sessions;
+    if (filters.course !== 'all') {
+        yearSessions = yearSessions.filter(s => s.course === filters.course);
+    }
+    const years = [...new Set(yearSessions.map(s => s.year).filter(Boolean))].sort();
+
+    // 3. Departments (Dependent on Course AND Year)
+    let deptSessions = yearSessions;
+    if (filters.year !== 'all') {
+        deptSessions = deptSessions.filter(s => s.year === filters.year);
+    }
+    const departments = [...new Set(deptSessions.map(s => s.branch).filter(Boolean))].sort();
+
+    // 4. Batches (Dependent on Course AND Year AND Dept)
+    let batchSessions = deptSessions;
+    if (filters.department !== 'all') {
+        batchSessions = batchSessions.filter(s => s.branch === filters.department);
+    }
+    const batches = [...new Set(batchSessions.map(s => s.batch).filter(Boolean))].sort();
+
+    return { courses, departments, years, batches };
+  }, [sessions, filters.course, filters.year, filters.department]);
 
   // Get date range from preset
   const getDateRange = (range) => {
@@ -197,7 +216,10 @@ const CollegeSessionsTab = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Course</Label>
-              <Select value={filters.course} onValueChange={(v) => setFilters(prev => ({ ...prev, course: v }))}>
+              <Select 
+                value={filters.course} 
+                onValueChange={(v) => setFilters(prev => ({ ...prev, course: v, year: 'all', department: 'all', batch: 'all' }))}
+              >
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
@@ -209,21 +231,12 @@ const CollegeSessionsTab = () => {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Department</Label>
-              <Select value={filters.department} onValueChange={(v) => setFilters(prev => ({ ...prev, department: v }))}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Depts</SelectItem>
-                  {filterOptions.departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
               <Label className="text-xs">Year</Label>
-              <Select value={filters.year} onValueChange={(v) => setFilters(prev => ({ ...prev, year: v }))}>
+              <Select 
+                value={filters.year} 
+                onValueChange={(v) => setFilters(prev => ({ ...prev, year: v, department: 'all', batch: 'all' }))}
+                disabled={filters.course === 'all'}
+              >
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
@@ -235,8 +248,29 @@ const CollegeSessionsTab = () => {
             </div>
 
             <div className="space-y-1">
+              <Label className="text-xs">Department</Label>
+              <Select 
+                value={filters.department} 
+                onValueChange={(v) => setFilters(prev => ({ ...prev, department: v, batch: 'all' }))}
+                disabled={filters.year === 'all'} // Strictly cascading: Course -> Year -> Dept
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Depts</SelectItem>
+                  {filterOptions.departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
               <Label className="text-xs">Batch</Label>
-              <Select value={filters.batch} onValueChange={(v) => setFilters(prev => ({ ...prev, batch: v }))}>
+              <Select 
+                value={filters.batch} 
+                onValueChange={(v) => setFilters(prev => ({ ...prev, batch: v }))}
+                disabled={filters.department === 'all'}
+              >
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>

@@ -203,50 +203,74 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
     return Object.keys(academicOptions.courses);
   }, [academicOptions]);
 
-  // Get years - extract from nested structure (requires course selected)
+  // Get years - extract from nested structure (Course -> Year)
   const availableYears = useMemo(() => {
     if (!academicOptions?.courses || filters.course === 'all') return [];
     
-    const yearsSet = new Set();
+    // New Structure: courses[course].years
     const course = academicOptions.courses[filters.course];
-    
-    if (course?.departments) {
-      Object.values(course.departments).forEach(dept => {
-        if (dept?.years) {
-          Object.keys(dept.years).forEach(year => yearsSet.add(year));
-        }
-      });
+    if (course?.years) {
+        return Object.keys(course.years).sort();
     }
-    
-    return [...yearsSet].sort();
+    return [];
   }, [academicOptions, filters.course]);
 
-  // Get batches - extract from nested structure (course -> dept -> year -> batches)
+  // Get Departments - extract from nested structure (Course -> Year -> Dept)
+  const availableDepartments = useMemo(() => {
+    if (!academicOptions?.courses || filters.course === 'all') return [];
+    
+    const allDepts = new Set();
+    const course = academicOptions.courses[filters.course];
+    
+    if (course?.years) {
+        // If Year is selected, get depts for that year
+        if (filters.year !== 'all') {
+            const yearData = course.years[filters.year];
+            if (yearData?.departments) {
+                Object.keys(yearData.departments).forEach(d => allDepts.add(d));
+            }
+        } else {
+            // Aggregate depts from ALL years
+            Object.values(course.years).forEach(yearData => {
+                if (yearData?.departments) {
+                    Object.keys(yearData.departments).forEach(d => allDepts.add(d));
+                }
+            });
+        }
+    }
+    return [...allDepts].sort();
+  }, [academicOptions, filters.course, filters.year]);
+
+  // Get batches - extract from nested structure (Course -> Year -> Dept -> Batch)
   const availableBatches = useMemo(() => {
     if (!academicOptions?.courses || filters.course === 'all') return [];
     
     const allBatches = new Set();
     const course = academicOptions.courses[filters.course];
     
-    if (course?.departments) {
-      Object.values(course.departments).forEach(dept => {
-        if (dept?.years) {
-          // If year filter is set, only get batches for that year
-          const yearsToScan = filters.year !== 'all' 
-            ? [filters.year] 
-            : Object.keys(dept.years);
-          
-          yearsToScan.forEach(yearKey => {
-            const year = dept.years[yearKey];
-            if (year?.batches) {
-              year.batches.forEach(batch => allBatches.add(batch));
-            }
-          });
-        }
-      });
+    if (course?.years) {
+        const yearsToScan = filters.year !== 'all' ? [filters.year] : Object.keys(course.years);
+
+        yearsToScan.forEach(yearKey => {
+            const yearData = course.years[yearKey];
+            if (!yearData?.departments) return;
+
+            // If Dept is selected, scan only that dept. Else scan all.
+            // Note: OverviewTab filter state doesn't seem to have 'department' in original code, 
+            // but it logic implies it might? 
+            // Checking original code: availableBatches depended on filters.course and filters.year.
+            // Original code didn't seem to have a Department filter in the UI (only Course, Year, Batch).
+            // So we aggregate batches from ALL departments in the selected year(s).
+            
+            Object.values(yearData.departments).forEach(deptData => {
+                if (deptData?.batches) {
+                    deptData.batches.forEach(b => allBatches.add(b));
+                }
+            });
+        });
     }
     
-    return [...allBatches];
+    return [...allBatches].sort();
   }, [academicOptions, filters.course, filters.year]);
 
   // Filter sessions based on active filters

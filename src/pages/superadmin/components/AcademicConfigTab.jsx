@@ -163,10 +163,10 @@ const AcademicConfigTab = ({ colleges }) => {
         renameCourse(currentValue, newValue);
         break;
       case 'department':
-        renameDept(courseName, currentValue, newValue);
+        renameDept(courseName, year, currentValue, newValue);
         break;
       case 'batch':
-        renameBatch(courseName, deptName, year, batch, newValue);
+        renameBatch(courseName, year, deptName, batch, newValue);
         break;
     }
 
@@ -227,13 +227,14 @@ const AcademicConfigTab = ({ colleges }) => {
 
   // --- CRUD Handlers ---
 
+  // Course: Level 1
   const addCourse = (name) => {
     if (!name.trim()) return;
     setConfig(prev => ({
       ...prev,
       courses: {
         ...prev.courses,
-        [name]: { departments: {} }
+        [name]: { years: {} }
       }
     }));
     setExpandedCourses(prev => ({ ...prev, [name]: true }));
@@ -245,39 +246,8 @@ const AcademicConfigTab = ({ colleges }) => {
     setConfig({ ...config, courses: newCourses });
   };
 
-  const addDept = (courseName, deptName) => {
-    if (!deptName.trim()) return;
-    setConfig(prev => ({
-      ...prev,
-      courses: {
-        ...prev.courses,
-        [courseName]: {
-          ...prev.courses[courseName],
-          departments: {
-            ...prev.courses[courseName].departments,
-            [deptName]: { years: {} }
-          }
-        }
-      }
-    }));
-  };
-
-  const removeDept = (courseName, deptName) => {
-    const newDepts = { ...config.courses[courseName].departments };
-    delete newDepts[deptName];
-    setConfig(prev => ({
-      ...prev,
-      courses: {
-        ...prev.courses,
-        [courseName]: {
-          ...prev.courses[courseName],
-          departments: newDepts
-        }
-      }
-    }));
-  };
-
-  const addYear = (courseName, deptName, year) => {
+  // Year: Level 2 (Under Course)
+  const addYear = (courseName, year) => {
     if (!year.trim()) return;
     setConfig(prev => ({
       ...prev,
@@ -285,13 +255,46 @@ const AcademicConfigTab = ({ colleges }) => {
         ...prev.courses,
         [courseName]: {
           ...prev.courses[courseName],
-          departments: {
-            ...prev.courses[courseName].departments,
-            [deptName]: {
-              ...prev.courses[courseName].departments[deptName],
-              years: {
-                ...prev.courses[courseName].departments[deptName].years,
-                [year]: { batches: [] }
+          years: {
+            ...prev.courses[courseName].years,
+            [year]: { departments: {} }
+          }
+        }
+      }
+    }));
+  };
+
+  const removeYear = (courseName, year) => {
+    const newYears = { ...config.courses[courseName].years };
+    delete newYears[year];
+    setConfig(prev => ({
+      ...prev,
+      courses: {
+        ...prev.courses,
+        [courseName]: {
+          ...prev.courses[courseName],
+          years: newYears
+        }
+      }
+    }));
+  };
+
+  // Department: Level 3 (Under Year)
+  const addDept = (courseName, year, deptName) => {
+    if (!deptName.trim()) return;
+    setConfig(prev => ({
+      ...prev,
+      courses: {
+        ...prev.courses,
+        [courseName]: {
+          ...prev.courses[courseName],
+          years: {
+            ...prev.courses[courseName].years,
+            [year]: {
+              ...prev.courses[courseName].years[year],
+              departments: {
+                ...prev.courses[courseName].years[year].departments,
+                [deptName]: { batches: [] }
               }
             }
           }
@@ -300,30 +303,31 @@ const AcademicConfigTab = ({ colleges }) => {
     }));
   };
 
-  const removeYear = (courseName, deptName, year) => {
-    const newYears = { ...config.courses[courseName].departments[deptName].years };
-    delete newYears[year];
+  const removeDept = (courseName, year, deptName) => {
+    const newDepts = { ...config.courses[courseName].years[year].departments };
+    delete newDepts[deptName];
     setConfig(prev => ({
       ...prev,
       courses: {
         ...prev.courses,
         [courseName]: {
           ...prev.courses[courseName],
-          departments: {
-            ...prev.courses[courseName].departments,
-            [deptName]: {
-              ...prev.courses[courseName].departments[deptName],
-              years: newYears
-            }
+          years: {
+             ...prev.courses[courseName].years,
+             [year]: {
+                ...prev.courses[courseName].years[year],
+                departments: newDepts
+             }
           }
         }
       }
     }));
   };
 
-  const addBatch = (courseName, deptName, year, batch) => {
+  // Batch: Level 4 (Under Department)
+  const addBatch = (courseName, year, deptName, batch) => {
     if (!batch.trim()) return;
-    const currentBatches = config.courses[courseName].departments[deptName].years[year].batches || [];
+    const currentBatches = config.courses[courseName].years[year].departments[deptName].batches || [];
     if (currentBatches.includes(batch)) return;
 
     setConfig(prev => ({
@@ -332,16 +336,16 @@ const AcademicConfigTab = ({ colleges }) => {
         ...prev.courses,
         [courseName]: {
           ...prev.courses[courseName],
-          departments: {
-            ...prev.courses[courseName].departments,
-            [deptName]: {
-              ...prev.courses[courseName].departments[deptName],
-              years: {
-                ...prev.courses[courseName].departments[deptName].years,
-                [year]: {
-                  ...prev.courses[courseName].departments[deptName].years[year],
-                  batches: [...currentBatches, batch]
-                }
+          years: {
+            ...prev.courses[courseName].years,
+            [year]: {
+              ...prev.courses[courseName].years[year],
+              departments: {
+                ...prev.courses[courseName].years[year].departments,
+                 [deptName]: {
+                   ...prev.courses[courseName].years[year].departments[deptName],
+                   batches: [...currentBatches, batch]
+                 }
               }
             }
           }
@@ -350,24 +354,24 @@ const AcademicConfigTab = ({ colleges }) => {
     }));
   };
 
-  const removeBatch = (courseName, deptName, year, batch) => {
-    const currentBatches = config.courses[courseName].departments[deptName].years[year].batches || [];
+  const removeBatch = (courseName, year, deptName, batch) => {
+    const currentBatches = config.courses[courseName].years[year].departments[deptName].batches || [];
     setConfig(prev => ({
       ...prev,
       courses: {
         ...prev.courses,
         [courseName]: {
           ...prev.courses[courseName],
-          departments: {
-            ...prev.courses[courseName].departments,
-            [deptName]: {
-              ...prev.courses[courseName].departments[deptName],
-              years: {
-                ...prev.courses[courseName].departments[deptName].years,
-                [year]: {
-                  ...prev.courses[courseName].departments[deptName].years[year],
-                  batches: currentBatches.filter(b => b !== batch)
-                }
+          years: {
+            ...prev.courses[courseName].years,
+            [year]: {
+              ...prev.courses[courseName].years[year],
+              departments: {
+                ...prev.courses[courseName].years[year].departments,
+                 [deptName]: {
+                   ...prev.courses[courseName].years[year].departments[deptName],
+                   batches: currentBatches.filter(b => b !== batch)
+                 }
               }
             }
           }
@@ -375,6 +379,8 @@ const AcademicConfigTab = ({ colleges }) => {
       }
     }));
   };
+
+  // --- Rename Handlers ---
 
   // --- Rename Handlers ---
 
@@ -409,56 +415,68 @@ const AcademicConfigTab = ({ colleges }) => {
     });
   };
 
-  const renameDept = (courseName, oldName, newName) => {
+  // Renaming Department (now nested under Year)
+  const renameDept = (courseName, year, oldName, newName) => {
     if (!newName.trim() || newName === oldName) return;
-    if (config.courses[courseName].departments[newName]) {
+    if (config.courses[courseName].years[year].departments[newName]) {
       toast.error('A department with this name already exists');
       return;
     }
+
+    const departments = config.courses[courseName].years[year].departments;
     const newDepts = {};
-    Object.entries(config.courses[courseName].departments).forEach(([key, value]) => {
+    Object.entries(departments).forEach(([key, value]) => {
       if (key === oldName) {
         newDepts[newName] = value;
       } else {
         newDepts[key] = value;
       }
     });
+
     setConfig(prev => ({
       ...prev,
       courses: {
         ...prev.courses,
         [courseName]: {
           ...prev.courses[courseName],
-          departments: newDepts
+          years: {
+             ...prev.courses[courseName].years,
+             [year]: {
+                ...prev.courses[courseName].years[year],
+                departments: newDepts
+             }
+          }
         }
       }
     }));
   };
 
-  const renameBatch = (courseName, deptName, year, oldBatch, newBatch) => {
+  // Renaming Batch (now nested under Dept)
+  const renameBatch = (courseName, year, deptName, oldBatch, newBatch) => {
     if (!newBatch.trim() || newBatch === oldBatch) return;
-    const currentBatches = config.courses[courseName].departments[deptName].years[year].batches || [];
+    const currentBatches = config.courses[courseName].years[year].departments[deptName].batches || [];
     if (currentBatches.includes(newBatch)) {
       toast.error('A batch with this name already exists');
       return;
     }
     const newBatches = currentBatches.map(b => b === oldBatch ? newBatch : b);
+    
     setConfig(prev => ({
       ...prev,
       courses: {
         ...prev.courses,
         [courseName]: {
           ...prev.courses[courseName],
-          departments: {
-            ...prev.courses[courseName].departments,
-            [deptName]: {
-              ...prev.courses[courseName].departments[deptName],
-              years: {
-                ...prev.courses[courseName].departments[deptName].years,
-                [year]: {
-                  ...prev.courses[courseName].departments[deptName].years[year],
-                  batches: newBatches
-                }
+          years: {
+            ...prev.courses[courseName].years,
+            [year]: {
+              ...prev.courses[courseName].years[year],
+              departments: {
+                ...prev.courses[courseName].years[year].departments,
+                 [deptName]: {
+                   ...prev.courses[courseName].years[year].departments[deptName],
+                   batches: newBatches
+                 }
               }
             }
           }
@@ -500,26 +518,26 @@ const AcademicConfigTab = ({ colleges }) => {
               <span className="font-bold text-lg text-primary">{courseName}</span>
             </div>
 
-            {/* Departments */}
-            {expandedCourses[courseName] && Object.entries(courseData.departments || {}).map(([deptName, deptData]) => (
-              <div key={deptName} className="ml-6 border-l-2 border-muted pl-4 py-2">
+            {/* Years (Level 2) */}
+            {expandedCourses[courseName] && Object.entries(courseData.years || {}).map(([year, yearData]) => (
+              <div key={year} className="ml-6 border-l-2 border-muted pl-4 py-2">
                 <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                  <span className="font-medium text-primary">{deptName}</span>
+                   <Calendar className="h-4 w-4 text-muted-foreground" />
+                   <span className="font-semibold text-foreground">Year {year}</span>
                 </div>
 
-                {/* Years - displayed side by side */}
+                {/* Departments (Level 3) - displayed side by side */}
                 <div className="flex flex-wrap gap-4 ml-4">
-                  {Object.entries(deptData.years || {}).map(([year, yearData]) => (
-                    <div key={year} className="bg-secondary/20 rounded-lg p-3 border border-border/50 min-w-[150px]">
+                  {Object.entries(yearData.departments || {}).map(([deptName, deptData]) => (
+                    <div key={deptName} className="bg-secondary/20 rounded-lg p-3 border border-border/50 min-w-[150px]">
                       <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-semibold">Year {year}</span>
+                        <BookOpen className="h-4 w-4 text-primary" />
+                        <span className="font-medium">{deptName}</span>
                       </div>
 
-                      {/* Batches */}
+                      {/* Batches (Level 4) */}
                       <div className="flex flex-wrap gap-1">
-                        {(yearData.batches || []).map((batch) => (
+                        {(deptData.batches || []).map((batch) => (
                           <span key={batch} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-secondary/30 border rounded">
                             <Users className="h-3 w-3" />
                             {batch}
@@ -540,19 +558,18 @@ const AcademicConfigTab = ({ colleges }) => {
   // State for tracking selected year tab per course+department
   const [selectedYears, setSelectedYears] = useState({});
 
-  // Get all unique years across departments for a course
+  // Get all unique years for a course
   const getYearsForCourse = (courseData) => {
-    const yearsSet = new Set();
-    Object.values(courseData.departments || {}).forEach(dept => {
-      Object.keys(dept.years || {}).forEach(year => yearsSet.add(year));
-    });
-    return Array.from(yearsSet).sort((a, b) => parseInt(a) - parseInt(b));
+    return Object.keys(courseData.years || {}).sort((a, b) => parseInt(a) - parseInt(b));
   };
 
   // Get stats for a course
   const getCourseStats = (courseData) => {
     const years = getYearsForCourse(courseData);
-    const deptCount = Object.keys(courseData.departments || {}).length;
+    let deptCount = 0;
+    Object.values(courseData.years || {}).forEach(y => {
+        deptCount += Object.keys(y.departments || {}).length;
+    });
     return { yearCount: years.length, deptCount };
   };
 
@@ -571,7 +588,7 @@ const AcademicConfigTab = ({ colleges }) => {
           {Object.entries(config.courses || {}).map(([courseName, courseData]) => {
             const stats = getCourseStats(courseData);
             const years = getYearsForCourse(courseData);
-            const selectedYear = selectedYears[courseName] || years[0] || '1';
+            const selectedYear = selectedYears[courseName] || years[0] || null;
 
             return (
               <div key={courseName} className="border rounded-xl bg-card shadow-sm overflow-hidden">
@@ -600,18 +617,10 @@ const AcademicConfigTab = ({ colleges }) => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Adder
+                       <Adder
                         placeholder="Year (e.g. 1)"
                         onAdd={(val) => {
-                          // Add year to all departments, or show message if no departments
-                          const depts = Object.keys(courseData.departments || {});
-                          if (depts.length === 0) {
-                            toast.info('Add a department first, then add years');
-                            return;
-                          }
-                          depts.forEach(deptName => {
-                            addYear(courseName, deptName, val);
-                          });
+                          addYear(courseName, val);
                           // Auto-select the new year
                           setSelectedYears(prev => ({ ...prev, [courseName]: val }));
                         }}
@@ -640,81 +649,83 @@ const AcademicConfigTab = ({ colleges }) => {
 
                   {/* Year Tabs */}
                   {expandedCourses[courseName] && years.length > 0 && (
-                    <div className="flex mt-4 border-b">
-                      {years.map((year, idx) => (
-                        <button
-                          key={year}
-                          onClick={() => setSelectedYears(prev => ({ ...prev, [courseName]: year }))}
-                          className={`px-6 py-2 text-sm font-medium transition-colors relative ${selectedYear === year
-                            ? 'text-white bg-[#1e3a5f] rounded-t-lg'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                            }`}
-                        >
-                          Year {year}
-                        </button>
+                    <div className="flex mt-4 border-b w-full overflow-x-auto">
+                      {years.map((year) => (
+                        <div key={year} className="relative group">
+                             <button
+                                onClick={() => setSelectedYears(prev => ({ ...prev, [courseName]: year }))}
+                                className={`px-6 py-2 text-sm font-medium transition-colors ${selectedYear === year
+                                    ? 'text-white bg-[#1e3a5f] rounded-t-lg'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                                    }`}
+                            >
+                            Year {year}
+                            </button>
+                            {/* Delete Year Button (Hover) */}
+                            {selectedYear !== year && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeYear(courseName, year);
+                                    }}
+                                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-white transition-all"
+                                    title="Delete Year"
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </button>
+                            )}
+                        </div>
                       ))}
                     </div>
                   )}
                 </div>
 
                 {/* Course Content */}
-                {expandedCourses[courseName] && (
+                {expandedCourses[courseName] && selectedYear && (
                   <div className="p-4">
-                    {/* Year Header */}
+                    {/* Year Header & Actions */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#1e3a5f] text-white flex items-center justify-center text-sm font-bold">
-                          {selectedYear}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-foreground">Year {selectedYear}</h4>
-                          <p className="text-xs text-muted-foreground">
-                            {Object.keys(courseData.departments || {}).length} Departments
-                          </p>
-                        </div>
+                         <div className="w-8 h-8 rounded-lg bg-[#1e3a5f] text-white flex items-center justify-center text-sm font-bold">
+                           {selectedYear}
+                         </div>
+                         <div>
+                           <h4 className="font-semibold text-foreground">Year {selectedYear}</h4>
+                           <p className="text-xs text-muted-foreground">
+                             {Object.keys(courseData.years[selectedYear]?.departments || {}).length} Departments
+                           </p>
+                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Adder
-                          placeholder="Department (e.g. CSE)"
-                          onAdd={(val) => {
-                            addDept(courseName, val);
-                            // Auto-add existing years to the new department
-                            setTimeout(() => {
-                              years.forEach(year => {
-                                addYear(courseName, val, year);
-                              });
-                            }, 0);
-                          }}
-                          buttonLabel="Add Department"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            // Remove selected year from all departments
-                            Object.keys(courseData.departments || {}).forEach(deptName => {
-                              removeYear(courseName, deptName, selectedYear);
-                            });
-                            // Select the first remaining year
-                            const remainingYears = years.filter(y => y !== selectedYear);
-                            if (remainingYears.length > 0) {
-                              setSelectedYears(prev => ({ ...prev, [courseName]: remainingYears[0] }));
-                            }
-                          }}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          title="Delete this year from all departments"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                       <div className="flex items-center gap-2">
+                         <Adder
+                           placeholder="Department (e.g. CSE)"
+                           onAdd={(val) => {
+                             addDept(courseName, selectedYear, val);
+                           }}
+                           buttonLabel="Add Department"
+                         />
+                         <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                                removeYear(courseName, selectedYear);
+                                // Select another year if available
+                                const remaining = years.filter(y => y !== selectedYear);
+                                if (remaining.length) setSelectedYears(prev => ({...prev, [courseName]: remaining[0]}));
+                            }}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            title="Delete this year"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                       </div>
                     </div>
 
                     {/* Department Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {Object.entries(courseData.departments || {}).map(([deptName, deptData]) => {
-                        const yearData = deptData.years?.[selectedYear];
-                        const batches = yearData?.batches || [];
-
+                      {Object.entries(courseData.years[selectedYear]?.departments || {}).map(([deptName, deptData]) => {
+                        const batches = deptData.batches || [];
+                        
                         return (
                           <div key={deptName} className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow">
                             {/* Department Header */}
@@ -727,7 +738,7 @@ const AcademicConfigTab = ({ colleges }) => {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => openEditModal('department', deptName, { courseName })}
+                                  onClick={() => openEditModal('department', deptName, { courseName, year: selectedYear })}
                                   className="h-6 w-6 text-muted-foreground hover:text-foreground"
                                   title="Edit department name"
                                 >
@@ -736,7 +747,7 @@ const AcademicConfigTab = ({ colleges }) => {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => removeDept(courseName, deptName)}
+                                  onClick={() => removeDept(courseName, selectedYear, deptName)}
                                   className="h-6 w-6 text-muted-foreground hover:text-destructive"
                                   title="Delete department"
                                 >
@@ -751,68 +762,55 @@ const AcademicConfigTab = ({ colleges }) => {
                                 <span className="text-xs text-muted-foreground">
                                   Batches ({batches.length})
                                 </span>
-                                {!yearData && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => addYear(courseName, deptName, selectedYear)}
-                                    className="h-6 text-xs gap-1"
-                                  >
-                                    <Plus className="h-3 w-3" />
-                                    Enable Year
-                                  </Button>
-                                )}
                               </div>
 
-                              {yearData ? (
-                                <div className="bg-secondary/10 rounded-lg p-3 border border-border/50">
-                                  <div className="flex flex-wrap gap-2">
-                                    {batches.map((batch) => (
-                                      <div
-                                        key={batch}
-                                        className="inline-flex items-center gap-1 px-2 py-1 bg-background border rounded-md text-sm group"
+                              <div className="bg-secondary/10 rounded-lg p-3 border border-border/50">
+                                <div className="flex flex-wrap gap-2">
+                                  {batches.map((batch) => (
+                                    <div
+                                      key={batch}
+                                      className="inline-flex items-center gap-1 px-2 py-1 bg-background border rounded-md text-sm group"
+                                    >
+                                      <span className="font-medium">{batch}</span>
+                                      <button
+                                        onClick={() => openEditModal('batch', batch, { courseName, deptName, year: selectedYear, batch })}
+                                        className="text-muted-foreground hover:text-foreground"
+                                        title="Edit batch name"
                                       >
-                                        <span className="font-medium">{batch}</span>
-                                        <button
-                                          onClick={() => openEditModal('batch', batch, { courseName, deptName, year: selectedYear, batch })}
-                                          className="text-muted-foreground hover:text-foreground"
-                                          title="Edit batch name"
-                                        >
-                                          <Edit className="h-3 w-3" />
-                                        </button>
-                                        <button
-                                          onClick={() => removeBatch(courseName, deptName, selectedYear, batch)}
-                                          className="text-muted-foreground hover:text-destructive"
-                                          title="Delete batch"
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  <div className="mt-2 pt-2 border-t border-border/50">
-                                    <Adder
-                                      placeholder="Batch name (e.g. A)"
-                                      onAdd={(val) => addBatch(courseName, deptName, selectedYear, val)}
-                                      size="xs"
-                                      buttonLabel="Add Batch"
-                                    />
-                                  </div>
+                                        <Edit className="h-3 w-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => removeBatch(courseName, selectedYear, deptName, batch)}
+                                        className="text-muted-foreground hover:text-destructive"
+                                        title="Delete batch"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
                                 </div>
-                              ) : (
-                                <div className="text-xs text-muted-foreground italic p-2 bg-secondary/10 rounded">
-                                  Year not configured for this department
+                                <div className="mt-2 pt-2 border-t border-border/50">
+                                  <Adder
+                                    placeholder="Batch name (e.g. A)"
+                                    onAdd={(val) => addBatch(courseName, selectedYear, deptName, val)}
+                                    size="xs"
+                                    buttonLabel="Add Batch"
+                                  />
                                 </div>
-                              )}
+                              </div>
                             </div>
                           </div>
                         );
                       })}
-
-                      {Object.keys(courseData.departments || {}).length === 0 && (
-                        <div className="col-span-full text-center text-muted-foreground py-8">
-                          No departments added yet. Click "Add Department" to start.
-                        </div>
+                      
+                      {/* Empty state if no departments */}
+                      {Object.keys(courseData.years[selectedYear]?.departments || {}).length === 0 && (
+                          <div className="col-span-full text-center py-6 border-2 border-dashed rounded-lg bg-muted/20">
+                              <p className="text-sm text-muted-foreground mb-2">No departments in Year {selectedYear} yet.</p>
+                              <Button variant="outline" size="sm" onClick={() => document.querySelector(`[placeholder="Department (e.g. CSE)"]`)?.focus()}>
+                                  Add your first department
+                              </Button>
+                          </div>
                       )}
                     </div>
                   </div>
@@ -820,14 +818,6 @@ const AcademicConfigTab = ({ colleges }) => {
               </div>
             );
           })}
-
-          {Object.keys(config.courses || {}).length === 0 && (
-            <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-xl">
-              <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">No courses defined</p>
-              <p className="text-sm">Click "Add Course" to get started</p>
-            </div>
-          )}
         </div>
       </div>
     );

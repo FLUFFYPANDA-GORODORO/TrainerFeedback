@@ -220,13 +220,20 @@ const SessionWizard = ({
 
   // Render Step 1
   const renderStep1 = () => {
+    // New Structure: Course -> Year -> Department -> Batch
     const courses = academicOptions?.courses ? Object.keys(academicOptions.courses) : [];
     const currentCourseData = formData.course ? academicOptions?.courses[formData.course] : null;
-    const departments = currentCourseData?.departments ? Object.keys(currentCourseData.departments) : [];
-    const currentDeptData = formData.branch && currentCourseData?.departments ? currentCourseData.departments[formData.branch] : null;
-    const years = currentDeptData?.years ? Object.keys(currentDeptData.years) : [];
-    const currentYearData = formData.year && currentDeptData?.years ? currentDeptData.years[formData.year] : null;
-    const batches = currentYearData?.batches || [];
+    
+    // Years are now under Course
+    const years = currentCourseData?.years ? Object.keys(currentCourseData.years) : [];
+    const currentYearData = formData.year && currentCourseData?.years ? currentCourseData.years[formData.year] : null;
+
+    // Departments are now under Year
+    const departments = currentYearData?.departments ? Object.keys(currentYearData.departments) : [];
+    const currentDeptData = formData.branch && currentYearData?.departments ? currentYearData.departments[formData.branch] : null;
+
+    // Batches are under Department
+    const batches = currentDeptData?.batches || [];
 
     return (
       <div className="space-y-4 py-2">
@@ -292,7 +299,13 @@ const SessionWizard = ({
               <Label>Course *</Label>
               <Select
                 value={formData.course}
-                onValueChange={v => setFormData({ ...formData, course: v, branch: '', year: '', batch: '' })}
+                onValueChange={v => setFormData({ 
+                    ...formData, 
+                    course: v, 
+                    year: '', // Reset Year
+                    branch: '', // Reset Branch 
+                    batch: '' // Reset Batch
+                })}
                 disabled={!formData.collegeId || !academicOptions || !!selectedProjectCode} // Disable if project code sets this
               >
                 <SelectTrigger><SelectValue placeholder="Select Course" /></SelectTrigger>
@@ -301,34 +314,18 @@ const SessionWizard = ({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Branch/Dept *</Label>
-              <Select
-                value={formData.branch}
-                onValueChange={v => setFormData({ 
-                    ...formData, 
-                    branch: v, 
-                    // Preserve year if already set (e.g. by project code)
-                    year: formData.year || '', 
-                    batch: '' 
-                })}
-                disabled={!formData.course}
-              >
-                <SelectTrigger><SelectValue placeholder="Select Branch" /></SelectTrigger>
-                <SelectContent>
-                  {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Year *</Label>
               <Select
                 value={formData.year}
-                onValueChange={v => setFormData({ ...formData, year: v, batch: '' })}
-                disabled={!formData.branch || !!selectedProjectCode} // Disable if project code sets this
+                onValueChange={v => setFormData({ 
+                    ...formData, 
+                    year: v, 
+                    branch: '', // Reset Branch
+                    batch: '' // Reset Batch
+                })}
+                disabled={!formData.course || !!selectedProjectCode} // Disable if project code sets this
               >
                 <SelectTrigger><SelectValue placeholder="Select Year" /></SelectTrigger>
                 <SelectContent>
@@ -336,12 +333,33 @@ const SessionWizard = ({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Branch/Dept *</Label>
+              <Select
+                value={formData.branch}
+                onValueChange={v => setFormData({ 
+                    ...formData, 
+                    branch: v, 
+                    batch: '' // Reset Batch
+                })}
+                disabled={!formData.year}
+              >
+                <SelectTrigger><SelectValue placeholder="Select Branch" /></SelectTrigger>
+                <SelectContent>
+                  {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label>Batch *</Label>
               <Select
                 value={formData.batch}
                 onValueChange={v => setFormData({ ...formData, batch: v })}
-                disabled={!formData.year}
+                disabled={!formData.branch}
               >
                 <SelectTrigger><SelectValue placeholder="Select Batch" /></SelectTrigger>
                 <SelectContent>

@@ -157,40 +157,38 @@ const TrainerOverview = () => {
     return courses.sort();
   }, [sessions, filters.collegeId]);
 
-  // Unique Departments (Branches)
-  const availableDepartments = useMemo(() => {
-    if (filters.course === 'all') return []; // Generally dependent on course structure, but loose here
-    let filtered = sessions;
-    if (filters.collegeId !== 'all') filtered = filtered.filter(s => s.collegeId === filters.collegeId);
-    if (filters.course !== 'all') filtered = filtered.filter(s => s.course === filters.course);
-
-    const depts = [...new Set(filtered.map(s => s.branch || s.department))].filter(Boolean);
-    return depts.sort();
-  }, [sessions, filters.collegeId, filters.course]);
-
-  // Unique Years
+  // Unique Years (Dependent on Course)
   const availableYears = useMemo(() => {
     let filtered = sessions;
     if (filters.collegeId !== 'all') filtered = filtered.filter(s => s.collegeId === filters.collegeId);
     if (filters.course !== 'all') filtered = filtered.filter(s => s.course === filters.course);
-    // Dept filter optional for Year typically, but let's strictly hierarchical if desired OR loose
-    if (filters.department !== 'all') filtered = filtered.filter(s => (s.branch || s.department) === filters.department);
-
+    
     const years = [...new Set(filtered.map(s => s.year))].filter(Boolean);
     return years.sort();
-  }, [sessions, filters]);
+  }, [sessions, filters.collegeId, filters.course]);
 
-  // Unique Batches
+  // Unique Departments (Dependent on Course AND Year)
+  const availableDepartments = useMemo(() => {
+    let filtered = sessions;
+    if (filters.collegeId !== 'all') filtered = filtered.filter(s => s.collegeId === filters.collegeId);
+    if (filters.course !== 'all') filtered = filtered.filter(s => s.course === filters.course);
+    if (filters.year !== 'all') filtered = filtered.filter(s => s.year === filters.year);
+
+    const depts = [...new Set(filtered.map(s => s.branch || s.department))].filter(Boolean);
+    return depts.sort();
+  }, [sessions, filters.collegeId, filters.course, filters.year]);
+
+  // Unique Batches (Dependent on Course AND Year AND Dept)
   const availableBatches = useMemo(() => {
     let filtered = sessions;
     if (filters.collegeId !== 'all') filtered = filtered.filter(s => s.collegeId === filters.collegeId);
     if (filters.course !== 'all') filtered = filtered.filter(s => s.course === filters.course);
-    if (filters.department !== 'all') filtered = filtered.filter(s => (s.branch || s.department) === filters.department);
     if (filters.year !== 'all') filtered = filtered.filter(s => s.year === filters.year);
+    if (filters.department !== 'all') filtered = filtered.filter(s => (s.branch || s.department) === filters.department);
 
     const batches = [...new Set(filtered.map(s => s.batch))].filter(Boolean);
     return batches.sort();
-  }, [sessions, filters]);
+  }, [sessions, filters.collegeId, filters.course, filters.year, filters.department]);
 
 
   // --- Filtered Data & Stats Aggregation ---
@@ -380,7 +378,7 @@ const TrainerOverview = () => {
               <Label className="text-xs">Course</Label>
               <Select 
                 value={filters.course} 
-                onValueChange={v => setFilters({...filters, course: v, department: 'all', year: 'all', batch: 'all'})}
+                onValueChange={v => setFilters({...filters, course: v, year: 'all', department: 'all', batch: 'all'})}
               >
                 <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
@@ -391,26 +389,11 @@ const TrainerOverview = () => {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Department</Label>
-              <Select 
-                value={filters.department} 
-                onValueChange={v => setFilters({...filters, department: v, year: 'all', batch: 'all'})}
-              >
-                <SelectTrigger className={filters.course === 'all' && filters.collegeId === 'all' ? 'opacity-50' : ''}>
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {availableDepartments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
               <Label className="text-xs">Year</Label>
               <Select 
                 value={filters.year} 
-                onValueChange={v => setFilters({...filters, year: v, batch: 'all'})}
+                onValueChange={v => setFilters({...filters, year: v, department: 'all', batch: 'all'})}
+                disabled={filters.course === 'all'}
               >
                 <SelectTrigger className={filters.course === 'all' ? 'opacity-50' : ''}>
                    <SelectValue placeholder="All" />
@@ -423,12 +406,30 @@ const TrainerOverview = () => {
             </div>
 
             <div className="space-y-1">
+              <Label className="text-xs">Department</Label>
+              <Select 
+                value={filters.department} 
+                onValueChange={v => setFilters({...filters, department: v, batch: 'all'})}
+                disabled={filters.year === 'all'}
+              >
+                <SelectTrigger className={filters.year === 'all' ? 'opacity-50' : ''}>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {availableDepartments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
               <Label className="text-xs">Batch</Label>
               <Select 
                 value={filters.batch} 
                 onValueChange={v => setFilters({...filters, batch: v})}
+                disabled={filters.department === 'all'}
               >
-                <SelectTrigger className={filters.year === 'all' ? 'opacity-50' : ''}>
+                <SelectTrigger className={filters.department === 'all' ? 'opacity-50' : ''}>
                    <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>

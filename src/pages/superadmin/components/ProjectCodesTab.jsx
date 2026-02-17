@@ -308,7 +308,7 @@ const ProjectCodesTab = () => {
       <Modal open={showImportModal} onOpenChange={setShowImportModal} className="p-4">
         <ModalHeader>
            <ModalTitle>Bulk Import Project Codes</ModalTitle>
-           <ModalDescription>Upload a JSON file containing a list of codes.</ModalDescription>
+           <ModalDescription>Ask IT Dept for the project codes from Sync to import them here.</ModalDescription>
            <ModalClose onClose={() => setShowImportModal(false)} />
         </ModalHeader>
 
@@ -323,7 +323,15 @@ const ProjectCodesTab = () => {
                 {error && <p className="text-xs text-destructive">{error}</p>}
                 {!error && !fileName && (
                     <p className="text-xs text-muted-foreground">
-                        Format: <code>["CODE1", "CODE2"]</code>
+                        Format: <code>{`[ {S.no,
+        Name,
+        College Code,
+        Course,
+        Year,
+        Training Type,
+        Passing Year,
+        Project Code
+    }]`}</code>
                     </p>
                 )}
             </div>

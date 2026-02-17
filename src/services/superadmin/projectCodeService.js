@@ -11,7 +11,7 @@ import {
   writeBatch,
   updateDoc
 } from 'firebase/firestore';
-import { getAcademicConfig } from './academicService';
+import { getAcademicConfig, saveAcademicConfig } from './academicService';
 
 const COLLECTION_NAME = 'project_codes';
 
@@ -127,24 +127,29 @@ const resolveCourseName = async (collegeId, rawCourse) => {
 
 /**
  * Helper: Resolve Year string (e.g. "4th", "Final") to config key (e.g. "4").
+ * NEW Structure: courses.{course}.years.{year}
  */
 const resolveYear = async (collegeId, courseName, rawYear) => {
   if (!collegeId || !courseName || !rawYear) return rawYear;
   
   try {
     const config = await getAcademicConfig(collegeId);
-    if (!config || !config.courses || !config.courses[courseName]) return rawYear.replace(/\D/g, '');
+    
+    // Safety check for path existence
+    if (!config || !config.courses || !config.courses[courseName]) {
+        return rawYear.replace(/\D/g, ''); // Fallback
+    }
 
     const courseData = config.courses[courseName];
-    if (!courseData.departments) return rawYear.replace(/\D/g, '');
+    
+    // [NEW] Structure check: Years are direct children of course
+    if (!courseData.years) {
+         // Fallback logic if structure is unexpected or empty
+         return rawYear.replace(/\D/g, '');
+    }
 
-    // Collect all valid year keys from all departments
-    const validYears = new Set();
-    Object.values(courseData.departments).forEach(dept => {
-      if (dept.years) {
-        Object.keys(dept.years).forEach(y => validYears.add(y));
-      }
-    });
+    // Collect all valid year keys from the years object
+    const validYears = new Set(Object.keys(courseData.years));
 
     // 1. Try exact match
     if (validYears.has(rawYear)) return rawYear;
@@ -163,10 +168,15 @@ const resolveYear = async (collegeId, courseName, rawYear) => {
     };
     
     // Check known mappings against valid years
-    for (const [key, val] of Object.entries(map)) {
-      if (lower.includes(key) && validYears.has(val)) {
-        return val;
-      }
+    // Sort keys by length descending to match 'iii' before 'i'
+    const sortedKeys = Object.keys(map).sort((a, b) => b.length - a.length);
+
+    for (const key of sortedKeys) {
+       // Use word boundary check
+       const regex = new RegExp(`\\b${key}\\b`, 'i');
+       if (regex.test(rawYear) && validYears.has(map[key])) {
+         return map[key];
+       }
     }
 
     // Default: return numeric extraction if available, else raw
@@ -315,12 +325,84 @@ export const addProjectCodes = async (inputCodes, colleges) => {
     });
 
     await batch.commit();
-    return { added: count, skipped: processed.length - count };
 
+    // 4. Auto-update Academic Config with new Courses/Years
+    // Collect unique college -> course -> year mappings from the processed items
+    const collegeUpdates = {}; // { collegeId: { courseName: Set(years) } }
+
+    processed.forEach(item => {
+        if (item.matchStatus === 'matched' && item.collegeId && item.course && item.year) {
+            if (!collegeUpdates[item.collegeId]) {
+                collegeUpdates[item.collegeId] = {};
+            }
+            if (!collegeUpdates[item.collegeId][item.course]) {
+                collegeUpdates[item.collegeId][item.course] = new Set();
+            }
+            collegeUpdates[item.collegeId][item.course].add(item.year);
+        }
+    });
+
+    // Process updates for each college
+    for (const [collegeId, courses] of Object.entries(collegeUpdates)) {
+        await autoUpdateAcademicConfig(collegeId, courses);
+    }
+
+    return { added: count, skipped: processed.length - count }; // Return result
   } catch (error) {
     console.error('Error adding project codes:', error);
     throw error;
   }
+};
+
+/**
+ * Helper: Safely merge new courses and years into existing academic config.
+ * - Creates Course if missing.
+ * - Creates Year if missing (with empty departments).
+ * - DOES NOT overwrite existing structure or delete anything.
+ * 
+ * @param {string} collegeId 
+ * @param {Object} newCourses - { courseName: Set(years) }
+ */
+const autoUpdateAcademicConfig = async (collegeId, newCourses) => {
+    try {
+        const currentConfig = await getAcademicConfig(collegeId) || { courses: {} };
+        let updated = false;
+
+        // Ensure courses object exists
+        if (!currentConfig.courses) currentConfig.courses = {};
+
+        for (const [courseName, yearsSet] of Object.entries(newCourses)) {
+            // 1. Create Course if missing
+            if (!currentConfig.courses[courseName]) {
+                currentConfig.courses[courseName] = { years: {} };
+                updated = true;
+            }
+
+            // Ensure years object exists for the course
+            if (!currentConfig.courses[courseName].years) {
+                 currentConfig.courses[courseName].years = {};
+                 updated = true;
+            }
+
+            // 2. Create Years if missing
+            for (const year of yearsSet) {
+                if (!currentConfig.courses[courseName].years[year]) {
+                    // Initialize with empty departments to be valid
+                    currentConfig.courses[courseName].years[year] = { departments: {} };
+                    updated = true;
+                }
+            }
+        }
+
+        if (updated) {
+            console.log(`Auto-updating academic config for college ${collegeId}`);
+            await saveAcademicConfig(collegeId, currentConfig);
+        }
+    } catch (err) {
+        console.error(`Failed to auto-update academic config for ${collegeId}:`, err);
+        // Don't throw, as this is a secondary operation. 
+        // We don't want to fail the import if config update fails.
+    }
 };
 
 /**
@@ -359,23 +441,25 @@ export const deleteProjectCode = async (id) => {
  */
 export const rerunCollegeMatching = async (colleges) => {
   try {
-    // 1. Get all unmatched codes
-    const q = query(collection(db, COLLECTION_NAME), where('matchStatus', '==', 'unmatched'));
+    // 1. Get ALL codes (removed 'unmatched' filter to support full re-sync)
+    const q = query(collection(db, COLLECTION_NAME));
     const snapshot = await getDocs(q);
     
     if (snapshot.empty) return 0;
 
-    const batch = writeBatch(db);
+    // Firestore batch limit is 500. Processing in chunks would be safer for production.
+    // For now, using single batch as per existing pattern.
+    const batch = writeBatch(db); 
     let updatedCount = 0;
+    const collegeUpdates = {}; // { collegeId: { courseName: Set(years) } }
 
-    // Use for...of to handle await inside loop correctly
     for (const docSnap of snapshot.docs) {
       const data = docSnap.data();
       // Try matching again
       const parsed = {
         collegeCode: data.collegeCode,
         status: data.parseStatus,
-        course: data.course || '' // Keep existing course for now
+        course: data.course || ''
       };
       
       const matched = matchCollege(parsed, colleges);
@@ -384,26 +468,62 @@ export const rerunCollegeMatching = async (colleges) => {
          // [NEW] Resolve Course Name
          const resolvedCourse = await resolveCourseName(matched.collegeId, data.course);
          const resolvedYear = await resolveYear(matched.collegeId, resolvedCourse, data.year);
+         
+         // Collect for auto-config (only if matched)
+         if (matched.collegeId && resolvedCourse && resolvedYear) {
+             if (!collegeUpdates[matched.collegeId]) {
+                 collegeUpdates[matched.collegeId] = {};
+             }
+             if (!collegeUpdates[matched.collegeId][resolvedCourse]) {
+                 collegeUpdates[matched.collegeId][resolvedCourse] = new Set();
+             }
+             collegeUpdates[matched.collegeId][resolvedCourse].add(resolvedYear);
+         }
 
          batch.update(docSnap.ref, {
             collegeId: matched.collegeId,
             collegeName: matched.collegeName,
             matchStatus: 'matched',
-            course: resolvedCourse, // Update course if changed
-            year: resolvedYear, // Update year if changed
+            course: resolvedCourse,
+            year: resolvedYear,
             updatedAt: serverTimestamp()
          });
          updatedCount++;
+      } else {
+         // If unmatched, reset fields
+         if (data.matchStatus === 'matched') {
+             batch.update(docSnap.ref, {
+                 collegeId: null,
+                 collegeName: data.collegeName, // Keep original name from file
+                 matchStatus: 'unmatched',
+                 updatedAt: serverTimestamp()
+             });
+             updatedCount++;
+         }
       }
     }
 
     if (updatedCount > 0) {
-      await batch.commit();
+        await batch.commit();
+    }
+
+    // Auto-create config ONLY if empty
+    for (const [collegeId, courses] of Object.entries(collegeUpdates)) {
+        const currentConfig = await getAcademicConfig(collegeId);
+        // Check if config is essentially empty (no courses defined)
+        const isEmpty = !currentConfig || !currentConfig.courses || Object.keys(currentConfig.courses).length === 0;
+        
+        if (isEmpty) {
+            console.log(`Academic Config is empty for ${collegeId}. Auto-creating from project codes...`);
+            await autoUpdateAcademicConfig(collegeId, courses);
+        } else {
+            console.log(`Academic Config exists for ${collegeId}. Skipping auto-creation.`);
+        }
     }
 
     return updatedCount;
   } catch (error) {
-    console.error('Error rerunning matching:', error);
+    console.error('Error rerunning college matching:', error); // Note: original error logged different message? "Error rerunning matching:" vs "Error rerunning college matching:"
     throw error;
   }
 };

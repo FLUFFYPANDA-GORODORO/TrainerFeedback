@@ -1,0 +1,12 @@
+Running resolveYear tests...
+PASS: B.Tech '1' -> '1'
+PASS: B.Tech '4th' -> '4'
+PASS: B.Tech 'Final Year' -> '4'
+PASS: B.Tech 'Third' -> '3'
+PASS: B.Tech 'II' -> '2'
+PASS: B.Tech 'Year 2' -> '2'
+PASS: B.Tech 'random string 123' -> '123'
+PASS: M.Tech '1st' -> '1'
+PASS: M.Tech '3rd' -> '3'
+
+9/9 tests passed.

@@ -65,6 +65,9 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
   const [filters, setFilters] = useState({
     collegeId: 'all',
     course: 'all',
+    year: 'all',
+    department: 'all',
+    batch: 'all',
     domain: 'all',
     topic: '',
     projectCode: 'all'
@@ -82,18 +85,52 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
     return { total, active, inactive };
   }, [sessions]);
 
-  // Derived unique filter options
-  const uniqueColleges = useMemo(() => {
+  // Derived Filter Options (Cascading)
+  const filterOptions = useMemo(() => {
+    // 1. Colleges
     const map = new Map();
     sessions.forEach(s => {
       if (s.collegeId && s.collegeName) map.set(s.collegeId, s.collegeName);
     });
-    return Array.from(map, ([id, name]) => ({ id, name }));
-  }, [sessions]);
-  const uniqueCourses = useMemo(() => [...new Set(sessions.map(s => s.course).filter(Boolean))], [sessions]);
-  const uniqueDomains = useMemo(() => [...new Set(sessions.map(s => s.domain).filter(Boolean))], [sessions]);
-  // [NEW] Unique Project Codes from sessions (for filtering relevant ones)
-  const uniqueProjectCodes = useMemo(() => [...new Set(sessions.map(s => s.projectCode).filter(Boolean))], [sessions]);
+    const colleges = Array.from(map, ([id, name]) => ({ id, name }));
+
+    // 2. Courses (Dependent on College)
+    let courseSessions = sessions;
+    if (filters.collegeId !== 'all') {
+        courseSessions = courseSessions.filter(s => s.collegeId === filters.collegeId);
+    }
+    const courses = [...new Set(courseSessions.map(s => s.course).filter(Boolean))].sort();
+
+    // 3. Years (Dependent on College AND Course)
+    let yearSessions = courseSessions;
+    if (filters.course !== 'all') {
+        yearSessions = yearSessions.filter(s => s.course === filters.course);
+    }
+    const years = [...new Set(yearSessions.map(s => s.year).filter(Boolean))].sort();
+
+    // 4. Departments (Dependent on College AND Course AND Year)
+    let deptSessions = yearSessions;
+    if (filters.year !== 'all') {
+        deptSessions = deptSessions.filter(s => s.year === filters.year);
+    }
+    const departments = [...new Set(deptSessions.map(s => s.branch || s.department).filter(Boolean))].sort();
+
+    // 5. Batches (Dependent on College AND Course AND Year AND Dept)
+    let batchSessions = deptSessions;
+    if (filters.department !== 'all') {
+        batchSessions = batchSessions.filter(s => (s.branch || s.department) === filters.department);
+    }
+    const batches = [...new Set(batchSessions.map(s => s.batch).filter(Boolean))].sort();
+
+    // Domains (Dependent on College) - Keep independent of academic hierarchy for now? 
+    // Usually domains cross-cut. Let's filter by only College to keep it simple but relevant.
+    const domains = [...new Set(courseSessions.map(s => s.domain).filter(Boolean))].sort();
+
+    // Project Codes (Dependent on College)
+    const projectCodes = [...new Set(courseSessions.map(s => s.projectCode).filter(Boolean))].sort();
+
+    return { colleges, courses, years, departments, batches, domains, projectCodes };
+  }, [sessions, filters.collegeId, filters.course, filters.year, filters.department]);
 
   // Filter Logic
   const filteredSessions = useMemo(() => {
@@ -101,6 +138,10 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
       // Dropdown filters
       if (filters.collegeId !== 'all' && session.collegeId !== filters.collegeId) return false;
       if (filters.course !== 'all' && session.course !== filters.course) return false;
+      if (filters.year !== 'all' && session.year !== filters.year) return false;
+      if (filters.department !== 'all' && (session.branch || session.department) !== filters.department) return false;
+      if (filters.batch !== 'all' && session.batch !== filters.batch) return false;
+      
       if (filters.domain !== 'all' && session.domain !== filters.domain) return false;
       if (filters.projectCode !== 'all' && session.projectCode !== filters.projectCode) return false;
       // Topic search
@@ -252,49 +293,92 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
 
 
       {/* Filters Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-muted/20 p-4 rounded-lg border">
-        <Select value={filters.collegeId} onValueChange={v => setFilters({ ...filters, collegeId: v })}>
-          <SelectTrigger><SelectValue placeholder="All Colleges" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Colleges</SelectItem>
-            {uniqueColleges.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
-        <Select value={filters.course} onValueChange={v => setFilters({ ...filters, course: v })}>
-          <SelectTrigger><SelectValue placeholder="All Courses" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Courses</SelectItem>
-            {uniqueCourses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
-        <Select value={filters.domain} onValueChange={v => setFilters({ ...filters, domain: v })}>
-          <SelectTrigger><SelectValue placeholder="All Domains" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Domains</SelectItem>
-            {uniqueDomains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
-
-
-        <Select value={filters.projectCode} onValueChange={v => setFilters({ ...filters, projectCode: v })}>
-            <SelectTrigger><SelectValue placeholder="All Project Codes" /></SelectTrigger>
+      <div className="bg-muted/20 p-4 rounded-lg border space-y-4">
+        {/* Row 1: Academic Filters */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+             <Select 
+                value={filters.collegeId} 
+                onValueChange={v => setFilters({ ...filters, collegeId: v, course: 'all', year: 'all', department: 'all', batch: 'all' })}
+            >
+            <SelectTrigger><SelectValue placeholder="All Colleges" /></SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">All Project Codes</SelectItem>
-                {/* Only show matched codes */}
-                {uniqueProjectCodes
-                    .filter(code => projectCodes.some(pc => pc.code === code && pc.collegeId))
-                    .map(pc => <SelectItem key={pc} value={pc}>{pc}</SelectItem>)}
+                <SelectItem value="all">All Colleges</SelectItem>
+                {filterOptions.colleges.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
-        </Select>
+            </Select>
 
-        <Input
-          placeholder="Search Topic..."
-          value={filters.topic}
-          onChange={e => setFilters({ ...filters, topic: e.target.value })}
-        />
+            <Select 
+                value={filters.course} 
+                onValueChange={v => setFilters({ ...filters, course: v, year: 'all', department: 'all', batch: 'all' })}
+            >
+            <SelectTrigger><SelectValue placeholder="All Courses" /></SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Courses</SelectItem>
+                {filterOptions.courses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+            </Select>
+
+            <Select 
+                value={filters.year} 
+                onValueChange={v => setFilters({ ...filters, year: v, department: 'all', batch: 'all' })}
+                disabled={filters.course === 'all'}
+            >
+            <SelectTrigger><SelectValue placeholder="All Years" /></SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {filterOptions.years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+            </SelectContent>
+            </Select>
+
+             <Select 
+                value={filters.department} 
+                onValueChange={v => setFilters({ ...filters, department: v, batch: 'all' })}
+                disabled={filters.year === 'all'}
+            >
+            <SelectTrigger><SelectValue placeholder="All Depts" /></SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Depts</SelectItem>
+                {filterOptions.departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+            </SelectContent>
+            </Select>
+
+             <Select 
+                value={filters.batch} 
+                onValueChange={v => setFilters({ ...filters, batch: v })}
+                disabled={filters.department === 'all'}
+            >
+            <SelectTrigger><SelectValue placeholder="All Batches" /></SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Batches</SelectItem>
+                {filterOptions.batches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+            </SelectContent>
+            </Select>
+        </div>
+
+        {/* Row 2: Other Filters & Search */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+             <Select value={filters.domain} onValueChange={v => setFilters({ ...filters, domain: v })}>
+            <SelectTrigger><SelectValue placeholder="All Domains" /></SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Domains</SelectItem>
+                {filterOptions.domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+            </SelectContent>
+            </Select>
+
+            <Select value={filters.projectCode} onValueChange={v => setFilters({ ...filters, projectCode: v })}>
+                <SelectTrigger><SelectValue placeholder="All Project Codes" /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Project Codes</SelectItem>
+                    {filterOptions.projectCodes.map(pc => <SelectItem key={pc} value={pc}>{pc}</SelectItem>)}
+                </SelectContent>
+            </Select>
+
+            <Input
+            placeholder="Search Topic..."
+            value={filters.topic}
+            onChange={e => setFilters({ ...filters, topic: e.target.value })}
+            />
+        </div>
       </div>
 
       {/* Table */}
