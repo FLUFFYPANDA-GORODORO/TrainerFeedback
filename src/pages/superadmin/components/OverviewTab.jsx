@@ -44,11 +44,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSuperAdminData } from '@/contexts/SuperAdminDataContext';
 import { getAcademicConfig } from '@/services/superadmin/academicService';
 import { getCollegeTrends, getCollegeCache } from '@/services/superadmin/cacheService';
+import { getAnalyticsSessions } from '@/services/superadmin/sessionService'; // New import
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
   const { sessions, trainers } = useSuperAdminData();
+
+  // Data State
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsCache, setAnalyticsCache] = useState({});
+  const [isFetchingAnalytics, setIsFetchingAnalytics] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -68,6 +74,12 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
   const [collegeTrends, setCollegeTrends] = useState(null);
   // Qualitative data cache (for Student Voices)
   const [qualitativeCache, setQualitativeCache] = useState({ high: [], low: [] });
+  // Aggregated cache stats from all colleges (for default view)
+  const [aggregatedCacheStats, setAggregatedCacheStats] = useState(null);
+  // Per-college cache data (for college performance & domain charts)
+  const [perCollegeCaches, setPerCollegeCaches] = useState({});
+  // Sessions fetched by dynamic query (for charts on filtered view)
+  const [fetchedFilteredSessions, setFetchedFilteredSessions] = useState([]);
 
   const resetFilters = () => {
     setFilters({
@@ -167,6 +179,17 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
           // Aggregate Qualitative
           const aggregatedQualitative = { high: [], low: [] };
 
+          // Aggregate Stats from all college caches
+          const aggStats = {
+            totalSessions: 0,
+            totalResponses: 0,
+            totalRatingsCount: 0,
+            ratingSum: 0,
+            ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+            categoryTotals: {},
+            categoryCounts: {}
+          };
+
           results.forEach(([trend, cache]) => {
             // Aggregate Trends
             if (trend?.dailyResponses) {
@@ -180,10 +203,34 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
               if (cache.qualitative.high) aggregatedQualitative.high.push(...cache.qualitative.high);
               if (cache.qualitative.low) aggregatedQualitative.low.push(...cache.qualitative.low);
             }
+
+            // Aggregate Stats
+            if (cache) {
+              aggStats.totalSessions += cache.totalSessions || 0;
+              aggStats.totalResponses += cache.totalResponses || 0;
+              aggStats.totalRatingsCount += cache.totalRatingsCount || 0;
+              aggStats.ratingSum += cache.ratingSum || 0;
+              Object.entries(cache.ratingDistribution || {}).forEach(([r, c]) => {
+                aggStats.ratingDistribution[r] = (aggStats.ratingDistribution[r] || 0) + c;
+              });
+              Object.entries(cache.categoryData || {}).forEach(([cat, data]) => {
+                aggStats.categoryTotals[cat] = (aggStats.categoryTotals[cat] || 0) + (data.sum || 0);
+                aggStats.categoryCounts[cat] = (aggStats.categoryCounts[cat] || 0) + (data.count || 0);
+              });
+            }
           });
           
+          // Build per-college cache map
+          const collegeCacheMap = {};
+          colleges.forEach((college, idx) => {
+              const cache = results[idx]?.[1];
+              if (cache) collegeCacheMap[college.id] = cache;
+          });
+
           setCollegeTrends(aggregatedTrends);
           setQualitativeCache(aggregatedQualitative);
+          setAggregatedCacheStats(aggStats);
+          setPerCollegeCaches(collegeCacheMap);
         }
       } catch (err) {
         console.error('Failed to load college data:', err);
@@ -274,131 +321,211 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
   }, [academicOptions, filters.course, filters.year]);
 
   // Filter sessions based on active filters
-  const filteredSessions = useMemo(() => {
-    return sessions.filter(session => {
-      // Only include closed sessions with compiled stats
-      if (session.status !== 'inactive' || !session.compiledStats) return false;
-      
-      if (filters.projectCode !== 'all' && session.projectCode !== filters.projectCode) return false;
-      if (filters.collegeId !== 'all' && session.collegeId !== filters.collegeId) return false;
-      if (filters.trainerId !== 'all' && session.assignedTrainer?.id !== filters.trainerId) return false;
-      if (filters.course !== 'all' && session.course !== filters.course) return false;
-      if (filters.year !== 'all' && session.year !== filters.year) return false;
-      if (filters.batch !== 'all' && session.batch !== filters.batch) return false;
-      
-      // Date filtering
-      if (filters.dateRange !== 'all') {
-        const { startDate, endDate } = getDateRange(filters.dateRange);
-        if (startDate && endDate) {
-          const sessionDate = new Date(session.sessionDate);
-          if (sessionDate < startDate || sessionDate > endDate) return false;
+  // --- Dynamic Analytics Fetching ---
+  
+  const getCacheKey = (filters) => {
+    return JSON.stringify(filters);
+  };
+  
+  const aggregateStatsFromSessions = (sessionList) => {
+      const stats = {
+          totalResponses: 0,
+          totalRatingsCount: 0,
+          ratingSum: 0,
+          ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+          categoryTotals: {},
+          categoryCounts: {},
+          totalSessions: sessionList.length,
+      };
+
+      sessionList.forEach(session => {
+          const cs = session.compiledStats;
+          // Only count valid stats
+          if (!cs) return;
+
+          stats.totalResponses += cs.totalResponses || 0;
+          
+          Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
+              stats.ratingDistribution[rating] = (stats.ratingDistribution[rating] || 0) + count;
+              stats.ratingSum += Number(rating) * count;
+              stats.totalRatingsCount += count;
+          });
+
+          // Sum category averages (need to convert back to sum/count for weighted average)
+          Object.entries(cs.categoryAverages || {}).forEach(([cat, avg]) => {
+              const count = cs.totalResponses || 1;
+              stats.categoryTotals[cat] = (stats.categoryTotals[cat] || 0) + (avg * count);
+              stats.categoryCounts[cat] = (stats.categoryCounts[cat] || 0) + count;
+          });
+      });
+
+      const avgRating = stats.totalRatingsCount > 0 
+          ? (stats.ratingSum / stats.totalRatingsCount).toFixed(2) 
+          : '0.00';
+
+      const categoryAverages = {};
+      Object.keys(stats.categoryTotals).forEach(cat => {
+          categoryAverages[cat] = stats.categoryCounts[cat] > 0
+            ? (stats.categoryTotals[cat] / stats.categoryCounts[cat]).toFixed(2)
+            : 0;
+      });
+
+      return {
+          totalSessions: stats.totalSessions,
+          totalResponses: stats.totalResponses,
+          totalRatingsCount: stats.totalRatingsCount,
+          avgRating,
+          ratingDistribution: stats.ratingDistribution,
+          categoryAverages,
+          qualitative: { high: [], low: [], avg: [] } 
+      };
+  };
+
+  // Helper to check if filters are at default (all)
+  const isDefaultView = useMemo(() => {
+    return filters.projectCode === 'all' &&
+           filters.collegeId === 'all' &&
+           filters.trainerId === 'all' &&
+           filters.course === 'all' &&
+           filters.year === 'all' &&
+           filters.batch === 'all' &&
+           filters.dateRange === 'all';
+  }, [filters]);
+
+  useEffect(() => {
+    // Skip dynamic fetch when default view — we use aggregated cache instead
+    if (isDefaultView) {
+      setAnalyticsData(null);
+      setFetchedFilteredSessions([]);
+      return;
+    }
+
+    const fetchAnalytics = async () => {
+        const cacheKey = getCacheKey(filters);
+        if (analyticsCache[cacheKey]) {
+            setAnalyticsData(analyticsCache[cacheKey].stats);
+            setFetchedFilteredSessions(analyticsCache[cacheKey].sessions || []);
+            return;
         }
-      }
-      
-      return true;
-    });
-  }, [sessions, filters]);
 
-  // Aggregate stats from filtered sessions
+        setIsFetchingAnalytics(true);
+        try {
+            const fetchedSessions = await getAnalyticsSessions({
+                ...filters,
+                limitCount: 30
+            });
+
+            const computedStats = aggregateStatsFromSessions(fetchedSessions);
+            
+            setAnalyticsCache(prev => ({ ...prev, [cacheKey]: { stats: computedStats, sessions: fetchedSessions } }));
+            setAnalyticsData(computedStats);
+            setFetchedFilteredSessions(fetchedSessions);
+        } catch (err) {
+            console.error("Failed to fetch analytics:", err);
+            setAnalyticsData(null); 
+        } finally {
+            setIsFetchingAnalytics(false);
+        }
+    };
+
+    const timer = setTimeout(fetchAnalytics, 300);
+    return () => clearTimeout(timer);
+
+  }, [filters, isDefaultView]); 
+
+
+
+  // Calculate aggregated stats — cache-first for default view
   const aggregatedStats = useMemo(() => {
-    const stats = {
-      totalResponses: 0,
-      totalRatingsCount: 0,
-      ratingSum: 0,
-      ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-      categoryTotals: {},
-      categoryCounts: {}
-    };
+    // 1. Default View -> Use aggregated college cache stats
+    if (isDefaultView && aggregatedCacheStats) {
+      const avgRating = aggregatedCacheStats.totalRatingsCount > 0 
+        ? (aggregatedCacheStats.ratingSum / aggregatedCacheStats.totalRatingsCount).toFixed(2) 
+        : '0.00';
 
-    filteredSessions.forEach(session => {
-      const cs = session.compiledStats;
-      if (!cs) return;
-
-      stats.totalResponses += cs.totalResponses || 0;
-      
-      // Sum rating distribution
-      Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
-        stats.ratingDistribution[rating] = (stats.ratingDistribution[rating] || 0) + count;
-        stats.ratingSum += Number(rating) * count;
-        stats.totalRatingsCount += count;
+      const categoryAverages = {};
+      Object.keys(aggregatedCacheStats.categoryTotals || {}).forEach(cat => {
+        categoryAverages[cat] = aggregatedCacheStats.categoryCounts[cat] > 0
+          ? (aggregatedCacheStats.categoryTotals[cat] / aggregatedCacheStats.categoryCounts[cat]).toFixed(2)
+          : 0;
       });
 
-      // Sum category averages (need to convert back to sum/count)
-      Object.entries(cs.categoryAverages || {}).forEach(([cat, avg]) => {
-        const count = cs.totalResponses || 1;
-        stats.categoryTotals[cat] = (stats.categoryTotals[cat] || 0) + (avg * count);
-        stats.categoryCounts[cat] = (stats.categoryCounts[cat] || 0) + count;
-      });
-    });
+      return {
+        totalSessions: aggregatedCacheStats.totalSessions || 0,
+        totalResponses: aggregatedCacheStats.totalResponses || 0,
+        totalRatingsCount: aggregatedCacheStats.totalRatingsCount || 0,
+        avgRating,
+        ratingDistribution: aggregatedCacheStats.ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        categoryAverages,
+        qualitative: qualitativeCache || { high: [], low: [] }
+      };
+    }
 
-    // Calculate final averages
-    const avgRating = stats.totalRatingsCount > 0 
-      ? (stats.ratingSum / stats.totalRatingsCount).toFixed(2) 
-      : '0.00';
-
-    const categoryAverages = {};
-    Object.keys(stats.categoryTotals).forEach(cat => {
-      categoryAverages[cat] = stats.categoryCounts[cat] > 0
-        ? (stats.categoryTotals[cat] / stats.categoryCounts[cat]).toFixed(2)
-        : 0;
-    });
-
-    return {
-      totalSessions: filteredSessions.length,
-      totalResponses: stats.totalResponses,
-      totalRatingsCount: stats.totalRatingsCount,
-      avgRating,
-      ratingDistribution: stats.ratingDistribution,
-      categoryAverages
+    // 2. Filtered View -> Use dynamic data
+    return analyticsData || {
+        totalSessions: 0,
+        totalResponses: 0,
+        totalRatingsCount: 0,
+        avgRating: 0,
+        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        categoryAverages: {},
+        qualitative: { high: [], low: [] } 
     };
-  }, [filteredSessions]);
+  }, [isDefaultView, aggregatedCacheStats, analyticsData, qualitativeCache]);
 
-  // College performance data for bar chart - ALL colleges for full width chart
+
+
+  // College performance data for bar chart
   const allCollegesPerformance = useMemo(() => {
-    // Get all colleges with their performance data
+    if (isDefaultView) {
+      // Default view: use per-college cache data
+      return colleges.map(college => {
+        const cache = perCollegeCaches[college.id];
+        const ratingCount = cache?.totalRatingsCount || 0;
+        const ratingSum = cache?.ratingSum || 0;
+        return {
+          name: college.code || college.id,
+          fullName: college.name,
+          avgRating: ratingCount > 0 ? parseFloat((ratingSum / ratingCount).toFixed(2)) : 0,
+          responses: cache?.totalResponses || 0
+        };
+      })
+      .sort((a, b) => b.avgRating - a.avgRating)
+      .slice(0, 30);
+    }
+
+    // Filtered view: use fetched sessions from dynamic query
     const collegeStats = {};
-    
-    // Initialize all colleges (even ones without sessions yet)
     colleges.forEach(college => {
-      collegeStats[college.code || college.id] = { 
-        id: college.id,
-        fullName: college.name, 
-        ratingSum: 0, 
-        ratingCount: 0, 
-        responses: 0 
+      collegeStats[college.code || college.id] = {
+        id: college.id, fullName: college.name,
+        ratingSum: 0, ratingCount: 0, responses: 0
       };
     });
-    
-    // Aggregate session data
-    filteredSessions.forEach(session => {
-      const collegeId = session.collegeId;
-      const college = colleges.find(c => c.id === collegeId);
-      const collegeCode = college?.code || 'UNK';
-      
-      if (!collegeStats[collegeCode]) {
-        collegeStats[collegeCode] = { id: collegeId, fullName: college?.name || 'Unknown', ratingSum: 0, ratingCount: 0, responses: 0 };
+    fetchedFilteredSessions.forEach(session => {
+      const college = colleges.find(c => c.id === session.collegeId);
+      const code = college?.code || 'UNK';
+      if (!collegeStats[code]) {
+        collegeStats[code] = { id: session.collegeId, fullName: college?.name || 'Unknown', ratingSum: 0, ratingCount: 0, responses: 0 };
       }
-      
       const cs = session.compiledStats;
       if (cs) {
         Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
-          collegeStats[collegeCode].ratingSum += Number(rating) * count;
-          collegeStats[collegeCode].ratingCount += count;
+          collegeStats[code].ratingSum += Number(rating) * count;
+          collegeStats[code].ratingCount += count;
         });
-        collegeStats[collegeCode].responses += cs.totalResponses || 0;
+        collegeStats[code].responses += cs.totalResponses || 0;
       }
     });
-
     return Object.entries(collegeStats)
       .map(([code, data]) => ({
-        name: code,
-        fullName: data.fullName,
+        name: code, fullName: data.fullName,
         avgRating: data.ratingCount > 0 ? parseFloat((data.ratingSum / data.ratingCount).toFixed(2)) : 0,
         responses: data.responses
       }))
       .sort((a, b) => b.avgRating - a.avgRating)
-      .slice(0, 30); // Max 30 colleges for the bar chart
-  }, [filteredSessions, colleges]);
+      .slice(0, 30);
+  }, [isDefaultView, colleges, perCollegeCaches, fetchedFilteredSessions]);
 
   // Response trend - use cache for specific college, aggregate from sessions for all
   // Response trend - use cache data (now handles both specific and all colleges)
@@ -442,25 +569,35 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
     }));
   }, [aggregatedStats]);
 
-  // Domain analytics data (from filtered sessions)
+  // Domain analytics data
   const domainAnalyticsData = useMemo(() => {
     const domains = {};
-    
-    filteredSessions.forEach(session => {
-      const domain = session.domain || 'Unknown';
-      if (!domains[domain]) {
-        domains[domain] = { ratingSum: 0, ratingCount: 0, responses: 0 };
-      }
-      
-      const cs = session.compiledStats;
-      if (cs) {
-        Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
-          domains[domain].ratingSum += Number(rating) * count;
-          domains[domain].ratingCount += count;
+
+    if (isDefaultView) {
+      // Default view: aggregate domains from all college caches
+      Object.values(perCollegeCaches).forEach(cache => {
+        Object.entries(cache.domains || {}).forEach(([domain, data]) => {
+          if (!domains[domain]) domains[domain] = { ratingSum: 0, ratingCount: 0, responses: 0 };
+          domains[domain].ratingSum += data.ratingSum || 0;
+          domains[domain].ratingCount += data.totalRatingsCount || 0;
+          domains[domain].responses += data.totalResponses || 0;
         });
-        domains[domain].responses += cs.totalResponses || 0;
-      }
-    });
+      });
+    } else {
+      // Filtered view: use fetched sessions from dynamic query
+      fetchedFilteredSessions.forEach(session => {
+        const domain = session.domain || 'Unknown';
+        if (!domains[domain]) domains[domain] = { ratingSum: 0, ratingCount: 0, responses: 0 };
+        const cs = session.compiledStats;
+        if (cs) {
+          Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
+            domains[domain].ratingSum += Number(rating) * count;
+            domains[domain].ratingCount += count;
+          });
+          domains[domain].responses += cs.totalResponses || 0;
+        }
+      });
+    }
 
     const chartData = Object.entries(domains).map(([name, data]) => ({
       name: name.replace(/_/g, ' '),
@@ -469,7 +606,7 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
     }));
 
     return { chartData, totalResponses: chartData.reduce((sum, d) => sum + d.responses, 0) };
-  }, [filteredSessions]);
+  }, [isDefaultView, perCollegeCaches, fetchedFilteredSessions]);
 
   // Qualitative data (aggregate from filtered sessions)
   // Qualitative data - Filter what we have in cache
@@ -522,7 +659,13 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
   const topTrainers = useMemo(() => {
     const trainerStats = {};
     
-    filteredSessions.forEach(session => {
+    // Use context sessions on default view, fetched sessions on filtered view
+    const sessionsToUse = isDefaultView ? sessions : fetchedFilteredSessions;
+    
+    sessionsToUse.forEach(session => {
+      // Only count closed sessions with stats
+      if (session.status !== 'inactive' || !session.compiledStats) return;
+      
       const trainerId = session.assignedTrainer?.id;
       const trainerName = session.assignedTrainer?.name || 'Unknown';
       if (!trainerId) return;
@@ -568,7 +711,7 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
       }))
       .sort((a, b) => b.avgRating - a.avgRating)
       .slice(0, 5);
-  }, [filteredSessions]);
+  }, [isDefaultView, sessions, fetchedFilteredSessions]);
 
   return (
     <div className="space-y-6">
@@ -588,13 +731,15 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {/* Project Code - Disabled for now */}
+            {/* Project Code */}
             <div className="space-y-1">
               <Label className="text-xs">Project</Label>
               <Select value={filters.projectCode} onValueChange={v => {
-                  setFilters({ ...filters, projectCode: v });
-              }}>
-                <SelectTrigger>
+                  setFilters({ ...filters, projectCode: v, collegeId: 'all', course: 'all', year: 'all', batch: 'all' });
+              }}
+                disabled={filters.collegeId !== 'all'}
+              >
+                <SelectTrigger className={filters.collegeId !== 'all' ? 'opacity-50' : ''}>
                   <SelectValue placeholder="All Projects" />
                 </SelectTrigger>
                 <SelectContent>
@@ -611,9 +756,11 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
             <div className="space-y-1">
               <Label className="text-xs">College</Label>
               <Select value={filters.collegeId} onValueChange={v => {
-                setFilters({...filters, collegeId: v, course: 'all', year: 'all', batch: 'all'});
-              }}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                setFilters({...filters, collegeId: v, projectCode: 'all', course: 'all', year: 'all', batch: 'all'});
+              }}
+                disabled={filters.projectCode !== 'all'}
+              >
+                <SelectTrigger className={filters.projectCode !== 'all' ? 'opacity-50' : ''}><SelectValue placeholder="All" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Colleges</SelectItem>
                   {colleges.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}

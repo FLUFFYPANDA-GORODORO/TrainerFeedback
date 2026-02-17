@@ -1,3 +1,0 @@
-PASS: Created new config correctly.
-PASS: Merged new data without overwriting existing.
-PASS: No unnecessary updates performed.

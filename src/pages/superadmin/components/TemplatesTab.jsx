@@ -59,6 +59,7 @@ import {
   deleteTemplate,
   seedDefaultTemplate,
 } from "@/services/superadmin/templateService";
+import { useSuperAdminData } from "@/contexts/SuperAdminDataContext";
 import {
   QUESTION_CATEGORIES,
   DEFAULT_CATEGORY,
@@ -67,13 +68,15 @@ import {
 const QUESTION_TYPES = [
   { value: "rating", label: "Star Rating (1-5)" },
   { value: "mcq", label: "Multiple Choice" },
+  { value: "multiselect", label: "Multi-Select" },
   { value: "text", label: "Long Answer" },
+  { value: "futureSession", label: "Future Expectations" },
   { value: "yesno", label: "Yes/No" },
 ];
 
 const TemplatesTab = () => {
-  const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { templates, loadTemplates, loading: contextLoading } = useSuperAdminData();
+  const loading = contextLoading.templates;
   const [builderOpen, setBuilderOpen] = useState(false);
 
   // =====================================
@@ -104,22 +107,23 @@ const TemplatesTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    loadTemplates();
-  }, []);
+    const init = async () => {
+        // If empty, try seeding then load
+        // But loadTemplates from context is cached.
+        // If we want to guarantee seeding, we should check length after load.
+        await loadTemplates();
+        // Determine if we need to seed inside the effect is tricky if loadTemplates is async state update.
+        // Actually, the context handles the data. 
+        // Let's just trust loadTemplates to return data. 
+        // If we really want to seed defaults if empty, we can check result.
+        // const data = await loadTemplates();
+        // if (data.length === 0) { await seedDefaultTemplate(); await loadTemplates(true); }
+        // For now, let's stick to standard loading.
+    };
+    init();
+  }, [loadTemplates]);
 
-  const loadTemplates = async () => {
-    setLoading(true);
-    try {
-      // Try to seed if empty
-      await seedDefaultTemplate();
-      const data = await getAllTemplates();
-      setTemplates(data);
-    } catch (error) {
-      toast.error("Failed to load templates");
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const handleCreateNew = () => {
     setNewTemplateInfo({ title: "", description: "" });
@@ -147,7 +151,8 @@ const TemplatesTab = () => {
       await createTemplate(templateToCreate);
       toast.success("Template created! Click to edit and add questions.");
       setCreateDialogOpen(false);
-      loadTemplates();
+      setCreateDialogOpen(false);
+      loadTemplates(true); // Force refresh context
     } catch (err) {
       toast.error("Failed to create template");
     }
@@ -224,7 +229,7 @@ const TemplatesTab = () => {
               id: Date.now().toString() + sIdx + qIdx,
               text: q.text || "",
               // Default to 'rating' if type is invalid or not provided
-              type: ["rating", "mcq", "text", "boolean"].includes(q.type)
+              type: ["rating", "mcq", "multiselect", "futureSession", "text", "boolean"].includes(q.type)
                 ? q.type
                 : "rating",
               // Set category for rating questions, use default for others
@@ -248,7 +253,7 @@ const TemplatesTab = () => {
               questions: importedData.questions.map((q, qIdx) => ({
                 id: Date.now().toString() + qIdx,
                 text: q.text || "",
-                type: ["rating", "mcq", "text", "boolean"].includes(q.type)
+                type: ["rating", "mcq", "multiselect", "text", "boolean"].includes(q.type)
                   ? q.type
                   : "rating",
                 category: q.category || DEFAULT_CATEGORY,
@@ -297,7 +302,7 @@ const TemplatesTab = () => {
       try {
         await deleteTemplate(id);
         toast.success("Template deleted");
-        loadTemplates();
+        loadTemplates(true); // Force refresh context
       } catch (err) {
         toast.error("Failed to delete template");
       }
@@ -326,7 +331,7 @@ const TemplatesTab = () => {
         toast.success("Template created");
       }
       setBuilderOpen(false);
-      loadTemplates();
+      loadTemplates(true); // Force refresh context
     } catch (err) {
       toast.error("Failed to save template");
     }
@@ -427,6 +432,43 @@ const TemplatesTab = () => {
     setCurrentTemplate({ ...currentTemplate, sections: newSections });
   };
 
+  // Drag-and-drop state for question reordering
+  const [dragState, setDragState] = useState({ sIdx: null, qIdx: null });
+  const [dragOverState, setDragOverState] = useState({ sIdx: null, qIdx: null });
+
+  const handleDragStart = (sIdx, qIdx) => {
+    setDragState({ sIdx, qIdx });
+  };
+
+  const handleDragOver = (e, sIdx, qIdx) => {
+    e.preventDefault();
+    if (dragState.sIdx === sIdx) {
+      setDragOverState({ sIdx, qIdx });
+    }
+  };
+
+  const handleDrop = (e, sIdx, qIdx) => {
+    e.preventDefault();
+    if (dragState.sIdx !== sIdx || dragState.qIdx === qIdx) {
+      setDragState({ sIdx: null, qIdx: null });
+      setDragOverState({ sIdx: null, qIdx: null });
+      return;
+    }
+    const newSections = [...currentTemplate.sections];
+    const questions = [...newSections[sIdx].questions];
+    const [moved] = questions.splice(dragState.qIdx, 1);
+    questions.splice(qIdx, 0, moved);
+    newSections[sIdx].questions = questions;
+    setCurrentTemplate({ ...currentTemplate, sections: newSections });
+    setDragState({ sIdx: null, qIdx: null });
+    setDragOverState({ sIdx: null, qIdx: null });
+  };
+
+  const handleDragEnd = () => {
+    setDragState({ sIdx: null, qIdx: null });
+    setDragOverState({ sIdx: null, qIdx: null });
+  };
+
   return (
     <div className="space-y-6">
       {builderOpen ? (
@@ -494,10 +536,21 @@ const TemplatesTab = () => {
                 {section.questions.map((q, qIdx) => (
                   <div
                     key={q.id}
-                    className="p-4 bg-muted/30 rounded-lg space-y-3 group border border-transparent hover:border-border"
+                    draggable
+                    onDragStart={() => handleDragStart(sIdx, qIdx)}
+                    onDragOver={(e) => handleDragOver(e, sIdx, qIdx)}
+                    onDrop={(e) => handleDrop(e, sIdx, qIdx)}
+                    onDragEnd={handleDragEnd}
+                    className={`p-4 bg-muted/30 rounded-lg space-y-3 group border transition-all ${
+                      dragOverState.sIdx === sIdx && dragOverState.qIdx === qIdx
+                        ? 'border-primary border-dashed bg-primary/5'
+                        : dragState.sIdx === sIdx && dragState.qIdx === qIdx
+                          ? 'opacity-50 border-transparent'
+                          : 'border-transparent hover:border-border'
+                    }`}
                   >
                     <div className="flex gap-3 items-center">
-                      <div className="text-muted-foreground cursor-grab">
+                      <div className="text-muted-foreground cursor-grab active:cursor-grabbing">
                         <GripVertical className="h-4 w-4" />
                       </div>
                       <div className="flex-1">
@@ -523,6 +576,9 @@ const TemplatesTab = () => {
                           } else if (v === "mcq") {
                             // Regular MCQ starts with empty options
                             newSections[sIdx].questions[qIdx].type = "mcq";
+                            newSections[sIdx].questions[qIdx].options = [];
+                          } else if (v === "multiselect") {
+                            newSections[sIdx].questions[qIdx].type = "multiselect";
                             newSections[sIdx].questions[qIdx].options = [];
                           } else {
                             newSections[sIdx].questions[qIdx].type = v;
@@ -621,6 +677,48 @@ const TemplatesTab = () => {
                         {q.options?.map((opt, oIdx) => (
                           <div key={oIdx} className="flex gap-2 items-center">
                             <div className="h-4 w-4 rounded-full border border-muted-foreground flex-shrink-0" />
+                            <Input
+                              value={opt}
+                              onChange={(e) =>
+                                updateQuestionOption(
+                                  sIdx,
+                                  qIdx,
+                                  oIdx,
+                                  e.target.value,
+                                )
+                              }
+                              className="h-8"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground"
+                              onClick={() =>
+                                removeQuestionOption(sIdx, qIdx, oIdx)
+                              }
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => addQuestionOption(sIdx, qIdx)}
+                        >
+                          + Add Option
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Multi-Select Options */}
+                    {q.type === "multiselect" && (
+                      <div className="space-y-2 pl-8 border-l-2 ml-2">
+                        <p className="text-xs text-muted-foreground">Students can select multiple options</p>
+                        {q.options?.map((opt, oIdx) => (
+                          <div key={oIdx} className="flex gap-2 items-center">
+                            <div className="h-4 w-4 rounded-sm border border-muted-foreground flex-shrink-0" />
                             <Input
                               value={opt}
                               onChange={(e) =>
@@ -1126,11 +1224,70 @@ const TemplatesTab = () => {
                                 </div>
                               )}
 
+                              {/* Multi-Select Type */}
+                              {q.type === "multiselect" && q.options && (
+                                <div className="space-y-2">
+                                  <p className="text-xs text-muted-foreground">Select all that apply</p>
+                                  {q.options.map((option, optIndex) => {
+                                    const selected = Array.isArray(previewResponses[key]) && previewResponses[key].includes(option);
+                                    return (
+                                      <button
+                                        key={optIndex}
+                                        type="button"
+                                        onClick={() =>
+                                          setPreviewResponses((prev) => {
+                                            const current = Array.isArray(prev[key]) ? [...prev[key]] : [];
+                                            if (current.includes(option)) {
+                                              return { ...prev, [key]: current.filter(o => o !== option) };
+                                            } else {
+                                              return { ...prev, [key]: [...current, option] };
+                                            }
+                                          })
+                                        }
+                                        className={`w-full flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all text-left ${
+                                          selected
+                                            ? "border-primary bg-primary/5"
+                                            : "border-border hover:border-primary/50"
+                                        }`}
+                                      >
+                                        <div
+                                          className={`h-4 w-4 rounded-sm border-2 flex items-center justify-center ${
+                                            selected
+                                              ? "border-primary bg-primary text-white"
+                                              : "border-muted-foreground"
+                                          }`}
+                                        >
+                                          {selected && <span className="text-[10px] leading-none">✓</span>}
+                                        </div>
+                                        <span>{option}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
                               {/* Text Type */}
                               {q.type === "text" && (
                                 <div className="space-y-2">
                                   <Textarea
                                     placeholder="Share your thoughts..."
+                                    value={previewResponses[key] || ""}
+                                    onChange={(e) =>
+                                      setPreviewResponses((prev) => ({
+                                        ...prev,
+                                        [key]: e.target.value,
+                                      }))
+                                    }
+                                    rows={3}
+                                  />
+                                </div>
+                              )}
+
+                              {/* Future Session Type */}
+                              {q.type === "futureSession" && (
+                                <div className="space-y-2">
+                                  <Textarea
+                                    placeholder="What topics or skills would you like covered in future sessions?"
                                     value={previewResponses[key] || ""}
                                     onChange={(e) =>
                                       setPreviewResponses((prev) => ({

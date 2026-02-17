@@ -44,13 +44,21 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAdminData } from '@/contexts/AdminDataContext';
 import { getAcademicConfig } from '@/services/superadmin/academicService';
+import { getAnalyticsSessions } from '@/services/superadmin/sessionService'; // New import
 
 const CollegeOverviewTab = () => {
-  const { sessions, trainers, college, cache, trends, loadSessions, refreshAll, loading } = useAdminData();
+  const { sessions, trainers, college, cache, trends, loadSessions, loadTrainers, refreshAll, loading } = useAdminData();
+
+  // Auto-load trainers for the filter dropdown
+  useEffect(() => {
+    if (trainers.length === 0 && loadTrainers) {
+      loadTrainers();
+    }
+  }, [trainers.length, loadTrainers]);
 
   // Filter state
   const [filters, setFilters] = useState({
-    projectCode: 'all', // Keeping in state but removing from UI as requested
+    projectCode: 'all', 
     trainerId: 'all',
     course: 'all',
     department: 'all',
@@ -58,6 +66,11 @@ const CollegeOverviewTab = () => {
     batch: 'all',
     dateRange: 'all'
   });
+
+  // Analytics State
+  const [analyticsData, setAnalyticsData] = useState(null); // Stores compiled stats for current view
+  const [analyticsCache, setAnalyticsCache] = useState({}); // Local Cache: { filterKeyString: statsObject }
+  const [isFetchingAnalytics, setIsFetchingAnalytics] = useState(false);
 
   // Academic config for current college
   const [academicOptions, setAcademicOptions] = useState(null);
@@ -122,7 +135,7 @@ const CollegeOverviewTab = () => {
       }
     };
     loadAcademicConfig();
-  }, [college]);
+  }, [college?.id]);
 
   // Extract available lists for filters
   const availableCourses = useMemo(() => {
@@ -213,36 +226,141 @@ const CollegeOverviewTab = () => {
   //    }
   // }, [sessions.length, loadSessions]);
 
+  // NOTE: filteredSessions is no longer used for aggregation in the dynamic model.
+  // We keep it empty or could use it if we wanted to show a list of the 30 fetched sessions.
+  // For now, to match the dynamic stats approach, we don't rely on loading all sessions.
   const filteredSessions = useMemo(() => {
-    // Only used if sessions ARE loaded (e.g. visited sessions tab)
-    if (sessions.length === 0) return [];
+      // If we wanted to populate this with the sessions fetched for analytics, we would need to store them in state.
+      // But purely for stats aggregation, we used 'analyticsData'.
+      return []; 
+  }, []);
 
-    return sessions.filter(session => {
-      if (session.status !== 'inactive' || !session.compiledStats) return false;
-      
-      // if (filters.projectCode !== 'all' && session.projectId !== filters.projectCode) return false; // Removed filter UI
-      if (filters.trainerId !== 'all' && session.assignedTrainer?.id !== filters.trainerId) return false;
-      if (filters.course !== 'all' && session.course !== filters.course) return false;
-      if (filters.department !== 'all' && session.branch !== filters.department) return false; // Assuming branch == department
-      if (filters.year !== 'all' && session.year !== filters.year) return false;
-      if (filters.batch !== 'all' && session.batch !== filters.batch) return false;
-      
-      if (filters.dateRange !== 'all') {
-        const { startDate, endDate } = getDateRange(filters.dateRange);
-        if (startDate && endDate) {
-          const sessionDate = new Date(session.sessionDate);
-          if (sessionDate < startDate || sessionDate > endDate) return false;
-        }
-      }
-      return true;
+  // --- Dynamic Analytics Fetching ---
+  
+  // Helper to generate cache key
+  const getCacheKey = (filters) => {
+    return JSON.stringify({
+      collegeId: college?.id,
+      ...filters
     });
-  }, [sessions, filters]);
+  };
 
-  // Aggregate stats: Use Cache Hierarchical Lookup Optimized for Read Cost
+  // Helper to Aggregate Stats from Sessions List
+  const aggregateStatsFromSessions = (sessionList) => {
+      const stats = {
+          totalResponses: 0,
+          totalRatingsCount: 0,
+          ratingSum: 0,
+          ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+          categoryTotals: {},
+          categoryCounts: {},
+          totalSessions: sessionList.length
+      };
+
+      sessionList.forEach(session => {
+          const cs = session.compiledStats;
+          // Only count valid stats
+          if (!cs) return;
+
+          stats.totalResponses += cs.totalResponses || 0;
+          
+          Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
+              stats.ratingDistribution[rating] = (stats.ratingDistribution[rating] || 0) + count;
+              stats.ratingSum += Number(rating) * count;
+              stats.totalRatingsCount += count;
+          });
+
+          Object.entries(cs.categoryAverages || {}).forEach(([cat, avg]) => {
+              const count = cs.totalResponses || 1; 
+              stats.categoryTotals[cat] = (stats.categoryTotals[cat] || 0) + (avg * count);
+              stats.categoryCounts[cat] = (stats.categoryCounts[cat] || 0) + count;
+          });
+      });
+
+      const avgRating = stats.totalRatingsCount > 0 
+          ? (stats.ratingSum / stats.totalRatingsCount).toFixed(2) 
+          : '0.00';
+
+      const categoryAverages = {};
+      Object.keys(stats.categoryTotals).forEach(cat => {
+          categoryAverages[cat] = stats.categoryCounts[cat] > 0
+            ? (stats.categoryTotals[cat] / stats.categoryCounts[cat]).toFixed(2)
+            : 0;
+      });
+
+      return {
+          totalSessions: stats.totalSessions,
+          totalResponses: stats.totalResponses,
+          totalRatingsCount: stats.totalRatingsCount,
+          avgRating,
+          ratingDistribution: stats.ratingDistribution,
+          categoryAverages,
+          qualitative: { high: [], low: [], avg: [] } 
+      };
+  };
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+        if (!college?.id) return;
+
+        // Skip dynamic fetch when default view — global cache is used instead
+        const isDefault = filters.trainerId === 'all' && 
+                          filters.course === 'all' && 
+                          filters.projectCode === 'all' &&
+                          filters.year === 'all' &&
+                          filters.department === 'all' &&
+                          filters.batch === 'all' &&
+                          filters.dateRange === 'all';
+        if (isDefault) {
+            setAnalyticsData(null);
+            return;
+        }
+
+        // 1. Check Cache
+        const cacheKey = getCacheKey(filters);
+        if (analyticsCache[cacheKey]) {
+            setAnalyticsData(analyticsCache[cacheKey]);
+            return;
+        }
+
+        setIsFetchingAnalytics(true);
+        try {
+            // 2. Fetch Sessions
+            const fetchedSessions = await getAnalyticsSessions({
+                collegeId: college.id,
+                ...filters,
+                limitCount: 30
+            });
+
+            // 3. Aggregate Stats
+            const computedStats = aggregateStatsFromSessions(fetchedSessions);
+
+            // 4. Update Cache & State
+            setAnalyticsCache(prev => ({ ...prev, [cacheKey]: computedStats }));
+            setAnalyticsData(computedStats);
+        } catch (err) {
+            console.error("Failed to fetch analytics:", err);
+            setAnalyticsData(null); 
+        } finally {
+            setIsFetchingAnalytics(false);
+        }
+    };
+
+    // Debounce slightly to prevent rapid firing
+    const timer = setTimeout(fetchAnalytics, 300);
+    return () => clearTimeout(timer);
+
+  }, [filters, college?.id]); 
+
+  // Combined Stats: Prefer Global Cache for Default View, otherwise Dynamic Data
   const aggregatedStats = useMemo(() => {
     // 1. If global view (no filters), return root cache
     const isDefaultView = filters.trainerId === 'all' && 
                           filters.course === 'all' && 
+                          filters.projectCode === 'all' &&
+                          filters.year === 'all' &&
+                          filters.department === 'all' &&
+                          filters.batch === 'all' &&
                           filters.dateRange === 'all';
     
     if (isDefaultView && cache) {
@@ -270,104 +388,17 @@ const CollegeOverviewTab = () => {
       };
     }
 
-    // 2. If filtered by Hierarchy (Course -> Year -> Batch), try to peek into Cache hierarchy
-    // Note: Department level stats are NOT currently in cache, so we might fallback or show 'N/A' if granular dept filtering strictly needed without sessions.
-    // However, we can use Course -> Year -> Batch if available.
-    
-    if (cache && cache.courses && filters.course !== 'all') {
-       const courseData = cache.courses[filters.course];
-       if (courseData) {
-          let targetData = courseData; // Start at course level
-          
-          // Drill down if Year selected
-          if (filters.year !== 'all' && targetData.years && targetData.years[filters.year]) {
-             targetData = targetData.years[filters.year];
-             
-             // Drill down if Batch selected
-             if (filters.batch !== 'all' && targetData.batches && targetData.batches[filters.batch]) {
-                targetData = targetData.batches[filters.batch];
-             }
-          }
-          
-          // If we have data at this level
-          if (targetData.totalResponses !== undefined) {
-             const avg = targetData.totalRatingsCount > 0 
-                ? (targetData.ratingSum / targetData.totalRatingsCount).toFixed(2) 
-                : '0.00';
-             
-             return {
-                totalSessions: 0, // Not tracked in hierarchy usually, or add if available
-                totalResponses: targetData.totalResponses || 0,
-                totalRatingsCount: targetData.totalRatingsCount || 0,
-                avgRating: avg,
-                ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, // Hierarchy often doesn't store distribution to save space
-                categoryAverages: {} // Hierarchy doesn't store category breakdown
-             };
-          }
-       }
-    }
- 
-    // 3. Fallback: Aggregate from Filtered Sessions (Legacy/Detailed behavior)
-    if (filteredSessions.length > 0) {
-       const stats = {
-         totalResponses: 0,
-         totalRatingsCount: 0,
-         ratingSum: 0,
-         ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-         categoryTotals: {},
-         categoryCounts: {}
-       };
- 
-       filteredSessions.forEach(session => {
-         const cs = session.compiledStats;
-         if (!cs) return;
- 
-         stats.totalResponses += cs.totalResponses || 0;
-         
-         Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
-           stats.ratingDistribution[rating] = (stats.ratingDistribution[rating] || 0) + count;
-           stats.ratingSum += Number(rating) * count;
-           stats.totalRatingsCount += count;
-         });
- 
-         Object.entries(cs.categoryAverages || {}).forEach(([cat, avg]) => {
-           const count = cs.totalResponses || 1;
-           stats.categoryTotals[cat] = (stats.categoryTotals[cat] || 0) + (avg * count);
-           stats.categoryCounts[cat] = (stats.categoryCounts[cat] || 0) + count;
-         });
-       });
- 
-       const avgRating = stats.totalRatingsCount > 0 
-         ? (stats.ratingSum / stats.totalRatingsCount).toFixed(2) 
-         : '0.00';
- 
-       const categoryAverages = {};
-       Object.keys(stats.categoryTotals).forEach(cat => {
-         categoryAverages[cat] = stats.categoryCounts[cat] > 0
-           ? (stats.categoryTotals[cat] / stats.categoryCounts[cat]).toFixed(2)
-           : 0;
-       });
- 
-       return {
-         totalSessions: filteredSessions.length,
-         totalResponses: stats.totalResponses,
-         totalRatingsCount: stats.totalRatingsCount,
-         avgRating,
-         ratingDistribution: stats.ratingDistribution,
-         categoryAverages
-       };
-    }
-
-    // Default Empty State
-    return {
+    // 2. Use Dynamic Data (or empty if loading/error)
+    return analyticsData || {
       totalSessions: 0,
       totalResponses: 0,
       totalRatingsCount: 0,
-      avgRating: '0.00',
+      avgRating: 0,
       ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-      categoryAverages: {}
+      categoryAverages: {},
+      qualitative: { high: [], low: [], avg: [] }
     };
-  }, [filteredSessions, cache, filters]);
+  }, [analyticsData, cache, filters]);
 
   // Response trend - use cache trends data with day numbers like CollegeAnalytics
   // Response trend - use normalized trends data (YYYY-MM-DD keys)

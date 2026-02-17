@@ -32,12 +32,13 @@ import {
   createSystemUser,
   updateSystemUser,
   deleteSystemUser,
-  getAllSystemUsers,
 } from "@/services/superadmin/userService";
 
+import { useSuperAdminData } from "@/contexts/SuperAdminDataContext";
+
 const AdminsTab = ({ colleges, onRefresh, isDialogOpen, setDialogOpen }) => {
-  const [admins, setAdmins] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { admins, loadAdmins, loading: contextLoading } = useSuperAdminData();
+  const loading = contextLoading.admins;
   const [localDialogOpen, setLocalDialogOpen] = useState(false);
   const dialogOpen =
     isDialogOpen !== undefined ? isDialogOpen : localDialogOpen;
@@ -56,24 +57,10 @@ const AdminsTab = ({ colleges, onRefresh, isDialogOpen, setDialogOpen }) => {
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch users on mount
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const users = await getAllSystemUsers();
-      // Filter out those who might be just pure superAdmins or strictly college admins if needed,
-      // but generally we show all 'system users' here.
-      setAdmins(users);
-    } catch (error) {
-      toast.error("Failed to load admins");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Fetch users on mount using Context (uses cache)
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    loadAdmins();
+  }, [loadAdmins]);
 
   const openCreateDialog = () => {
     setFormData(defaultFormState);
@@ -129,7 +116,7 @@ const AdminsTab = ({ colleges, onRefresh, isDialogOpen, setDialogOpen }) => {
         toast.success("User created successfully");
       }
       setDialogOpen(false);
-      fetchUsers(); // Refresh list
+      loadAdmins(true); // Force refresh context cache
       if (onRefresh) onRefresh();
     } catch (error) {
       toast.error(error.message || "Operation failed");
@@ -147,7 +134,7 @@ const AdminsTab = ({ colleges, onRefresh, isDialogOpen, setDialogOpen }) => {
       try {
         await deleteSystemUser(id);
         toast.success("User deleted");
-        setAdmins((prev) => prev.filter((u) => u.id !== id));
+        loadAdmins(true); // Sync with context cache
       } catch (error) {
         toast.error("Failed to delete user");
       }

@@ -26,8 +26,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from 'sonner';
 import {
   saveAcademicConfig,
-  getAcademicConfig
 } from '@/services/superadmin/academicService';
+import { useSuperAdminData } from "@/contexts/SuperAdminDataContext";
 import {
   Dialog,
   DialogContent,
@@ -105,6 +105,7 @@ const Adder = ({ placeholder, onAdd, size = 'default', minimal = false, buttonLa
 };
 
 const AcademicConfigTab = ({ colleges }) => {
+  const { loadAcademicConfig, updateAcademicConfig } = useSuperAdminData();
   const [selectedCollegeId, setSelectedCollegeId] = useState('');
   const [config, setConfig] = useState({ courses: {} });
   const [loading, setLoading] = useState(false);
@@ -193,7 +194,8 @@ const AcademicConfigTab = ({ colleges }) => {
   const loadConfig = async (collegeId) => {
     setLoading(true);
     try {
-      const data = await getAcademicConfig(collegeId);
+      // Use context to load (checks cache first)
+      const data = await loadAcademicConfig(collegeId);
       setConfig(data || { courses: {} });
       // Expand all courses by default
       if (data?.courses) {
@@ -216,6 +218,8 @@ const AcademicConfigTab = ({ colleges }) => {
     setLoading(true);
     try {
       await saveAcademicConfig(selectedCollegeId, config);
+      // Update context cache with new config
+      updateAcademicConfig(selectedCollegeId, config);
       toast.success('Configuration saved successfully');
       setConfigModalOpen(false);
     } catch (error) {

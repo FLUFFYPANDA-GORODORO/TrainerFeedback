@@ -40,6 +40,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { sessionsApi, collegesApi } from '@/lib/dataService';
 import { getTrainerCache, getTrainerTrends } from '@/services/superadmin/cacheService';
+import { getAnalyticsSessions } from '@/services/superadmin/sessionService'; // New import
 import { toast } from 'sonner';
 
 const TrainerOverview = () => {
@@ -48,8 +49,13 @@ const TrainerOverview = () => {
   // Data state
   const [cache, setCache] = useState(null);
   const [trends, setTrends] = useState(null);
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState([]); // Still used for initial/list, but analytics will go dynamic
   const [isLoading, setIsLoading] = useState(true);
+
+  // Analytics State
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsCache, setAnalyticsCache] = useState({}); 
+  const [isFetchingAnalytics, setIsFetchingAnalytics] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -193,66 +199,28 @@ const TrainerOverview = () => {
 
   // --- Filtered Data & Stats Aggregation ---
 
-  const filteredSessions = useMemo(() => {
-    return sessions.filter(session => {
-       if (session.status !== 'inactive' || !session.compiledStats) return false;
 
-       if (filters.collegeId !== 'all' && session.collegeId !== filters.collegeId) return false;
-       if (filters.course !== 'all' && session.course !== filters.course) return false;
-       if (filters.department !== 'all' && (session.branch || session.department) !== filters.department) return false;
-       if (filters.year !== 'all' && session.year !== filters.year) return false;
-       if (filters.batch !== 'all' && session.batch !== filters.batch) return false;
+  // --- Dynamic Analytics Fetching ---
 
-       if (filters.dateRange !== 'all') {
-         const { startDate, endDate } = getDateRange(filters.dateRange);
-         if (startDate && endDate) {
-           const sessionDate = new Date(session.sessionDate);
-           if (sessionDate < startDate || sessionDate > endDate) return false;
-         }
-       }
-       return true;
+  const getCacheKey = (filters) => {
+    return JSON.stringify({
+      trainerId: user?.id || user?.uid, // Filter by current trainer
+      ...filters
     });
-  }, [sessions, filters]);
+  };
 
-  const aggregatedStats = useMemo(() => {
-     // 1. Initial State / Global View -> Use Cache
-     const isDefaultView = 
-        filters.collegeId === 'all' && 
-        filters.course === 'all' && 
-        filters.department === 'all' &&
-        filters.year === 'all' &&
-        filters.batch === 'all' &&
-        filters.dateRange === 'all';
-    
-      if (isDefaultView && cache) {
-          const avgRating = cache.totalRatingsCount > 0 
-            ? (cache.ratingSum / cache.totalRatingsCount).toFixed(2) 
-            : '0.00';
-          
-          return {
-            totalSessions: cache.totalSessions || 0,
-            totalResponses: cache.totalResponses || 0,
-            totalRatingsCount: cache.totalRatingsCount || 0,
-            avgRating,
-            ratingDistribution: cache.ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-            categoryAverages: cache.categoryData ? 
-                Object.fromEntries(Object.entries(cache.categoryData).map(([k, v]) => [k, v.count > 0 ? (v.sum / v.count).toFixed(2) : 0])) 
-                : {},
-            qualitative: cache.qualitative || { high: [], low: [], avg: [] }
-          };
-      }
-
-      // 2. Filtered View -> Aggregate from Sessions
+  const aggregateStatsFromSessions = (sessionList) => {
       const stats = {
           totalResponses: 0,
           totalRatingsCount: 0,
           ratingSum: 0,
           ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
           categoryTotals: {},
-          categoryCounts: {}
+          categoryCounts: {},
+          totalSessions: sessionList.length
       };
 
-      filteredSessions.forEach(session => {
+      sessionList.forEach(session => {
           const cs = session.compiledStats;
           if (!cs) return;
 
@@ -265,7 +233,7 @@ const TrainerOverview = () => {
           });
 
           Object.entries(cs.categoryAverages || {}).forEach(([cat, avg]) => {
-              const count = cs.totalResponses || 1; // Weighted by responses
+              const count = cs.totalResponses || 1; 
               stats.categoryTotals[cat] = (stats.categoryTotals[cat] || 0) + (avg * count);
               stats.categoryCounts[cat] = (stats.categoryCounts[cat] || 0) + count;
           });
@@ -283,16 +251,106 @@ const TrainerOverview = () => {
       });
 
       return {
-          totalSessions: filteredSessions.length,
+          totalSessions: stats.totalSessions,
           totalResponses: stats.totalResponses,
           totalRatingsCount: stats.totalRatingsCount,
           avgRating,
           ratingDistribution: stats.ratingDistribution,
           categoryAverages,
-          qualitative: { high: [], low: [], avg: [] } // Qualitative not aggregated on fly easily yet
+          qualitative: { high: [], low: [], avg: [] } 
       };
+  };
 
-  }, [filteredSessions, cache, filters]);
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+        const trainerId = user?.id || user?.uid;
+        if (!trainerId) return;
+
+        // Skip dynamic fetch when default view — trainer cache is used instead
+        const isDefault = filters.collegeId === 'all' && 
+                          filters.course === 'all' && 
+                          filters.department === 'all' &&
+                          filters.year === 'all' &&
+                          filters.batch === 'all' &&
+                          filters.dateRange === 'all';
+        if (isDefault) {
+            setAnalyticsData(null);
+            return;
+        }
+
+        const cacheKey = getCacheKey(filters);
+        if (analyticsCache[cacheKey]) {
+            setAnalyticsData(analyticsCache[cacheKey]);
+            return;
+        }
+
+        setIsFetchingAnalytics(true);
+        try {
+            const fetchedSessions = await getAnalyticsSessions({
+                trainerId,
+                ...filters,
+                limitCount: 30
+            });
+
+            const computedStats = aggregateStatsFromSessions(fetchedSessions);
+            
+            setAnalyticsCache(prev => ({ ...prev, [cacheKey]: computedStats }));
+            setAnalyticsData(computedStats);
+        } catch (err) {
+            console.error("Failed to fetch analytics:", err);
+            setAnalyticsData(null); 
+        } finally {
+            setIsFetchingAnalytics(false);
+        }
+    };
+
+    const timer = setTimeout(fetchAnalytics, 300);
+    return () => clearTimeout(timer);
+
+  }, [filters, user]);
+
+  const filteredSessions = useMemo(() => [], []);
+
+  const aggregatedStats = useMemo(() => {
+    // 1. Initial State / Global View -> Use Cache
+    const isDefaultView = 
+       filters.collegeId === 'all' && 
+       filters.course === 'all' && 
+       filters.department === 'all' &&
+       filters.year === 'all' &&
+       filters.batch === 'all' &&
+       filters.dateRange === 'all';
+   
+     if (isDefaultView && cache) {
+         const avgRating = cache.totalRatingsCount > 0 
+           ? (cache.ratingSum / cache.totalRatingsCount).toFixed(2) 
+           : '0.00';
+         
+         return {
+           totalSessions: cache.totalSessions || 0,
+           totalResponses: cache.totalResponses || 0,
+           totalRatingsCount: cache.totalRatingsCount || 0,
+           avgRating,
+           ratingDistribution: cache.ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+           categoryAverages: cache.categoryData ? 
+               Object.fromEntries(Object.entries(cache.categoryData).map(([k, v]) => [k, v.count > 0 ? (v.sum / v.count).toFixed(2) : 0])) 
+               : {},
+           qualitative: cache.qualitative || { high: [], low: [], avg: [] }
+         };
+     }
+
+     // 2. Filtered View -> Use Dynamic Data
+     return analyticsData || {
+        totalSessions: 0,
+        totalResponses: 0,
+        totalRatingsCount: 0,
+        avgRating: 0,
+        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        categoryAverages: {},
+        qualitative: { high: [], low: [], avg: [] }
+    };
+
+  }, [analyticsData, cache, filters]);
 
   // Chart Data Preparation
   

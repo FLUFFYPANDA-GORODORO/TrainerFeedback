@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { resetAllData } from '@/lib/dataService';
 import { createSystemUser } from '@/services/superadmin/userService';
-import { addTrainer } from '@/services/superadmin/trainerService';
 import { rebuildCache } from '@/services/superadmin/rebuildCache';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +30,7 @@ const SeedData = () => {
   const handleSeedAuth = async () => {
     setIsAuthSeeding(true);
     try {
-        // 1. Create Superadmin
+        // Create Superadmin only
         try {
             await createSystemUser({
                 name: 'Super Admin',
@@ -39,38 +38,13 @@ const SeedData = () => {
                 role: 'superAdmin',
                 collegeId: null
             }, 'password123');
-            toast.success('Superadmin created');
+            toast.success('Superadmin created successfully');
         } catch (e) {
-            console.log('Superadmin creation info:', e.message); // Likely already exists
-        }
-
-        // 2. Create College Admin
-        try {
-            await createSystemUser({
-                name: 'Jane Admin',
-                email: 'admin@icem.com',
-                role: 'collegeAdmin',
-                collegeId: 'col_1' // Assuming 'col_1' exists in seeded data or manual
-            }, 'password123');
-            toast.success('College Admin created');
-        } catch (e) {
-             console.log('College Admin creation info:', e.message);
-        }
-
-        // 3. Create Trainer
-        try {
-            await addTrainer({
-                trainer_id: 'TR-DEMO',
-                name: 'John Trainer',
-                email: 'john.trainer@test.com',
-                password: 'password123',
-                domain: 'Computer Science',
-                specialisation: 'React',
-                topics: ['Frontend', 'UI/UX']
-            });
-             toast.success('Trainer created');
-        } catch (e) {
-             console.log('Trainer creation info:', e.message);
+            if (e.code === 'auth/email-already-in-use') {
+                toast.info('Superadmin already exists');
+            } else {
+                throw e;
+            }
         }
 
         setAuthSeedComplete(true);
@@ -152,7 +126,7 @@ const SeedData = () => {
                     <Check className="h-4 w-4" /> Users created!
                 </div>
             )}
-             <p className="text-xs text-muted-foreground">Creates the demo accounts (Superadmin, Admin, Trainer) in your real Firebase project.</p>
+            <p className="text-xs text-muted-foreground">Creates the SuperAdmin account in your Firebase project using the same auth logic as the app.</p>
           </div>
 
           {/* Section 3: Maintenance */}
@@ -181,11 +155,9 @@ const SeedData = () => {
 
           {/* Credentials Info */}
           <div className="bg-secondary/30 p-4 rounded-lg space-y-2 mt-4">
-            <p className="text-sm font-medium">Demo Credentials:</p>
+            <p className="text-sm font-medium">Default Credentials:</p>
             <ul className="text-xs space-y-1 text-muted-foreground">
                 <li><strong>Super Admin:</strong> superadmin@gryphonacademy.co.in</li>
-                <li><strong>College Admin:</strong> admin@icem.com</li>
-                <li><strong>Trainer:</strong> john.trainer@test.com</li>
                 <li><strong>Password:</strong> password123</li>
             </ul>
             </div>

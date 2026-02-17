@@ -383,3 +383,46 @@ export const subscribeToSessions = (callback) => {
     console.error('Error in sessions subscription:', error);
   });
 };
+/**
+ * Fetch sessions for analytics with dynamic filters and limit
+ * Used for Overview Dashboards to avoid processing all sessions client-side
+ * @param {Object} params - { collegeId, trainerId, course, year, branch, batch, projectCode, limit }
+ * @returns {Promise<Array>} - List of sessions with compiledStats
+ */
+export const getAnalyticsSessions = async (params) => {
+  try {
+    const { 
+      collegeId, 
+      trainerId, 
+      course, 
+      year, 
+      department, // mapped to branch in db
+      batch, 
+      projectCode,
+      limitCount = 30 
+    } = params;
+
+    const constraints = [
+      where('status', '==', 'inactive'), // Only closed sessions have stats
+      orderBy('sessionDate', 'desc'),
+      limit(limitCount)
+    ];
+
+    if (collegeId && collegeId !== 'all') constraints.push(where('collegeId', '==', collegeId));
+    if (trainerId && trainerId !== 'all') constraints.push(where('assignedTrainer.id', '==', trainerId));
+    if (course && course !== 'all') constraints.push(where('course', '==', course));
+    if (year && year !== 'all') constraints.push(where('year', '==', year));
+    if (department && department !== 'all') constraints.push(where('branch', '==', department));
+    if (batch && batch !== 'all') constraints.push(where('batch', '==', batch));
+    if (projectCode && projectCode !== 'all') constraints.push(where('projectCode', '==', projectCode));
+
+    const q = query(collection(db, COLLECTION_NAME), ...constraints);
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error fetching analytics sessions:', error);
+    // Return empty array on error to prevent crash
+    return [];
+  }
+};

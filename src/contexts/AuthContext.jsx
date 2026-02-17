@@ -12,25 +12,7 @@ export const AuthProvider = ({ children }) => {
   // Helper function to fetch user role and data from Firestore
   const fetchUserRoleAndData = async (firebaseUser) => {
     try {
-      // 1. Check 'users' collection (Superadmin / College Admin)
-      const userDocRef = doc(db, 'users', firebaseUser.uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        return {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          role: userData.role, // 'superAdmin' or 'collegeAdmin'
-          ...userData
-        };
-      }
-
-      // 2. Check 'trainers' collection
-      // We assume the trainer document ID might NOT be the UID initially if not migrated, 
-      // but for new auth-based trainers we expect UID to match doc ID or a field.
-      // However, best practice with Auth is to use UID as doc ID.
-      // For now, let's try to find by doc ID = UID first.
+      // 1. Check 'trainers' collection first (avoids permission issues on 'users' for trainers)
       const trainerDocRef = doc(db, 'trainers', firebaseUser.uid);
       const trainerDocSnap = await getDoc(trainerDocRef);
 
@@ -41,6 +23,20 @@ export const AuthProvider = ({ children }) => {
           email: firebaseUser.email,
           role: 'trainer',
           ...trainerData
+        };
+      }
+
+      // 2. Check 'users' collection (Superadmin / College Admin)
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        return {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          role: userData.role, // 'superAdmin' or 'collegeAdmin'
+          ...userData
         };
       }
 

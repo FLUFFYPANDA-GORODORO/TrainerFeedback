@@ -99,6 +99,19 @@ export const AnonymousFeedback = () => {
     }));
   };
 
+  const handleMultiselectChange = (index, option) => {
+    setResponses(prev => {
+      const current = Array.isArray(prev[index]?.value) ? [...prev[index].value] : [];
+      const updated = current.includes(option)
+        ? current.filter(o => o !== option)
+        : [...current, option];
+      return {
+        ...prev,
+        [index]: { ...prev[index], value: updated, type: 'multiselect' }
+      };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -110,7 +123,8 @@ export const AnonymousFeedback = () => {
       // Validate required questions
       const requiredQuestions = questions.map((q, idx) => ({ ...q, idx })).filter(q => q.required);
       for (const q of requiredQuestions) {
-        if (!responses[q.idx]?.value) {
+        const val = responses[q.idx]?.value;
+        if (!val || (Array.isArray(val) && val.length === 0)) {
           setError('Please answer all required questions');
           setIsSubmitting(false);
           return;
@@ -242,6 +256,11 @@ export const AnonymousFeedback = () => {
             else value = Math.floor(Math.random() * 2) + 1; // 1 or 2
           } else if (type === 'mcq' && q.options) {
              value = q.options[Math.floor(Math.random() * q.options.length)];
+          } else if (type === 'multiselect' && q.options) {
+             // Pick a random subset (at least 1)
+             const shuffled = [...q.options].sort(() => 0.5 - Math.random());
+             const count = Math.floor(Math.random() * shuffled.length) + 1;
+             value = shuffled.slice(0, count);
           } else {
              value = comments[Math.floor(Math.random() * comments.length)];
           }
@@ -416,11 +435,56 @@ export const AnonymousFeedback = () => {
                       </div>
                     )}
 
+                    {/* Multi-Select Type */}
+                    {question.type === 'multiselect' && question.options && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Select all that apply</p>
+                        {question.options.map((option, optIndex) => {
+                          const selected = Array.isArray(responses[index]?.value) && responses[index].value.includes(option);
+                          return (
+                            <button
+                              key={optIndex}
+                              type="button"
+                              onClick={() => handleMultiselectChange(index, option)}
+                              className={`w-full flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all text-left ${
+                                selected
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-border hover:border-primary/50'
+                              }`}
+                            >
+                              <div
+                                className={`h-4 w-4 rounded-sm border-2 flex items-center justify-center flex-shrink-0 ${
+                                  selected
+                                    ? 'border-primary bg-primary text-white'
+                                    : 'border-muted-foreground'
+                                }`}
+                              >
+                                {selected && <span className="text-[10px] leading-none">✓</span>}
+                              </div>
+                              <span>{option}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     {/* Text Type */}
                     {(question.type === 'text' || question.responseType === 'text' || question.responseType === 'both') && (
                       <div className="space-y-2">
                         <Textarea
                           placeholder="Share your thoughts..."
+                          value={responses[index]?.value || ''}
+                          onChange={(e) => handleTextChange(index, e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+                    )}
+
+                    {/* Future Session Type */}
+                    {question.type === 'futureSession' && (
+                      <div className="space-y-2">
+                        <Textarea
+                          placeholder="What topics or skills would you like covered in future sessions?"
                           value={responses[index]?.value || ''}
                           onChange={(e) => handleTextChange(index, e.target.value)}
                           rows={3}

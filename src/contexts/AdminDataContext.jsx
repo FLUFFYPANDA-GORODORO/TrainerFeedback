@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { collegesApi, sessionsApi, usersApi, feedbackApi } from '@/lib/dataService';
 import { getAllSessions } from '@/services/superadmin/sessionService';
@@ -37,21 +37,29 @@ export const AdminDataProvider = ({ children }) => {
     feedback: false
   });
 
+  // Refs to access current values inside stable callbacks without adding them as deps
+  const loadedRef = useRef(loaded);
+  const collegeRef = useRef(college);
+  const sessionsRef = useRef(sessions);
+  const trainersRef = useRef(trainers);
+  const feedbackRef = useRef(feedback);
+  useEffect(() => { loadedRef.current = loaded; }, [loaded]);
+  useEffect(() => { collegeRef.current = college; }, [college]);
+  useEffect(() => { sessionsRef.current = sessions; }, [sessions]);
+  useEffect(() => { trainersRef.current = trainers; }, [trainers]);
+  useEffect(() => { feedbackRef.current = feedback; }, [feedback]);
+
   // Load college details
   const loadCollege = useCallback(async (force = false) => {
     if (!user?.collegeId) return null;
-    if (loaded.college && !force) return college;
+    if (loadedRef.current.college && !force) return collegeRef.current;
     
     setLoading(prev => ({ ...prev, college: true }));
     try {
-      // Use firestore service if available, fallback to mock/legacy for now if needed
-      // But we are moving to Firestore services.
-      // Assuming getCollegeById is available and imported
       try {
           const data = await getCollegeById(user.collegeId);
           setCollege(data);
       } catch (err) {
-          // Fallback to legacy dataService if firestore fails or not ready
           console.warn("Firestore college fetch failed, using legacy:", err);
           const data = collegesApi.getById(user.collegeId);
           setCollege(data);
@@ -69,7 +77,6 @@ export const AdminDataProvider = ({ children }) => {
              getCollegeTrends(user.collegeId, currentYearMonth)
         ];
 
-        // If currently in first week, fetch previous month too for trends
         if (isEarlyMonth) {
             const prevDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
             const prevYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
@@ -81,13 +88,12 @@ export const AdminDataProvider = ({ children }) => {
         const currentTrends = results[1] || { dailyResponses: {}, dailySessions: {} };
         const prevTrends = isEarlyMonth ? results[2] : null;
 
-        // Normalize trends into a single YYYY-MM-DD map
         const normalizedTrends = {};
         
         const processTrendDoc = (trendDoc, yearMonth) => {
            if (!trendDoc) return;
            Object.entries(trendDoc.dailyResponses || {}).forEach(([day, count]) => {
-              const fullDate = `${yearMonth}-${day}`; // e.g. 2024-02-05
+              const fullDate = `${yearMonth}-${day}`;
               if (!normalizedTrends[fullDate]) normalizedTrends[fullDate] = { responses: 0, sessions: 0 };
               normalizedTrends[fullDate].responses = count;
            });
@@ -117,16 +123,15 @@ export const AdminDataProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, college: false }));
     }
-  }, [user, loaded.college, college]);
+  }, [user?.collegeId]);
 
   // Load sessions
   const loadSessions = useCallback(async (force = false) => {
     if (!user?.collegeId) return [];
-    if (loaded.sessions && !force) return sessions;
+    if (loadedRef.current.sessions && !force) return sessionsRef.current;
     
     setLoading(prev => ({ ...prev, sessions: true }));
     try {
-      // Using the getAllSessions which supports filtering by collegeId
       const data = await getAllSessions(user.collegeId);
       setSessions(data);
       setLoaded(prev => ({ ...prev, sessions: true }));
@@ -138,32 +143,15 @@ export const AdminDataProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, sessions: false }));
     }
-  }, [user, loaded.sessions, sessions]);
+  }, [user?.collegeId]);
 
   // Load trainers
   const loadTrainers = useCallback(async (force = false) => {
-    if (loaded.trainers && !force) return trainers;
+    if (loadedRef.current.trainers && !force) return trainersRef.current;
     
     setLoading(prev => ({ ...prev, trainers: true }));
     try {
-      // We need trainers who are associated with this college OR have sessions here.
-      // For now, let's fetch all trainers and filter client side or if we have a better query.
-      // Currently, trainers might be assigned to a collegeId in their profile (if resident)
-      // OR they just visit.
-      // Let's get all trainers first (cacheable) and filter.
-      
       const { trainers: allTrainers } = await getAllTrainers(100); 
-      // Filter logic: 
-      // 1. Trainer has collegeId matching current college
-      // 2. OR Trainer exists in the sessions list (if sessions loaded)
-      
-      // Since sessions might not be loaded yet, we can't depend on them strict for the first load perfectly 
-      // without chaining. But let's basic filter by collegeId first if that property exists on trainer.
-      // If trainers are "freelance" they might not have a collegeId.
-      
-      // Let's just return all for now and let the UI filter, or filter by 'assigned' if key exists.
-      // Actually, if we want to show stats for trainers who visited, we rely on session data.
-      
       setTrainers(allTrainers);
       setLoaded(prev => ({ ...prev, trainers: true }));
       return allTrainers;
@@ -174,26 +162,16 @@ export const AdminDataProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, trainers: false }));
     }
-  }, [loaded.trainers, trainers]);
+  }, []);
 
   // Load feedback (Using legacy for now as feedback service migration might be partial)
   const loadFeedback = useCallback(async (force = false) => {
-    if (loaded.feedback && !force) return feedback;
+    if (loadedRef.current.feedback && !force) return feedbackRef.current;
     
     setLoading(prev => ({ ...prev, feedback: true }));
     try {
-      // TODO: Replace with Firestore feedback service when ready.
-      // For now using mock/legacy
       const allFeedback = feedbackApi.getAll();
-      // Filter for this college's sessions
-      // We need session Ids first. 
-      // If sessions are already loaded, use them. If not, fetch them?
-      // Simpler: Fetch all feedback and filter client side if dataset small, 
-      // or wait for proper FeedbackService with compound queries.
-      
-      // Assuming we can get relevant feedback or just ALL for now (demo scale)
       setFeedback(allFeedback); 
-      
       setLoaded(prev => ({ ...prev, feedback: true }));
       return allFeedback;
     } catch (error) {
@@ -202,19 +180,18 @@ export const AdminDataProvider = ({ children }) => {
     } finally {
       setLoading(prev => ({ ...prev, feedback: false }));
     }
-  }, [loaded.feedback, feedback]);
+  }, []);
 
   const refreshAll = useCallback(async () => {
     setLoading(prev => ({ ...prev, initial: true }));
-    // Only refresh core data. separate refresh for sessions if needed.
     await loadCollege(true);
-    // If sessions were already loaded, refresh them too
-    if (loaded.sessions) await loadSessions(true);
-    if (loaded.trainers) await loadTrainers(true);
+    if (loadedRef.current.sessions) await loadSessions(true);
+    if (loadedRef.current.trainers) await loadTrainers(true);
     setLoading(prev => ({ ...prev, initial: false }));
-  }, [loadCollege, loadSessions, loadTrainers, loaded.sessions, loaded.trainers]);
+  }, [loadCollege, loadSessions, loadTrainers]);
 
   // Initial load - ONLY College Info + Cache
+  // Depends on user?.collegeId (primitive) so it only re-runs on actual college change
   useEffect(() => {
     if (user?.collegeId) {
       const init = async () => {
@@ -223,7 +200,7 @@ export const AdminDataProvider = ({ children }) => {
       };
       init();
     }
-  }, [user, loadCollege]);
+  }, [user?.collegeId, loadCollege]);
 
   const value = {
     college,

@@ -19,14 +19,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalFooter,
+  ModalClose
+} from "@/components/ui/modal";
 import { toast } from "sonner";
 import {
   addCollege,
@@ -139,18 +139,19 @@ const CollegesTab = ({
       <div className="flex items-center justify-between">
         <div></div>
       </div>
-      <Dialog open={collegeDialogOpen} onOpenChange={setCollegeDialogOpen}>
-        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>
+      <Modal open={collegeDialogOpen} onOpenChange={setCollegeDialogOpen} className="p-5">
+        <ModalContent>
+          <ModalClose onClose={() => setCollegeDialogOpen(false)} />
+          <ModalHeader>
+            <ModalTitle>
               {isEditingCollege ? "Edit College" : "Create New College"}
-            </DialogTitle>
-            <DialogDescription>
+            </ModalTitle>
+            <ModalDescription>
               {isEditingCollege
                 ? "Update college details"
                 : "Add a new college to the platform"}
-            </DialogDescription>
-          </DialogHeader>
+            </ModalDescription>
+          </ModalHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>College Name</Label>
@@ -186,7 +187,7 @@ const CollegesTab = ({
               />
             </div>
           </div>
-          <DialogFooter>
+          <ModalFooter>
             <Button
               variant="outline"
               onClick={() => setCollegeDialogOpen(false)}
@@ -199,9 +200,9 @@ const CollegesTab = ({
             >
               {isEditingCollege ? "Update" : "Create"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {colleges.map((college, index) => (

@@ -11,6 +11,7 @@ export const QUESTION_CATEGORIES = [
   { value: 'engagement', label: 'Engagement', description: 'Interaction and responsiveness to doubts' },
   { value: 'content', label: 'Content Quality', description: 'Relevance and quality of materials' },
   { value: 'delivery', label: 'Delivery', description: 'Pace, presentation, and session flow' },
+  { value: 'futureSessions', label: 'Future Sessions', description: 'Expectations and suggestions for upcoming sessions' },
   { value: 'overall', label: 'Overall', description: 'General satisfaction' }
 ];
 

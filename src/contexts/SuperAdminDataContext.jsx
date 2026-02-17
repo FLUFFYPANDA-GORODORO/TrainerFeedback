@@ -11,6 +11,7 @@ import {
   rerunCollegeMatching as rerunCollegeMatchingService
 } from '@/services/superadmin/projectCodeService';
 import { toast } from 'sonner';
+import { getAcademicConfig } from '@/services/superadmin/academicService';
 
 const SuperAdminDataContext = createContext(null);
 
@@ -22,6 +23,7 @@ export const SuperAdminDataProvider = ({ children }) => {
   const [templates, setTemplates] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [projectCodes, setProjectCodes] = useState([]);
+  const [academicConfigs, setAcademicConfigs] = useState({}); // { [collegeId]: config }
 
   // Refs to always access the latest state values (fixes stale closure bug)
   const collegesRef = useRef(colleges);
@@ -30,6 +32,7 @@ export const SuperAdminDataProvider = ({ children }) => {
   const templatesRef = useRef(templates);
   const adminsRef = useRef(admins);
   const projectCodesRef = useRef(projectCodes);
+  const academicConfigsRef = useRef(academicConfigs);
 
   // Keep refs in sync with state
   useEffect(() => { collegesRef.current = colleges; }, [colleges]);
@@ -38,6 +41,7 @@ export const SuperAdminDataProvider = ({ children }) => {
   useEffect(() => { templatesRef.current = templates; }, [templates]);
   useEffect(() => { adminsRef.current = admins; }, [admins]);
   useEffect(() => { projectCodesRef.current = projectCodes; }, [projectCodes]);
+  useEffect(() => { academicConfigsRef.current = academicConfigs; }, [academicConfigs]);
 
   // Loading states
   const [loading, setLoading] = useState({
@@ -301,6 +305,45 @@ export const SuperAdminDataProvider = ({ children }) => {
     }
   }, []);
 
+
+  // Load academic config for a specific college
+  const loadAcademicConfig = useCallback(async (collegeId, force = false) => {
+    if (!collegeId) return null;
+    
+    // Check cache first
+    if (!force && academicConfigsRef.current[collegeId]) {
+      return academicConfigsRef.current[collegeId];
+    }
+
+    // Set simple loading state? 
+    // Since we don't have per-college loading in the main state object, 
+    // we'll rely on the specific component to show loading spinners, 
+    // but the unexpected 'loading' state update here might be overkill or tricky.
+    // Let's just do the fetch.
+    try {
+      const data = await getAcademicConfig(collegeId);
+      const config = data || { courses: {} };
+      
+      setAcademicConfigs(prev => ({
+        ...prev,
+        [collegeId]: config
+      }));
+      
+      return config;
+    } catch (error) {
+      console.error('Failed to load academic config:', error);
+      toast.error('Failed to load academic config');
+      return { courses: {} };
+    }
+  }, []);
+
+  const updateAcademicConfig = useCallback((collegeId, newConfig) => {
+    setAcademicConfigs(prev => ({
+      ...prev,
+      [collegeId]: newConfig
+    }));
+  }, []);
+
   const updateAdminsList = useCallback((updater) => {
     if (typeof updater === 'function') {
       setAdmins(updater);
@@ -308,6 +351,7 @@ export const SuperAdminDataProvider = ({ children }) => {
       setAdmins(updater);
     }
   }, []);
+
 
   const value = {
     // Data
@@ -322,6 +366,7 @@ export const SuperAdminDataProvider = ({ children }) => {
     loading,
     isInitialLoading: loading.initial,
 
+
     // Load functions (with caching)
     loadColleges,
     loadTrainers,
@@ -329,6 +374,7 @@ export const SuperAdminDataProvider = ({ children }) => {
     loadTemplates,
     loadAdmins,
     loadProjectCodes,
+    loadAcademicConfig,
     refreshAll,
 
     // Project Code Actions
@@ -341,6 +387,7 @@ export const SuperAdminDataProvider = ({ children }) => {
     updateTemplatesList,
     updateCollegesList,
     updateAdminsList,
+    updateAcademicConfig,
     setSessions
   };
 
