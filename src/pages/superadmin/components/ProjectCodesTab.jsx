@@ -63,18 +63,49 @@ const ProjectCodesTab = () => {
   const importPreview = useMemo(() => {
     if (!importedCodes.length) return [];
     
-    return importedCodes.map(raw => {
-      const parsed = parseProjectCode(raw);
+    return importedCodes.map(item => {
+      let parsed;
+      let isDuplicate = false;
+      let rawCode = '';
+
+      if (typeof item === 'string') {
+          // Should not happen with strict validation, but safe fallback
+          rawCode = item;
+          parsed = parseProjectCode(item);
+      } else {
+          // Object input
+          rawCode = item["Project Code"] || item.code || '';
+          // Create a "parsed" structure from metadata if available
+          if (item["Project Code"]) {
+              parsed = {
+                  rawCode,
+                  status: 'parsed',
+                  collegeCode: item["College Code"],
+                  // These are just for preview matching logic
+              };
+          } else {
+             parsed = parseProjectCode(rawCode);
+          }
+      }
+
+      // Check for duplicate in DB
+      isDuplicate = projectCodes.some(pc => pc.code === rawCode);
+      
       const matched = matchCollege(parsed, colleges);
-      // Check for duplicate
-      const isDuplicate = projectCodes.some(pc => pc.code === parsed.code);
-      return { ...matched, isDuplicate };
+  
+      return { 
+          ...matched, 
+          isDuplicate,
+          // Pass original item through for processing
+          originalItem: item,
+          rawCode
+      };
     });
   }, [importedCodes, colleges, projectCodes]);
 
   const validCount = importPreview.filter(p => p.status === 'parsed').length;
   const matchedCount = importPreview.filter(p => p.matchStatus === 'matched').length;
-  const newCount = importPreview.filter(p => !p.isDuplicate).length; // [NEW]
+  const newCount = importPreview.filter(p => !p.isDuplicate).length;
 
   // Filtered List
   const filteredCodes = useMemo(() => {
@@ -102,18 +133,24 @@ const ProjectCodesTab = () => {
           throw new Error("File must contain a JSON array");
         }
         
-        // Handle array of strings or objects with 'code' property
-        const codes = json.map(item => {
-           if (typeof item === 'string') return item;
-           if (typeof item === 'object' && item?.code) return item.code;
-           return null;
-        }).filter(Boolean);
+        // Strict Validation: Must be array of objects with "Project Code"
+        const validItems = json.filter(item => {
+            return typeof item === 'object' && item !== null && item["Project Code"];
+        });
 
-        if (codes.length === 0) {
-            throw new Error("No valid project codes found in array");
+        if (validItems.length === 0) {
+            // Check if it was the old simple string array format to give specific error
+            if (json.some(i => typeof i === 'string')) {
+                throw new Error("Invalid format: Arrays of strings are no longer supported. Please use the exported JSON object format.");
+            }
+            throw new Error("No valid project code objects found. Each item must have a 'Project Code' field.");
         }
 
-        setImportedCodes(codes);
+        if (validItems.length !== json.length) {
+             // Optional: warning that some items were skipped? For now let's just use valid ones.
+        }
+
+        setImportedCodes(validItems);
       } catch (err) {
         setError(err.message || "Invalid JSON file");
         setImportedCodes([]);
@@ -128,17 +165,19 @@ const ProjectCodesTab = () => {
     setIsImporting(true);
     try {
       // Only import non-duplicates
-      const rawCodes = importPreview.filter(p => !p.isDuplicate).map(p => p.rawCode);
+      // Pass the ORIGINAL items (objects) so service can extract metadata
+      const itemsToImport = importPreview
+          .filter(p => !p.isDuplicate)
+          .map(p => p.originalItem);
       
-      if (rawCodes.length === 0) {
-        // Should probably show a toast here, but for now just close
+      if (itemsToImport.length === 0) {
         setImportedCodes([]);
         setFileName('');
         setShowImportModal(false);
         return;
       }
 
-      await addProjectCodes(rawCodes);
+      await addProjectCodes(itemsToImport);
       setImportedCodes([]); // Clear on success
       setFileName('');
       setShowImportModal(false); // Close modal
@@ -221,7 +260,8 @@ const ProjectCodesTab = () => {
                                         {pc.code}
                                     </TableCell>
                                     <TableCell>
-                                        {pc.collegeName ? (
+                                    <TableCell>
+                                        {pc.collegeId ? (
                                             <div className="flex items-center gap-1.5">
                                                 <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
                                                      {pc.collegeName}
@@ -230,9 +270,13 @@ const ProjectCodesTab = () => {
                                         ) : (
                                             <div className="flex items-center gap-1.5 text-muted-foreground">
                                                 <AlertCircle className="h-3 w-3 text-orange-400" />
-                                                <span className="text-xs">Unmatched ({pc.collegeCode})</span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-medium text-orange-600/80">Unmatched</span>
+                                                    {pc.collegeName && <span className="text-[10px] text-muted-foreground">{pc.collegeName}</span>}
+                                                </div>
                                             </div>
                                         )}
+                                    </TableCell>
                                     </TableCell>
                                     <TableCell>
                                         <div className="text-sm">{pc.course}</div>

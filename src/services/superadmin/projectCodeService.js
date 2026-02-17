@@ -181,31 +181,102 @@ const resolveYear = async (collegeId, courseName, rawYear) => {
 /**
  * Bulk add project codes.
  * - Parses and matches each code.
+ * - Supports object input with explicit metadata (S.No, Name, etc.).
  * - [NEW] Resolves "Engg" to correct course name.
  * - [NEW] Resolves Year to config key.
  * - Checks for duplicates in DB (by rawCode).
  * - Saves to Firestore in batches.
  * 
- * @param {string[]} rawCodes - Array of raw code strings
+ * @param {string[]|Object[]} inputCodes - Array of raw code strings OR objects
  * @param {Array} colleges - List of existing colleges for matching
  */
-export const addProjectCodes = async (rawCodes, colleges) => {
+export const addProjectCodes = async (inputCodes, colleges) => {
   try {
-    const uniqueRawCodes = [...new Set(rawCodes.filter(c => c && c.trim()))];
-    const processed = [];
-
     // 1. Process all codes locally first
-    for (const raw of uniqueRawCodes) {
-      const parsed = parseProjectCode(raw);
+    const processed = [];
+    const uniqueInputs = [];
+    const seenCodes = new Set();
+
+    // Filter duplicates within the input itself
+    for (const item of inputCodes) {
+        let code;
+        if (typeof item === 'string') {
+            code = item;
+        } else if (typeof item === 'object' && item !== null) {
+            // Handle specific JSON import format or generic object
+            code = item["Project Code"] || item.code || item.rawCode;
+        }
+
+        if (code && !seenCodes.has(code)) {
+            seenCodes.add(code);
+            uniqueInputs.push(item);
+        }
+    }
+
+    for (const input of uniqueInputs) {
+      let parsed;
+      let rawMetadata = {};
+
+      if (typeof input === 'string') {
+          parsed = parseProjectCode(input);
+      } else {
+          // It's an object, extract metadata if available
+          // Format: { "S.No": 1, "Name": "...", "College Code": "...", "Course": "...", "Year": "...", "Training Type": "...", "Passing Year": "...", "Project Code": "..." }
+          const rawCode = input["Project Code"] || input.code;
+          
+          // If we have the specific JSON export format
+          if (input["Project Code"]) {
+             rawMetadata = {
+                 serialNumber: input["S.No"],
+                 collegeName: input["Name"], // Fallback name
+                 collegeCode: input["College Code"],
+                 course: input["Course"],
+                 year: input["Year"],
+                 type: input["Training Type"],
+                 academicYear: input["Passing Year"]
+             };
+             
+             // Construct a 'parsed' object directly from metadata
+             parsed = {
+                 rawCode,
+                 status: 'parsed',
+                 collegeCode: rawMetadata.collegeCode,
+                 course: rawMetadata.course,
+                 year: rawMetadata.year,
+                 type: rawMetadata.type,
+                 academicYear: rawMetadata.academicYear
+             };
+          } else {
+              // Fallback to parsing the string if it's a minimal object
+              parsed = parseProjectCode(rawCode);
+          }
+      }
+
       const matched = matchCollege(parsed, colleges);
       
-      // [NEW] Resolve Course & Year if matched
-      if (matched.matchStatus === 'matched' && matched.collegeId) {
-        matched.course = await resolveCourseName(matched.collegeId, matched.course);
-        matched.year = await resolveYear(matched.collegeId, matched.course, matched.year);
+      // Merge matched data with raw metadata (raw metadata takes precedence for things like serialNumber)
+      const finalItem = {
+          ...matched,
+          ...rawMetadata,
+          // If matched found a college link, use it. 
+          // If NOT matched, we still want to keep the 'collegeName' from the JSON as a text field.
+          collegeName: matched.collegeName || rawMetadata.collegeName || '',
+          collegeCode: matched.collegeCode || rawMetadata.collegeCode || '',
+          
+          // Ensure critical fields are set
+          course: matched.course || rawMetadata.course || '',
+          year: matched.year || rawMetadata.year || '',
+          academicYear: matched.academicYear || rawMetadata.academicYear || '',
+      };
+
+      // Resolve Course & Year if matched AND we are using standard "Engg" terms
+      // We do this even for imported objects to ensure "Engg" -> "B.E." consistency
+      if (finalItem.matchStatus === 'matched' && finalItem.collegeId) {
+        finalItem.course = await resolveCourseName(finalItem.collegeId, finalItem.course);
+        finalItem.year = await resolveYear(finalItem.collegeId, finalItem.course, finalItem.year);
       }
       
-      processed.push(matched);
+      processed.push(finalItem);
     }
 
     // 2. Check for existing codes in DB to avoid duplicates
@@ -224,15 +295,20 @@ export const addProjectCodes = async (rawCodes, colleges) => {
       const docRef = doc(collection(db, COLLECTION_NAME));
       batch.set(docRef, {
         code: item.rawCode, // Main identifier
+        serialNumber: item.serialNumber || null, // [NEW] Store S.No
+
         collegeCode: item.collegeCode || '',
         collegeId: item.collegeId || null,
-        collegeName: item.collegeName || '',
+        collegeName: item.collegeName || '', // Stores text name even if unmatched
+        
         course: item.course || '',
         year: item.year || '',
         type: item.type || '',
         academicYear: item.academicYear || '',
+        
         parseStatus: item.status,
-        matchStatus: item.matchStatus,
+        matchStatus: item.matchStatus, // 'matched' or 'unmatched'
+        
         createdAt: serverTimestamp()
       });
       count++;

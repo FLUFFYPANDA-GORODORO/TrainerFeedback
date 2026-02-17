@@ -1,0 +1,532 @@
+[
+    {
+        "S.No":1,
+        "Name":"ACS International India Pvt. Ltd",
+        "College Code":"ACS",
+        "Course":"Employees",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2025-2026",
+        "Project Code":"ACS\/Employees\/1st\/OT\/25-26"
+    },
+    {
+        "S.No":2,
+        "Name":"ASM Group Of Institutes",
+        "College Code":"ASM",
+        "Course":"MBA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"ASM\/MBA\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":3,
+        "Name":"ASM Group Of Institutes",
+        "College Code":"ASM",
+        "Course":"PGDMAGRI",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"ASM\/PGDMAGRI\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":4,
+        "Name":"ASM Group Of Institutes",
+        "College Code":"ASM",
+        "Course":"PGDMDUAL",
+        "Year":"1st",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"ASM\/PGDMDUAL\/1st\/TP\/25-26"
+    },
+    {
+        "S.No":5,
+        "Name":"Dnyanshree Institute Of Technology",
+        "College Code":"DIET",
+        "Course":"Engineering",
+        "Year":"3rd",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"DIET\/ENGG\/3rd\/OT\/26-27"
+    },
+    {
+        "S.No":6,
+        "Name":"Dnyanshree Institute of Engineering And Technology",
+        "College Code":"DIET",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"DIET\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":7,
+        "Name":"D Y Patil Kolhapur , Bawada\t",
+        "College Code":"DYPB",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2024-2025",
+        "Project Code":"DYPB\/ENGG\/4th\/TP\/24-25"
+    },
+    {
+        "S.No":8,
+        "Name":"Indira College Of Commerce & Science",
+        "College Code":"ICCS",
+        "Course":"BBA",
+        "Year":"2nd",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"ICCS\/BBA\/2nd\/OT\/26-27"
+    },
+    {
+        "S.No":9,
+        "Name":"Indira College Of Commerce & Science",
+        "College Code":"ICCS",
+        "Course":"BBA",
+        "Year":"3rd",
+        "Training Type":"OT",
+        "Passing Year":"2025-2026",
+        "Project Code":"ICCS\/BBA\/3rd\/OT\/25-26"
+    },
+    {
+        "S.No":10,
+        "Name":"Indira College Of Commerce And Science",
+        "College Code":"ICCS",
+        "Course":"BCA\/CS\/AIML",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2027-2028",
+        "Project Code":"ICCS\/BCA\/CS\/AIML\/1st\/OT\/27-28"
+    },
+    {
+        "S.No":11,
+        "Name":"Indira College of Commerce and Science",
+        "College Code":"ICCS",
+        "Course":"MSC",
+        "Year":"1st",
+        "Training Type":"TP",
+        "Passing Year":"2026-2027",
+        "Project Code":"ICCS\/MSC\/1st\/TP\/26-27"
+    },
+    {
+        "S.No":12,
+        "Name":"Indira College of Commerce and Science",
+        "College Code":"ICCS",
+        "Course":"MSC",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"ICCS\/MSC\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":13,
+        "Name":"Indira College Of Engineering And Management",
+        "College Code":"ICEM",
+        "Course":"CLDP",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"ICEM\/CLDP\/1st\/OT\/26-27"
+    },
+    {
+        "S.No":14,
+        "Name":"Indira College Of Engineering And Management",
+        "College Code":"ICEM",
+        "Course":"Engineering",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2025-2026",
+        "Project Code":"ICEM\/ENGG\/1st\/OT\/25-26"
+    },
+    {
+        "S.No":15,
+        "Name":"Indira College Of Engineering And Management",
+        "College Code":"ICEM",
+        "Course":"Engineering",
+        "Year":"2nd",
+        "Training Type":"OT",
+        "Passing Year":"2027-2028",
+        "Project Code":"ICEM\/ENGG\/2nd\/OT\/27-28"
+    },
+    {
+        "S.No":16,
+        "Name":"Indira College Of Engineering And Management",
+        "College Code":"ICEM",
+        "Course":"Engineering",
+        "Year":"3rd",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"ICEM\/ENGG\/3rd\/OT\/26-27"
+    },
+    {
+        "S.No":17,
+        "Name":"Indira College Of Engineering And Management",
+        "College Code":"ICEM",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"ICEM\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":18,
+        "Name":"Indira College Of Engineering And Management",
+        "College Code":"ICEM",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"TP",
+        "Passing Year":"2026-2027",
+        "Project Code":"ICEM\/MBA\/1st\/TP\/26-27"
+    },
+    {
+        "S.No":19,
+        "Name":"Indira  college of Engineering and Management ",
+        "College Code":"ICEM",
+        "Course":"MBA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"ICEM\/MBA\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":20,
+        "Name":"Indira College Of Engineering And Management",
+        "College Code":"ICEM",
+        "Course":"MCA",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"ICEM\/MCA\/1st\/OT\/26-27"
+    },
+    {
+        "S.No":21,
+        "Name":"Indira College Of Engineering And Management",
+        "College Code":"ICEM",
+        "Course":"MCA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"ICEM\/MCA\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":22,
+        "Name":"IFEEL - Institute For Future Education Entrepreneurship And Mangement",
+        "College Code":"IFEEL",
+        "Course":"MBA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"IFEEL\/MBA\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":23,
+        "Name":"Indira Institute Of Management Pune",
+        "College Code":"IGI",
+        "Course":"MBA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"IGI\/MBA\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":24,
+        "Name":"Indira Global School Of Business",
+        "College Code":"IGSB",
+        "Course":"CLDP",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"IGSB\/CLDP\/1st\/OT\/26-27"
+    },
+    {
+        "S.No":25,
+        "Name":"Indira College Of Engineering And Management",
+        "College Code":"IGSB",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"IGSB\/MBA\/1st\/OT\/26-27"
+    },
+    {
+        "S.No":26,
+        "Name":"Indira Global School Of Business",
+        "College Code":"IGSB",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"TP",
+        "Passing Year":"2026-2027",
+        "Project Code":"IGSB\/MBA\/1st\/TP\/26-27"
+    },
+    {
+        "S.No":27,
+        "Name":"Ideal Institute Of Technology Kakinada",
+        "College Code":"IITK",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"IITK\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":28,
+        "Name":"International School Of Management Excellence",
+        "College Code":"ISME",
+        "Course":"MBA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"ISME\/MBA\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":29,
+        "Name":"Indira University - Pune",
+        "College Code":"IUA",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"TP",
+        "Passing Year":"2026-2027",
+        "Project Code":"IUA\/MBA\/1st\/TP\/26-27"
+    },
+    {
+        "S.No":30,
+        "Name":"Indira University - Pune",
+        "College Code":"IUD",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"TP",
+        "Passing Year":"2026-2027",
+        "Project Code":"IUD\/MBA\/1st\/TP\/26-27"
+    },
+    {
+        "S.No":31,
+        "Name":"Indira University - Pune",
+        "College Code":"IUT",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"TP",
+        "Passing Year":"2026-2027",
+        "Project Code":"IUT\/MBA\/1st\/TP\/26-27"
+    },
+    {
+        "S.No":32,
+        "Name":"Mauli College Of Engineering And Technology",
+        "College Code":"MCOET",
+        "Course":"Engineering",
+        "Year":"2nd",
+        "Training Type":"OT",
+        "Passing Year":"2027-2028",
+        "Project Code":"MCOET\/ENGG\/2nd\/OT\/27-28"
+    },
+    {
+        "S.No":33,
+        "Name":"Mauli College Of Engineering And Technology",
+        "College Code":"MCOET",
+        "Course":"Engineering",
+        "Year":"3rd",
+        "Training Type":"TP",
+        "Passing Year":"2026-2027",
+        "Project Code":"MCOET\/ENGG\/3rd\/TP\/26-27"
+    },
+    {
+        "S.No":34,
+        "Name":"Mauli College Of Engineering And Technology",
+        "College Code":"MCOET",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"MCOET\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":35,
+        "Name":"Nagpur Institute Of Technology",
+        "College Code":"NIT",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"NIT\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":36,
+        "Name":"Pune District Education Association College Of Engineering",
+        "College Code":"PDEA",
+        "Course":"Engineering",
+        "Year":"3rd",
+        "Training Type":"TP",
+        "Passing Year":"2026-2027",
+        "Project Code":"PDEA\/ENGG\/3rd\/TP\/26-27"
+    },
+    {
+        "S.No":37,
+        "Name":"P.R. Pote Patil College Of Engineering",
+        "College Code":"PRPCOE",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"PRPCOE\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":38,
+        "Name":"Shri Ramdeobaba College Of Engineering And Management",
+        "College Code":"RCOEM",
+        "Course":"Engineering",
+        "Year":"3rd",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"RCOEM\/ENGG\/3rd\/OT\/26-27"
+    },
+    {
+        "S.No":39,
+        "Name":"Shri Ramdeobaba College of Engineering and Management",
+        "College Code":"RCOEM",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"RCOEM\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":40,
+        "Name":"Shri Ramdeobaba College Of Engineering And Management",
+        "College Code":"RCOEM",
+        "Course":"MBA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"RCOEM\/MBA\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":41,
+        "Name":"Ramachandran International Institute Of Management",
+        "College Code":"RIIM",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"RIIM\/MBA\/1st\/TP\/25-26"
+    },
+    {
+        "S.No":42,
+        "Name":"Sanjivani College Of Engineering",
+        "College Code":"SCOE",
+        "Course":"Engineering",
+        "Year":"3rd",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"SCOE\/ENGG\/3rd\/OT\/26-27"
+    },
+    {
+        "S.No":43,
+        "Name":"Sanjivani College Of Engineering",
+        "College Code":"SCOE",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"SCOE\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":44,
+        "Name":"Sri Eshwar College Of Engineering",
+        "College Code":"SECE",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"SECE\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":45,
+        "Name":"Sharad Institute Of Technology",
+        "College Code":"SITCOE",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"SITCOE\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":46,
+        "Name":"Sanjivani University ",
+        "College Code":"SU",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"TP",
+        "Passing Year":"2026-2027",
+        "Project Code":"SU\/MBA\/1st\/TP\/26-27"
+    },
+    {
+        "S.No":47,
+        "Name":"Sharda University",
+        "College Code":"SUD",
+        "Course":"MBA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"SUD\/MBA\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":48,
+        "Name":"Yashoda Technical Campus ENGG",
+        "College Code":"YSPM",
+        "Course":"Engineering",
+        "Year":"4th",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"YSPM\/ENGG\/4th\/TP\/25-26"
+    },
+    {
+        "S.No":49,
+        "Name":"YSPM'S Yashoda Technical Campus",
+        "College Code":"YSPM",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2024-2025",
+        "Project Code":"YSPM\/MBA\/1st\/OT\/24-25"
+    },
+    {
+        "S.No":50,
+        "Name":"Yashoda Technical Campus",
+        "College Code":"YSPM",
+        "Course":"MBA",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"YSPM\/MBA\/1st\/OT\/26-27"
+    },
+    {
+        "S.No":51,
+        "Name":"Yashoda Technical Campus",
+        "College Code":"YSPM",
+        "Course":"MBA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"YSPM\/MBA\/2nd\/TP\/25-26"
+    },
+    {
+        "S.No":52,
+        "Name":"Yashoda Technical Campus",
+        "College Code":"YSPM",
+        "Course":"MCA",
+        "Year":"1st",
+        "Training Type":"OT",
+        "Passing Year":"2026-2027",
+        "Project Code":"YSPM\/MCA\/1st\/OT\/26-27"
+    },
+    {
+        "S.No":53,
+        "Name":"Yashoda Technical Campus",
+        "College Code":"YSPM",
+        "Course":"MCA",
+        "Year":"2nd",
+        "Training Type":"TP",
+        "Passing Year":"2025-2026",
+        "Project Code":"YSPM\/MCA\/2nd\/TP\/25-26"
+    }
+]
