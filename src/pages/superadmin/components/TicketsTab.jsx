@@ -27,16 +27,27 @@ import {
   ChevronDown,
   ChevronUp,
   Trash2,
-  MessageSquare,
-  Filter,
-  RefreshCw,
-  RotateCcw,
+  Search,
+  MessageSquarePlus,
+  X,
   Bug,
   Megaphone,
   Lightbulb,
   HelpCircle,
-  Search,
+  Filter,
+  RefreshCw,
+  RotateCcw,
 } from "lucide-react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalFooter,
+  ModalClose
+} from "@/components/ui/modal";
+import { Textarea } from "@/components/ui/textarea";
 
 const CATEGORY_CONFIG = {
   bug: { label: "Bug Report", icon: Bug },
@@ -61,10 +72,16 @@ const PRIORITY_OPTIONS = [
 const TicketsTab = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedTicket, setExpandedTicket] = useState(null);
-  const [adminNotes, setAdminNotes] = useState({});
-  const [updatingId, setUpdatingId] = useState(null);
+
+
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Modal State
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [newStatus, setNewStatus] = useState("");
+  const [resolutionNotes, setResolutionNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -94,18 +111,32 @@ const TicketsTab = () => {
     }
   };
 
-  const handleStatusChange = async (ticketId, newStatus) => {
-    setUpdatingId(ticketId);
+  const openStatusModal = (ticket) => {
+    setSelectedTicket(ticket);
+    setNewStatus(ticket.status);
+    setResolutionNotes(ticket.adminNotes || "");
+    setIsStatusModalOpen(true);
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!selectedTicket) return;
+    
+    // Validation: Admin notes are mandatory when changing status
+    if (!resolutionNotes.trim()) {
+      toast.error("Admin notes/comments are required to update status");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      await updateTicketStatus(ticketId, newStatus, adminNotes[ticketId] || "");
-      toast.success(
-        `Ticket status updated to ${STATUS_OPTIONS.find((s) => s.value === newStatus)?.label || newStatus}`,
-      );
+      await updateTicketStatus(selectedTicket.id, newStatus, resolutionNotes.trim());
+      toast.success("Ticket status updated successfully");
+      setIsStatusModalOpen(false);
       await loadTickets();
     } catch (error) {
-      toast.error("Failed to update ticket");
+      toast.error("Failed to update ticket status");
     } finally {
-      setUpdatingId(null);
+      setIsSubmitting(false);
     }
   };
 
@@ -175,57 +206,7 @@ const TicketsTab = () => {
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
       {/* Stats Cards — Neutral, non-interactive */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="glass-card">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{overdueCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">7+ days old</p>
-          </CardContent>
-        </Card>
 
-        <Card className="glass-card">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Open</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{openCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Awaiting action
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <RefreshCw className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{inProgressCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Being worked on
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{resolvedCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Completed tickets
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Filter Bar — Dashboard style */}
       <Card>
@@ -357,11 +338,10 @@ const TicketsTab = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredTickets.map((ticket) => {
             const overdue = isTicketOverdue(ticket);
             const ageDays = getTicketAgeDays(ticket);
-            const isExpanded = expandedTicket === ticket.id;
             const catConfig =
               CATEGORY_CONFIG[ticket.category] || CATEGORY_CONFIG.other;
             const CatIcon = catConfig.icon;
@@ -369,179 +349,185 @@ const TicketsTab = () => {
             return (
               <div
                 key={ticket.id}
-                className="rounded-xl border bg-card transition-all hover:shadow-sm"
+                className="flex items-center gap-4 p-4 rounded-xl border bg-card cursor-pointer transition-all hover:shadow-sm hover:border-primary/30"
+                onClick={() => openStatusModal(ticket)}
               >
-                {/* Ticket Header Row */}
-                <div
-                  className="flex items-center gap-4 p-4 cursor-pointer"
-                  onClick={() =>
-                    setExpandedTicket(isExpanded ? null : ticket.id)
-                  }
-                >
-                  {/* Category Icon */}
-                  <div className="h-9 w-9 rounded-lg border bg-muted/50 flex items-center justify-center flex-shrink-0">
-                    <CatIcon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-
-                  {/* Subject + Meta */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="font-semibold text-foreground truncate">
-                        {ticket.subject}
-                      </p>
-                      {overdue && (
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] px-1.5 py-0 gap-1 flex-shrink-0"
-                        >
-                          Overdue
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>{ticket.raisedBy?.name || "Unknown"}</span>
-                      <span>•</span>
-                      <span className="capitalize">
-                        {ticket.raisedBy?.role || "—"}
-                      </span>
-                      <span>•</span>
-                      <span>{formatDate(ticket.createdAt)}</span>
-                      <span>•</span>
-                      <span>{ageDays}d ago</span>
-                    </div>
-                  </div>
-
-                  {/* Priority */}
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] px-2 capitalize"
-                  >
-                    {ticket.priority || "—"}
-                  </Badge>
-
-                  {/* Status */}
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] px-2 capitalize"
-                  >
-                    {STATUS_OPTIONS.find((s) => s.value === ticket.status)
-                      ?.label || ticket.status}
-                  </Badge>
-
-                  {/* Expand Icon */}
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  )}
+                {/* Category Icon */}
+                <div className="h-9 w-9 rounded-lg border bg-muted/50 flex items-center justify-center flex-shrink-0">
+                  <CatIcon className="h-4 w-4 text-muted-foreground" />
                 </div>
 
-                {/* Expanded Detail */}
-                {isExpanded && (
-                  <div className="border-t px-4 py-4 bg-muted/20 space-y-4">
-                    {/* Description */}
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">
-                        Description
-                      </p>
-                      <p className="text-sm text-foreground whitespace-pre-wrap bg-card rounded-lg border p-3">
-                        {ticket.description || "No description provided."}
-                      </p>
-                    </div>
-
-                    {/* Raised By Details */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Email
-                        </p>
-                        <p className="text-sm truncate">
-                          {ticket.raisedBy?.email || "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Role
-                        </p>
-                        <p className="text-sm capitalize">
-                          {ticket.raisedBy?.role || "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Created
-                        </p>
-                        <p className="text-sm">
-                          {formatDate(ticket.createdAt)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Age
-                        </p>
-                        <p className="text-sm font-medium">
-                          {ageDays} day{ageDays !== 1 ? "s" : ""}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Admin Notes */}
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
-                        <MessageSquare className="h-3 w-3" /> Admin Notes
-                      </p>
-                      <textarea
-                        className="w-full text-sm border rounded-lg p-2.5 bg-card focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
-                        rows={2}
-                        placeholder="Add resolution notes..."
-                        value={adminNotes[ticket.id] ?? ticket.adminNotes ?? ""}
-                        onChange={(e) =>
-                          setAdminNotes((prev) => ({
-                            ...prev,
-                            [ticket.id]: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-muted-foreground mr-1">
-                        Change status:
-                      </span>
-                      {STATUS_OPTIONS.map(({ value, label }) => (
-                        <Button
-                          key={value}
-                          size="sm"
-                          variant={
-                            ticket.status === value ? "default" : "outline"
-                          }
-                          className="text-xs h-7"
-                          disabled={
-                            ticket.status === value || updatingId === ticket.id
-                          }
-                          onClick={() => handleStatusChange(ticket.id, value)}
-                        >
-                          {label}
-                        </Button>
-                      ))}
-                      <div className="flex-1" />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs h-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDelete(ticket.id)}
+                {/* Subject + Meta */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-semibold text-foreground truncate">
+                      {ticket.subject}
+                    </p>
+                    {overdue && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] px-1.5 py-0 gap-1 flex-shrink-0 border-red-300 text-red-600"
                       >
-                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
-                      </Button>
-                    </div>
+                        Overdue
+                      </Badge>
+                    )}
                   </div>
-                )}
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{ticket.raisedBy?.name || "Unknown"}</span>
+                    <span>•</span>
+                    <span className="capitalize">
+                      {ticket.raisedBy?.role || "—"}
+                    </span>
+                    <span>•</span>
+                    <span>{formatDate(ticket.createdAt)}</span>
+                    <span>•</span>
+                    <span>{ageDays}d ago</span>
+                  </div>
+                </div>
+
+                {/* Priority */}
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-2 capitalize"
+                >
+                  {ticket.priority || "—"}
+                </Badge>
+
+                {/* Status */}
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-2 capitalize"
+                >
+                  {STATUS_OPTIONS.find((s) => s.value === ticket.status)
+                    ?.label || ticket.status}
+                </Badge>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Ticket Detail + Status Update Modal */}
+      <Modal open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen} className="sm:max-w-2xl p-3">
+        <ModalContent>
+          <ModalClose onClose={() => setIsStatusModalOpen(false)} />
+          {selectedTicket && (() => {
+            const catConfig = CATEGORY_CONFIG[selectedTicket.category] || CATEGORY_CONFIG.other;
+            const CatIcon = catConfig.icon;
+            const ageDays = getTicketAgeDays(selectedTicket);
+            return (
+              <>
+                <ModalHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg border bg-muted/50 flex items-center justify-center flex-shrink-0">
+                      <CatIcon className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0 pr-6">
+                      <ModalTitle className="truncate">{selectedTicket.subject}</ModalTitle>
+                      <ModalDescription>
+                        {selectedTicket.raisedBy?.name} • {selectedTicket.raisedBy?.role} • {formatDate(selectedTicket.createdAt)}
+                      </ModalDescription>
+                    </div>
+                  </div>
+                </ModalHeader>
+
+                <div className="px-6 pb-6 space-y-5">
+                  {/* Description */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Description</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap bg-muted/20 rounded-lg border p-3">
+                      {selectedTicket.description || "No description provided."}
+                    </p>
+                  </div>
+
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Email</p>
+                      <p className="text-sm truncate">{selectedTicket.raisedBy?.email || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Priority</p>
+                      <p className="text-sm capitalize font-medium">{selectedTicket.priority || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Age</p>
+                      <p className="text-sm font-medium">{ageDays} day{ageDays !== 1 ? "s" : ""}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Current Status</p>
+                      <Badge variant="secondary" className="text-[10px] px-2 capitalize mt-0.5">
+                        {STATUS_OPTIONS.find(s => s.value === selectedTicket.status)?.label || selectedTicket.status}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Existing Admin Notes */}
+                  {selectedTicket.adminNotes && (
+                    <div className="bg-muted/30 p-3 rounded-lg border">
+                      <p className="text-xs font-semibold text-foreground mb-1">Previous Admin Comments:</p>
+                      <p className="text-sm text-muted-foreground italic">"{selectedTicket.adminNotes}"</p>
+                    </div>
+                  )}
+
+                  <hr className="border-border" />
+
+                  {/* Update Status Section */}
+                  <div className="space-y-4">
+                    <p className="text-sm font-semibold text-foreground">Update Status</p>
+
+                    <div className="space-y-2">
+                      <Label>New Status</Label>
+                      <Select value={newStatus} onValueChange={setNewStatus}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Admin Comments <span className="text-destructive">*</span></Label>
+                      <Textarea 
+                        placeholder="Explain the resolution or reason for status change..."
+                        value={resolutionNotes}
+                        onChange={(e) => setResolutionNotes(e.target.value)}
+                        rows={3}
+                        className="resize-none"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        These comments will be visible to the user who raised the ticket.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <ModalFooter className="px-6 pb-6 gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 mr-auto"
+                    onClick={() => { handleDelete(selectedTicket.id); setIsStatusModalOpen(false); }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsStatusModalOpen(false)}>Cancel</Button>
+                  <Button onClick={handleUpdateStatus} disabled={isSubmitting}>
+                    {isSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+                    Update Status
+                  </Button>
+                </ModalFooter>
+              </>
+            );
+          })()}
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

@@ -26,6 +26,8 @@ import {
   Download,
   HelpCircle,
   User,
+  Menu,
+  X,
 } from "lucide-react";
 import {
   Tooltip,
@@ -50,6 +52,7 @@ const TrainerDashboard = () => {
   const [isSessionFormOpen, setIsSessionFormOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null); // Track session being edited
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Get current section from URL
   const currentSection = location.pathname.split("/").pop() || "dashboard";
@@ -225,14 +228,34 @@ const TrainerDashboard = () => {
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
-      {/* Full-Height Sidebar */}
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - hidden on mobile, shown as overlay when menu open */}
       <aside
-        className={`bg-primary text-primary-foreground border-r border-primary/80 flex flex-col transition-all duration-300 ease-in-out h-screen ${
-          isSidebarCollapsed ? "w-20" : "w-64"
-        }`}
+        className={`bg-primary text-primary-foreground border-r border-primary/80 flex flex-col transition-all duration-300 ease-in-out h-screen z-50
+          ${
+            isSidebarCollapsed ? "w-20" : "w-64"
+          }
+          fixed lg:relative
+          ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        `}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
+        {/* Mobile Close Button */}
+        <button
+          className="lg:hidden absolute top-3 right-3 text-primary-foreground/80 hover:text-primary-foreground z-10"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <X className="h-5 w-5" />
+        </button>
+
         {/* Logo Section at Top - Full Width */}
         <div
           className={`h-28 border-b border-primary-foreground/20 flex items-center justify-center ${isSidebarCollapsed ? "px-2" : "px-3"}`}
@@ -264,11 +287,15 @@ const TrainerDashboard = () => {
             <div className="flex items-center justify-start">
               <div
                 className="flex items-center gap-3 cursor-pointer hover:bg-primary-foreground/10 p-2 -ml-2 rounded-md transition-colors"
-                onClick={() => navigate("/trainer/profile")}
+                onClick={() => { navigate("/trainer/profile"); setIsMobileMenuOpen(false); }}
                 title="Go to Profile"
               >
-                <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0">
-                  {user?.name?.charAt(0).toUpperCase()}
+                <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0 overflow-hidden">
+                  {user?.photoUrl ? (
+                    <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+                  ) : (
+                    user?.name?.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <p className="text-sm font-semibold text-primary-foreground truncate">
@@ -280,11 +307,15 @@ const TrainerDashboard = () => {
             </div>
           ) : (
             <div
-              className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform"
-              onClick={() => navigate("/trainer/profile")}
+              className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform overflow-hidden"
+              onClick={() => { navigate("/trainer/profile"); setIsMobileMenuOpen(false); }}
               title="Go to Profile"
             >
-              {user?.name?.charAt(0).toUpperCase()}
+              {user?.photoUrl ? (
+                <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+              ) : (
+                user?.name?.charAt(0).toUpperCase()
+              )}
             </div>
           )}
         </div>
@@ -344,47 +375,49 @@ const TrainerDashboard = () => {
       {/* Main Content Area with Navbar */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navbar */}
-        <header className="h-28 flex-shrink-0 border-b bg-white flex items-center justify-between z-20 shadow-sm px-6">
-          {/* Left: Page Title */}
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-xl font-bold tracking-tight text-foreground">
-              {activeTab === "overview" && "Trainer Dashboard"}
-              {activeTab === "sessions" && "My Sessions"}
-              {activeTab === "help" && "Help & Support"}
-              {activeTab === "profile" && "My Profile"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {activeTab === "overview" &&
-                "Manage your sessions and view feedback"}
-              {activeTab === "sessions" &&
-                "View and manage your training sessions"}
-              {activeTab === "help" && "Report issues or request features"}
-              {activeTab === "profile" && "Update your profile and password"}
-            </p>
+        <header className="h-auto min-h-[3.5rem] md:h-28 flex-shrink-0 border-b bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between z-20 shadow-sm px-4 md:px-6 py-3 md:py-0 gap-2 sm:gap-0">
+          {/* Left: Hamburger + Page Title */}
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* Mobile Menu Button */}
+            <button
+              className="lg:hidden p-1.5 rounded-md hover:bg-muted transition-colors"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu className="h-5 w-5 text-foreground" />
+            </button>
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-lg md:text-xl font-bold tracking-tight text-foreground">
+                {activeTab === "overview" && "Trainer Dashboard"}
+                {activeTab === "sessions" && "My Sessions"}
+                {activeTab === "help" && "Help & Support"}
+                {activeTab === "profile" && "My Profile"}
+              </h2>
+              <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
+                {activeTab === "overview" &&
+                  "Manage your sessions and view feedback"}
+                {activeTab === "sessions" &&
+                  "View and manage your training sessions"}
+                {activeTab === "help" && "Report issues or request features"}
+                {activeTab === "profile" && "Update your profile and password"}
+              </p>
+            </div>
           </div>
 
           {/* Right: Action Buttons */}
-          <div className="flex items-center gap-2">
-            {/* Create Session button hidden
-            {activeTab === 'sessions' && (
-              <Button onClick={handleCreateClick} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                <Plus className="h-4 w-4" /> Create Session
-              </Button>
-            )}
-            */}
-            <Button variant="outline" onClick={loadData} className="gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <Button variant="outline" onClick={loadData} className="gap-2" size="sm">
               <RefreshCw
                 className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
               />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-muted/5 p-6 scroll-smooth">
+        <main className="flex-1 overflow-y-auto bg-muted/5 p-3 md:p-6 scroll-smooth">
           <div
-            className={`max-w-8xl mx-auto transition-all duration-300 ${isSidebarCollapsed ? "px-6" : "px-0"}`}
+            className={`max-w-8xl mx-auto transition-all duration-300 ${isSidebarCollapsed ? "px-0 lg:px-6" : "px-0"}`}
           >
             {/* Session Form Modal (Shared for Create/Edit) - HIDDEN
             <Modal open={isSessionFormOpen} onOpenChange={setIsSessionFormOpen} className="sm:max-w-[600px]">

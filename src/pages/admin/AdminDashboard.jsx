@@ -164,8 +164,12 @@ const AdminDashboardContent = () => {
                 onClick={() => navigate("/admin/profile")}
                 title="Go to Profile"
               >
-                <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0">
-                  {user.name.charAt(0).toUpperCase()}
+                <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0 overflow-hidden">
+                  {user.photoUrl ? (
+                    <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+                  ) : (
+                    user.name.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <p className="text-sm font-semibold text-primary-foreground truncate">
@@ -181,11 +185,15 @@ const AdminDashboardContent = () => {
             </div>
           ) : (
             <div
-              className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform"
+              className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform overflow-hidden"
               onClick={() => navigate("/admin/profile")}
               title="Go to Profile"
             >
-              {user.name.charAt(0).toUpperCase()}
+              {user.photoUrl ? (
+                <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+              ) : (
+                user.name.charAt(0).toUpperCase()
+              )}
             </div>
           )}
         </div>

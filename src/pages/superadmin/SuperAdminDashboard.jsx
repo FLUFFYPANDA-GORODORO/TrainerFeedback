@@ -389,16 +389,6 @@ const SuperAdminDashboardInner = () => {
           {/* Right: Action Buttons */}
           <div className="flex items-center gap-2">
             {/* Context-specific action buttons */}
-            {activeTab === "colleges" && (
-              <Button
-                variant="default"
-                className="gap-2 gradient-hero text-primary-foreground"
-                onClick={() => setIsCollegeDialogOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Add College
-              </Button>
-            )}
             {activeTab === "admins" && (
               <Button
                 variant="default"

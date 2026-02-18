@@ -44,7 +44,9 @@ import {
   Download,
   Calendar,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  SlidersHorizontal,
+  RotateCcw
 } from 'lucide-react';
 import { FiCheckSquare } from "react-icons/fi";
 import { format } from 'date-fns';
@@ -76,6 +78,33 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
   // Export State
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [sessionToExport, setSessionToExport] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Active filter count for badge
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.collegeId !== 'all') count++;
+    if (filters.course !== 'all') count++;
+    if (filters.year !== 'all') count++;
+    if (filters.department !== 'all') count++;
+    if (filters.batch !== 'all') count++;
+    if (filters.domain !== 'all') count++;
+    if (filters.projectCode !== 'all') count++;
+    return count;
+  }, [filters]);
+
+  const resetFilters = () => {
+    setFilters({
+      collegeId: 'all',
+      course: 'all',
+      year: 'all',
+      department: 'all',
+      batch: 'all',
+      domain: 'all',
+      topic: '',
+      projectCode: 'all'
+    });
+  };
 
   // Session Stats
   const sessionStats = useMemo(() => {
@@ -261,8 +290,8 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
     <div className="space-y-6">
       
       {/* Stats Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="flex items-center gap-4 p-4 bg-card border rounded-xl">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+        <div className="flex items-center gap-4 p-4 bg-card border rounded-xl shadow-sm">
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
             <Calendar className="h-6 w-6 text-primary" />
           </div>
@@ -271,7 +300,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
             <p className="text-sm text-muted-foreground">Total Sessions</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 p-4 bg-card border rounded-xl">
+        <div className="hidden sm:flex items-center gap-4 p-4 bg-card border rounded-xl shadow-sm">
           <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
             <CheckCircle2 className="h-6 w-6 text-green-500" />
           </div>
@@ -280,7 +309,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
             <p className="text-sm text-muted-foreground">Active Sessions</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 p-4 bg-card border rounded-xl">
+        <div className="hidden sm:flex items-center gap-4 p-4 bg-card border rounded-xl shadow-sm">
           <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
             <FiCheckSquare className="h-6 w-6 text-green-500" />
           </div>
@@ -292,14 +321,107 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
       </div>
 
 
-      {/* Filters Bar */}
-      <div className="bg-muted/20 p-4 rounded-lg border space-y-4">
+      {/* Filters Bar - Mobile (Collapsible) */}
+      <div className="block sm:hidden space-y-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant={filtersOpen ? "default" : "outline"}
+            size="sm"
+            className="gap-2"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1 h-5 w-5 rounded-full bg-primary-foreground text-primary text-xs font-bold flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+          <div className="flex-1">
+            <Input
+              placeholder="Search topic..."
+              value={filters.topic}
+              onChange={e => setFilters({ ...filters, topic: e.target.value })}
+              className="h-9"
+            />
+          </div>
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={resetFilters}>
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Collapsible Panel content for Mobile */}
+        {filtersOpen && (
+          <div className="bg-muted/20 p-3 rounded-lg border space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+             <div className="space-y-3">
+                <Select value={filters.collegeId} onValueChange={v => setFilters({ ...filters, collegeId: v, course: 'all', year: 'all', department: 'all', batch: 'all' })}>
+                  <SelectTrigger><SelectValue placeholder="All Colleges" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Colleges</SelectItem>
+                    {filterOptions.colleges.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.course} onValueChange={v => setFilters({ ...filters, course: v, year: 'all', department: 'all', batch: 'all' })}>
+                  <SelectTrigger><SelectValue placeholder="All Courses" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Courses</SelectItem>
+                    {filterOptions.courses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.year} onValueChange={v => setFilters({ ...filters, year: v, department: 'all', batch: 'all' })} disabled={filters.course === 'all'}>
+                  <SelectTrigger><SelectValue placeholder="All Years" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Years</SelectItem>
+                    {filterOptions.years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.department} onValueChange={v => setFilters({ ...filters, department: v, batch: 'all' })} disabled={filters.year === 'all'}>
+                  <SelectTrigger><SelectValue placeholder="All Depts" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Depts</SelectItem>
+                    {filterOptions.departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.batch} onValueChange={v => setFilters({ ...filters, batch: v })} disabled={filters.department === 'all'}>
+                  <SelectTrigger><SelectValue placeholder="All Batches" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Batches</SelectItem>
+                    {filterOptions.batches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filters.domain} onValueChange={v => setFilters({ ...filters, domain: v })}>
+                  <SelectTrigger><SelectValue placeholder="All Domains" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Domains</SelectItem>
+                    {filterOptions.domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.projectCode} onValueChange={v => setFilters({ ...filters, projectCode: v })}>
+                  <SelectTrigger><SelectValue placeholder="All Project Codes" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Project Codes</SelectItem>
+                    {filterOptions.projectCodes.map(pc => <SelectItem key={pc} value={pc}>{pc}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Filters Bar - Desktop (Always Visible Grid) */}
+      <div className="hidden sm:block bg-muted/20 p-4 rounded-lg border space-y-4">
         {/* Row 1: Academic Filters */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-             <Select 
-                value={filters.collegeId} 
-                onValueChange={v => setFilters({ ...filters, collegeId: v, course: 'all', year: 'all', department: 'all', batch: 'all' })}
-            >
+        <div className="grid grid-cols-5 gap-3">
+             <Select value={filters.collegeId} onValueChange={v => setFilters({ ...filters, collegeId: v, course: 'all', year: 'all', department: 'all', batch: 'all' })}>
             <SelectTrigger><SelectValue placeholder="All Colleges" /></SelectTrigger>
             <SelectContent>
                 <SelectItem value="all">All Colleges</SelectItem>
@@ -307,10 +429,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
             </SelectContent>
             </Select>
 
-            <Select 
-                value={filters.course} 
-                onValueChange={v => setFilters({ ...filters, course: v, year: 'all', department: 'all', batch: 'all' })}
-            >
+            <Select value={filters.course} onValueChange={v => setFilters({ ...filters, course: v, year: 'all', department: 'all', batch: 'all' })}>
             <SelectTrigger><SelectValue placeholder="All Courses" /></SelectTrigger>
             <SelectContent>
                 <SelectItem value="all">All Courses</SelectItem>
@@ -318,11 +437,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
             </SelectContent>
             </Select>
 
-            <Select 
-                value={filters.year} 
-                onValueChange={v => setFilters({ ...filters, year: v, department: 'all', batch: 'all' })}
-                disabled={filters.course === 'all'}
-            >
+            <Select value={filters.year} onValueChange={v => setFilters({ ...filters, year: v, department: 'all', batch: 'all' })} disabled={filters.course === 'all'}>
             <SelectTrigger><SelectValue placeholder="All Years" /></SelectTrigger>
             <SelectContent>
                 <SelectItem value="all">All Years</SelectItem>
@@ -330,11 +445,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
             </SelectContent>
             </Select>
 
-             <Select 
-                value={filters.department} 
-                onValueChange={v => setFilters({ ...filters, department: v, batch: 'all' })}
-                disabled={filters.year === 'all'}
-            >
+             <Select value={filters.department} onValueChange={v => setFilters({ ...filters, department: v, batch: 'all' })} disabled={filters.year === 'all'}>
             <SelectTrigger><SelectValue placeholder="All Depts" /></SelectTrigger>
             <SelectContent>
                 <SelectItem value="all">All Depts</SelectItem>
@@ -342,11 +453,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
             </SelectContent>
             </Select>
 
-             <Select 
-                value={filters.batch} 
-                onValueChange={v => setFilters({ ...filters, batch: v })}
-                disabled={filters.department === 'all'}
-            >
+             <Select value={filters.batch} onValueChange={v => setFilters({ ...filters, batch: v })} disabled={filters.department === 'all'}>
             <SelectTrigger><SelectValue placeholder="All Batches" /></SelectTrigger>
             <SelectContent>
                 <SelectItem value="all">All Batches</SelectItem>
@@ -356,7 +463,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
         </div>
 
         {/* Row 2: Other Filters & Search */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3">
              <Select value={filters.domain} onValueChange={v => setFilters({ ...filters, domain: v })}>
             <SelectTrigger><SelectValue placeholder="All Domains" /></SelectTrigger>
             <SelectContent>
@@ -373,16 +480,77 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
                 </SelectContent>
             </Select>
 
-            <Input
-            placeholder="Search Topic..."
-            value={filters.topic}
-            onChange={e => setFilters({ ...filters, topic: e.target.value })}
-            />
+            <div className="flex gap-2">
+              <Input
+                placeholder="Search Topic..."
+                value={filters.topic}
+                onChange={e => setFilters({ ...filters, topic: e.target.value })}
+                className="flex-1"
+              />
+              {activeFilterCount > 0 && (
+                <Button variant="ghost" size="icon" onClick={resetFilters} title="Reset Filters">
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+      {/* Mobile Card View (Visible only on mobile) */}
+      <div className="block sm:hidden space-y-4">
+        {loading ? (
+             <div className="h-24 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+        ) : filteredSessions.length === 0 ? (
+             <div className="text-center p-8 text-muted-foreground">No sessions found.</div>
+        ) : (
+             filteredSessions.map((session) => (
+              <div key={session.id} className="bg-card border rounded-xl p-4 shadow-sm space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-foreground">{session.topic}</h3>
+                    <p className="text-xs text-muted-foreground">{session.domain}</p>
+                  </div>
+                  <Badge variant="outline" className={cn("capitalize", session.status === 'active' ? "bg-green-100 text-green-700 border-green-200" : "bg-gray-100 text-gray-700 border-gray-200")}>
+                      {session.status}
+                  </Badge>
+                </div>
+                
+                <div className="text-sm text-muted-foreground space-y-1">
+                   <p>{session.course} • {session.branch}</p>
+                   <p>Year {session.year} • Batch {session.batch}</p>
+                   <p className="flex items-center gap-2 mt-1">
+                      <Calendar className="h-3 w-3" /> 
+                      {session.sessionDate ? format(new Date(session.sessionDate), 'MMM d, yyyy') : '-'}
+                   </p>
+                </div>
+
+                <div className="pt-3 border-t flex items-center justify-between gap-2">
+                   <Button variant="outline" size="sm" className="flex-1" onClick={() => copyLink(session.id)}>
+                      <Share2 className="h-3.5 w-3.5 mr-1" /> Share
+                   </Button>
+                   <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setSelectedSession(session)}>
+                          <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportResponses(session)}>
+                          <Download className="mr-2 h-4 w-4" /> Export Excel
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                   </DropdownMenu>
+                </div>
+              </div>
+             ))
+        )}
+      </div>
+
+      {/* Desktop Table View (Hidden on mobile) */}
+      <div className="hidden sm:block border rounded-lg overflow-x-auto bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

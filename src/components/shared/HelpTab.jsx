@@ -14,8 +14,18 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Plus
 } from 'lucide-react';
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalFooter,
+  ModalClose
+} from "@/components/ui/modal";
 
 const CATEGORY_OPTIONS = [
   { value: 'bug', label: 'Bug Report', icon: Bug, description: 'Something is broken or not working' },
@@ -42,6 +52,7 @@ const HelpTab = () => {
   const [myTickets, setMyTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   
   // Form state
   const [subject, setSubject] = useState('');
@@ -73,6 +84,7 @@ const HelpTab = () => {
     }
 
     setSubmitting(true);
+
     try {
       await createTicket({
         subject: subject.trim(),
@@ -92,6 +104,7 @@ const HelpTab = () => {
       setCategory('');
       setPriority('medium');
       setDescription('');
+      setIsTicketModalOpen(false); // Close modal
       // Reload tickets
       await loadMyTickets();
     } catch (error) {
@@ -122,9 +135,14 @@ const HelpTab = () => {
               <p className="text-sm text-muted-foreground">Track the status of your submitted tickets</p>
             </div>
           </div>
-          <Badge variant="secondary" className="text-xs">
-            {myTickets.length} ticket{myTickets.length !== 1 ? 's' : ''}
-          </Badge>
+          <div className="flex items-center gap-3">
+             <Badge variant="secondary" className="text-xs">
+              {myTickets.length} ticket{myTickets.length !== 1 ? 's' : ''}
+            </Badge>
+            <Button onClick={() => setIsTicketModalOpen(true)} className="gap-2" size="sm">
+              <Plus className="h-4 w-4" /> Create Ticket
+            </Button>
+          </div>
         </div>
 
         <div className="p-4">
@@ -143,27 +161,28 @@ const HelpTab = () => {
                 const statusConf = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.open;
                 const StatusIcon = statusConf.icon;
                 return (
-                  <div key={ticket.id} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/20 transition-colors">
-                    <StatusIcon className={`h-4 w-4 flex-shrink-0 ${
-                      ticket.status === 'resolved' ? 'text-green-600' :
-                      ticket.status === 'in-progress' ? 'text-blue-600 animate-spin' :
-                      ticket.status === 'closed' ? 'text-gray-500' :
-                      'text-yellow-600'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{ticket.subject}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(ticket.createdAt)} • {ticket.category}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className={`text-[10px] px-2 ${statusConf.color}`}>
-                      {statusConf.label}
-                    </Badge>
-                    {ticket.adminNotes && (
-                      <div className="hidden sm:block max-w-48">
-                        <p className="text-[11px] text-muted-foreground italic truncate" title={ticket.adminNotes}>
-                          💬 {ticket.adminNotes}
+                  <div key={ticket.id} className="rounded-lg border hover:bg-muted/20 transition-colors">
+                    <div className="flex items-center gap-3 p-3">
+                      <StatusIcon className={`h-4 w-4 flex-shrink-0 ${
+                        ticket.status === 'resolved' ? 'text-green-600' :
+                        ticket.status === 'in-progress' ? 'text-blue-600 animate-spin' :
+                        ticket.status === 'closed' ? 'text-gray-500' :
+                        'text-yellow-600'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{ticket.subject}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(ticket.createdAt)} • {ticket.category}
                         </p>
+                      </div>
+                      <Badge variant="outline" className={`text-[10px] px-2 ${statusConf.color}`}>
+                        {statusConf.label}
+                      </Badge>
+                    </div>
+                    {ticket.adminNotes && (
+                      <div className="border-t bg-muted/10 px-4 py-2.5 text-center">
+                        <p className="text-xs font-semibold text-muted-foreground mb-0.5">Admin Response</p>
+                        <p className="text-sm text-foreground italic">"{ticket.adminNotes}"</p>
                       </div>
                     )}
                   </div>
@@ -174,115 +193,109 @@ const HelpTab = () => {
         </div>
       </div>
 
-      {/* Raise a Ticket Section */}
-      <div className="rounded-xl border bg-white shadow-sm">
-        <div className="px-6 py-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Send className="h-5 w-5 text-primary" />
-            </div>
+      {/* Raise a Ticket Modal */}
+      <Modal open={isTicketModalOpen} onOpenChange={setIsTicketModalOpen} className="sm:max-w-2xl p-3">
+        <ModalContent>
+          <ModalClose onClose={() => setIsTicketModalOpen(false)} />
+          <ModalHeader>
+             <ModalTitle>Raise a Ticket</ModalTitle>
+             <ModalDescription>Report a bug, request a feature, or raise a complaint</ModalDescription>
+          </ModalHeader>
+          
+          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            {/* Subject */}
             <div>
-              <h3 className="text-lg font-semibold text-foreground">Raise a Ticket</h3>
-              <p className="text-sm text-muted-foreground">Report a bug, request a feature, or raise a complaint</p>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Subject <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Brief summary of your issue"
+                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white"
+                maxLength={120}
+              />
             </div>
-          </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Subject */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
-              Subject <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Brief summary of your issue"
-              className="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white"
-              maxLength={120}
-            />
-          </div>
+            {/* Category Selection - Visual Cards */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {CATEGORY_OPTIONS.map(opt => {
+                  const Icon = opt.icon;
+                  const isSelected = category === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setCategory(opt.value)}
+                      className={`rounded-xl border-2 p-3 text-left transition-all hover:shadow-sm ${
+                        isSelected 
+                          ? 'border-primary bg-primary/5 shadow-sm' 
+                          : 'border-transparent bg-muted/30 hover:border-muted-foreground/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Icon className={`h-4 w-4 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <p className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                          {opt.label}
+                        </p>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-tight">{opt.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-          {/* Category Selection - Visual Cards */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Category <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {CATEGORY_OPTIONS.map(opt => {
-                const Icon = opt.icon;
-                const isSelected = category === opt.value;
-                return (
+            {/* Priority */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Priority</label>
+              <div className="flex gap-2">
+                {PRIORITY_OPTIONS.map(opt => (
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => setCategory(opt.value)}
-                    className={`rounded-xl border-2 p-3 text-left transition-all hover:shadow-sm ${
-                      isSelected 
-                        ? 'border-primary bg-primary/5 shadow-sm' 
-                        : 'border-transparent bg-muted/30 hover:border-muted-foreground/20'
+                    onClick={() => setPriority(opt.value)}
+                    className={`rounded-lg border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      priority === opt.value 
+                        ? `${opt.color} border-current shadow-sm` 
+                        : 'border-transparent bg-muted/30 text-muted-foreground hover:bg-muted/50'
                     }`}
                   >
-                    <Icon className={`h-5 w-5 mb-1.5 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <p className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-foreground'}`}>
-                      {opt.label}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{opt.description}</p>
+                    {opt.label}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Priority */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Priority</label>
-            <div className="flex gap-2">
-              {PRIORITY_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setPriority(opt.value)}
-                  className={`rounded-lg border-2 px-4 py-2 text-sm font-medium transition-all ${
-                    priority === opt.value 
-                      ? `${opt.color} border-current shadow-sm` 
-                      : 'border-transparent bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Description <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe your issue in detail. Include steps to reproduce if it's a bug."
+                rows={4}
+                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white resize-none"
+              />
             </div>
-          </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
-              Description <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your issue in detail. Include steps to reproduce if it's a bug."
-              rows={4}
-              className="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white resize-none"
-            />
-          </div>
-
-          {/* Submit */}
-          <div className="flex justify-end">
-            <Button type="submit" disabled={submitting} className="gap-2 px-6">
-              {submitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              {submitting ? 'Submitting...' : 'Submit Ticket'}
-            </Button>
-          </div>
-        </form>
-      </div>
+            <ModalFooter className="gap-2">
+               <Button type="button" variant="outline" onClick={() => setIsTicketModalOpen(false)}>Cancel</Button>
+               <Button type="submit" disabled={submitting} className="gap-2 px-6">
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {submitting ? 'Submitting...' : 'Submit Ticket'}
+              </Button>
+            </ModalFooter>
+            </form>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

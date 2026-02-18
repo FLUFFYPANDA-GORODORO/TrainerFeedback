@@ -518,7 +518,7 @@ const TrainerOverview = () => {
       */}
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Responses</CardTitle>
@@ -572,7 +572,7 @@ const TrainerOverview = () => {
       </div>
 
       {/* Analytics Charts - Row 1 */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
         
         {/* Category Breakdown (Now First) */}
         <Card>
@@ -635,7 +635,7 @@ const TrainerOverview = () => {
       </div>
       
       {/* Row 2: Response Trend & Student Voices */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
         
         {/* Response Trend */}
         <Card>

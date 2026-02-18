@@ -66,6 +66,13 @@ const CollegesTab = ({
     useState(null);
 
   // Handlers
+  const closeCollegeDialog = () => {
+    setCollegeDialogOpen(false);
+    setIsEditingCollege(false);
+    setEditingCollegeId(null);
+    setNewCollege({ name: "", code: "", logoUrl: "" });
+  };
+
   const openCreateCollegeDialog = () => {
     setNewCollege({ name: "", code: "", logoUrl: "" });
     setIsEditingCollege(false);
@@ -162,20 +169,20 @@ const CollegesTab = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold tracking-tight">Colleges</h2>
-            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-              {colleges.length} Total
-            </span>
-          </div>
-          <Button onClick={openCreateCollegeDialog} className="gradient-hero text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300">
-            <Plus className="mr-2 h-4 w-4" /> Add College
-          </Button>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold tracking-tight">Colleges</h2>
+          <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+            {colleges.length} Total
+          </span>
+        </div>
+        <Button onClick={openCreateCollegeDialog} className="gradient-hero text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300">
+          <Plus className="mr-2 h-4 w-4" /> Add College
+        </Button>
       </div>
 
       <Modal open={collegeDialogOpen} onOpenChange={setCollegeDialogOpen} className="p-5">
         <ModalContent>
-          <ModalClose onClose={() => setCollegeDialogOpen(false)} />
+          <ModalClose onClose={closeCollegeDialog} />
           <ModalHeader>
             <ModalTitle>
               {isEditingCollege ? "Edit College" : "Create New College"}
@@ -254,7 +261,7 @@ const CollegesTab = ({
           <ModalFooter>
             <Button
               variant="outline"
-              onClick={() => setCollegeDialogOpen(false)}
+              onClick={closeCollegeDialog}
             >
               Cancel
             </Button>

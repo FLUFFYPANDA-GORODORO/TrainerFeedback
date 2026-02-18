@@ -62,6 +62,13 @@ const AdminsTab = ({ colleges, onRefresh, isDialogOpen, setDialogOpen }) => {
     loadAdmins();
   }, [loadAdmins]);
 
+  const closeDialog = () => {
+    setDialog(false);
+    setIsEditing(false);
+    setEditingId(null);
+    setFormData(defaultFormState);
+  };
+
   const openCreateDialog = () => {
     setFormData(defaultFormState);
     setIsEditing(false);
@@ -292,7 +299,7 @@ const AdminsTab = ({ colleges, onRefresh, isDialogOpen, setDialogOpen }) => {
 
             {/* Footer */}
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 pt-0">
-              <Button variant="outline" onClick={() => setDialog(false)}>
+              <Button variant="outline" onClick={closeDialog}>
                 Cancel
               </Button>
               <Button

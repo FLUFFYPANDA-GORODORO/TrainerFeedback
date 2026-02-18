@@ -399,13 +399,13 @@ export const getAnalyticsSessions = async (params) => {
       department, // mapped to branch in db
       batch, 
       projectCode,
+      startDate, // 'YYYY-MM-DD'
+      endDate,   // 'YYYY-MM-DD'
       limitCount = 30 
     } = params;
 
     const constraints = [
       where('status', '==', 'inactive'), // Only closed sessions have stats
-      orderBy('sessionDate', 'desc'),
-      limit(limitCount)
     ];
 
     if (collegeId && collegeId !== 'all') constraints.push(where('collegeId', '==', collegeId));
@@ -415,6 +415,14 @@ export const getAnalyticsSessions = async (params) => {
     if (department && department !== 'all') constraints.push(where('branch', '==', department));
     if (batch && batch !== 'all') constraints.push(where('batch', '==', batch));
     if (projectCode && projectCode !== 'all') constraints.push(where('projectCode', '==', projectCode));
+    
+    // Date filtering — must come before orderBy on the same field
+    if (startDate) constraints.push(where('sessionDate', '>=', startDate));
+    if (endDate) constraints.push(where('sessionDate', '<=', endDate));
+
+    // orderBy and limit must come AFTER all where clauses
+    constraints.push(orderBy('sessionDate', 'desc'));
+    constraints.push(limit(limitCount));
 
     const q = query(collection(db, COLLECTION_NAME), ...constraints);
     
