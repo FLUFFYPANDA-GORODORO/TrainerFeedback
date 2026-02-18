@@ -918,9 +918,8 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
         </Card>
       </div>
 
-      {/* Conditional Charts Section */}
-      {filters.collegeId === 'all' ? (
-        /* All Colleges View - Full Width Bar Chart */
+      {/* All Colleges Performance - shown only when no college/project filter is active */}
+      {filters.collegeId === 'all' && filters.projectCode === 'all' && (
         <Card>
           <CardHeader>
             <CardTitle>All Colleges Performance</CardTitle>
@@ -966,110 +965,24 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
             </div>
           </CardContent>
         </Card>
-      ) : (
-        /* Specific College View - 3 Charts Grid */
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Domain Performance Vertical Bar Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Domain Performance</CardTitle>
-              <CardDescription>X: Domain | Y: Avg Rating (0-5)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {domainAnalyticsData.chartData.length > 0 ? (
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={domainAnalyticsData.chartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                      <XAxis dataKey="name" className="text-xs" />
-                      <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
-                      <Tooltip 
-                        cursor={false}
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                        formatter={(value) => [value.toFixed(2), 'Avg Rating']}
-                      />
-                      <Bar 
-                        dataKey="avgRating" 
-                        fill="hsl(var(--primary))"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No domain data available yet.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      )}
 
-          {/* Category Breakdown Radar Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Category Breakdown</CardTitle>
-              <CardDescription>X: Category | Y: Score (0-5)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                {categoryRadarData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={categoryRadarData}>
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis 
-                        dataKey="category" 
-                        tick={{ fill: 'hsl(var(--foreground))', fontSize: 10 }}
-                      />
-                      <PolarRadiusAxis 
-                        angle={90} 
-                        domain={[0, 5]} 
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
-                        tickCount={6}
-                      />
-                      <Radar
-                        name="Score"
-                        dataKey="score"
-                        stroke="hsl(var(--primary))"
-                        fill="hsl(var(--primary))"
-                        fillOpacity={0.4}
-                        strokeWidth={2}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                        formatter={(value) => [parseFloat(value).toFixed(2), 'Score']}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                    No category data available
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Rating Distribution Bar Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Rating Distribution</CardTitle>
-              <CardDescription>X: Star Rating | Y: Response Count</CardDescription>
-            </CardHeader>
-            <CardContent>
+      {/* Domain Performance, Category Breakdown, Rating Distribution - always visible */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Domain Performance Vertical Bar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Domain Performance</CardTitle>
+            <CardDescription>X: Domain | Y: Avg Rating (0-5)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {domainAnalyticsData.chartData.length > 0 ? (
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={ratingDistributionData}>
+                  <BarChart data={domainAnalyticsData.chartData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                    <XAxis dataKey="rating" className="text-xs" />
-                    <YAxis allowDecimals={false} className="text-xs" />
+                    <XAxis dataKey="name" className="text-xs" />
+                    <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
                     <Tooltip 
                       cursor={false}
                       contentStyle={{ 
@@ -1077,20 +990,106 @@ const OverviewTab = ({ colleges, admins, projectCodes = [] }) => {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
-                      formatter={(value) => [value, 'Responses']}
+                      formatter={(value) => [value.toFixed(2), 'Avg Rating']}
                     />
                     <Bar 
-                      dataKey="count" 
+                      dataKey="avgRating" 
                       fill="hsl(var(--primary))"
                       radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No domain data available yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Category Breakdown Radar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Category Breakdown</CardTitle>
+            <CardDescription>X: Category | Y: Score (0-5)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              {categoryRadarData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={categoryRadarData}>
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis 
+                      dataKey="category" 
+                      tick={{ fill: 'hsl(var(--foreground))', fontSize: 10 }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={[0, 5]} 
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                      tickCount={6}
+                    />
+                    <Radar
+                      name="Score"
+                      dataKey="score"
+                      stroke="hsl(var(--primary))"
+                      fill="hsl(var(--primary))"
+                      fillOpacity={0.4}
+                      strokeWidth={2}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value) => [parseFloat(value).toFixed(2), 'Score']}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  No category data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Rating Distribution Bar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Rating Distribution</CardTitle>
+            <CardDescription>X: Star Rating | Y: Response Count</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ratingDistributionData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                  <XAxis dataKey="rating" className="text-xs" />
+                  <YAxis allowDecimals={false} className="text-xs" />
+                  <Tooltip 
+                    cursor={false}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value) => [value, 'Responses']}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Response Trend & Student Voices - Side by Side */}
       <div className="grid gap-6 lg:grid-cols-2">

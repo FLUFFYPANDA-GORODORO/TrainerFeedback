@@ -284,7 +284,7 @@ const CollegesTab = ({
           >
             <div className="flex items-start justify-between">
               {/* Logo Section - Wider container for better visibility, removed grey bg */}
-              <div className="h-16 w-16 rounded-lg border border-border/50 flex items-center justify-center bg-white p-1 overflow-hidden">
+              <div className="h-20 w-auto rounded-lg border border-border/50 flex items-center justify-center bg-white p-1 overflow-hidden">
                 {college.logoUrl ? (
                   <img
                     src={college.logoUrl}
