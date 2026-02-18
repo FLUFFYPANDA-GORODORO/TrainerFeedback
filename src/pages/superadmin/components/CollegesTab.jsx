@@ -7,7 +7,10 @@ import {
   GraduationCap,
   BarChart3,
   MoreVertical,
+  Upload,
+  Loader2,
 } from "lucide-react";
+import { uploadImage } from "@/services/cloudinaryService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +59,7 @@ const CollegesTab = ({
   });
   const [isEditingCollege, setIsEditingCollege] = useState(false);
   const [editingCollegeId, setEditingCollegeId] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Analytics view state
   const [selectedCollegeForAnalytics, setSelectedCollegeForAnalytics] =
@@ -78,6 +82,27 @@ const CollegesTab = ({
     setIsEditingCollege(true);
     setEditingCollegeId(college.id);
     setCollegeDialogOpen(true);
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast.error("File size should be less than 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setNewCollege((prev) => ({ ...prev, logoUrl: url }));
+      toast.success("Logo uploaded successfully");
+    } catch (error) {
+      toast.error("Failed to upload logo");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleCreateOrUpdateCollege = async () => {
@@ -137,8 +162,17 @@ const CollegesTab = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div></div>
+         <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold tracking-tight">Colleges</h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+              {colleges.length} Total
+            </span>
+          </div>
+          <Button onClick={openCreateCollegeDialog} className="gradient-hero text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300">
+            <Plus className="mr-2 h-4 w-4" /> Add College
+          </Button>
       </div>
+
       <Modal open={collegeDialogOpen} onOpenChange={setCollegeDialogOpen} className="p-5">
         <ModalContent>
           <ModalClose onClose={() => setCollegeDialogOpen(false)} />
@@ -176,15 +210,45 @@ const CollegesTab = ({
                 placeholder="e.g., GIT"
               />
             </div>
+            
             <div className="space-y-2">
-              <Label>Logo URL</Label>
-              <Input
-                value={newCollege.logoUrl}
-                onChange={(e) =>
-                  setNewCollege({ ...newCollege, logoUrl: e.target.value })
-                }
-                placeholder="https://example.com/logo.png"
-              />
+              <Label>Logo</Label>
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-lg border border-border/50 flex items-center justify-center bg-muted/20 overflow-hidden relative group">
+                  {newCollege.logoUrl ? (
+                    <img
+                      src={newCollege.logoUrl}
+                      alt="Preview"
+                      className="w-full h-full object-contain p-1"
+                    />
+                  ) : (
+                    <Upload className="h-6 w-6 text-muted-foreground opacity-50" />
+                  )}
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                    className="cursor-pointer"
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Or stick with URL:
+                    <Input 
+                        value={newCollege.logoUrl}
+                        onChange={(e) => setNewCollege({ ...newCollege, logoUrl: e.target.value })}
+                        placeholder="https://..."
+                        className="h-7 mt-1 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <ModalFooter>
@@ -213,7 +277,7 @@ const CollegesTab = ({
           >
             <div className="flex items-start justify-between">
               {/* Logo Section - Wider container for better visibility, removed grey bg */}
-              <div className="h-24 w-[292px] rounded-xl flex items-center justify-center p-1 border border-border/50">
+              <div className="h-16 w-16 rounded-lg border border-border/50 flex items-center justify-center bg-white p-1 overflow-hidden">
                 {college.logoUrl ? (
                   <img
                     src={college.logoUrl}
@@ -221,7 +285,7 @@ const CollegesTab = ({
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <GraduationCap className="h-10 w-10 text-primary/50" />
+                  <GraduationCap className="h-8 w-8 text-primary/50" />
                 )}
               </div>
 

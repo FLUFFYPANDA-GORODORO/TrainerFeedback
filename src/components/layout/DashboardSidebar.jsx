@@ -148,8 +148,12 @@ export const DashboardSidebar = ({
         {/* User Info */}
         <div className="px-4 py-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-accent">
-              <RoleIcon className="h-5 w-5 text-sidebar-accent-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-accent overflow-hidden">
+              {user?.photoUrl ? (
+                <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+              ) : (
+                <RoleIcon className="h-5 w-5 text-sidebar-accent-foreground" />
+              )}
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">

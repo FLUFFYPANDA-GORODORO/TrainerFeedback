@@ -8,44 +8,72 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { toast } from 'sonner';
 import { User, Lock, KeyRound, Shield, Mail, GraduationCap } from 'lucide-react';
 
+import { updateTrainer } from "@/services/superadmin/trainerService";
+import { updateSystemUser } from "@/services/superadmin/userService";
+import { uploadImage } from "@/services/cloudinaryService";
+import { Loader2, Camera } from "lucide-react";
+
 const ProfilePage = () => {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth(); // Added refreshUser
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+    const handlePhotoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            toast.error("File size should be less than 5MB");
+            return;
+        }
+
+        setIsUploadingPhoto(true);
+        try {
+            const url = await uploadImage(file);
+            
+            if (user.role === 'trainer') {
+                await updateTrainer(user.uid, { photoUrl: url });
+            } else {
+                await updateSystemUser(user.uid, { photoUrl: url });
+            }
+
+            toast.success("Profile photo updated successfully");
+            if (refreshUser) await refreshUser();
+            
+        } catch (error) {
+            console.error("Failed to upload photo:", error);
+            toast.error("Failed to update profile photo");
+        } finally {
+            setIsUploadingPhoto(false);
+        }
+    };
 
     const handleChangePassword = async (e) => {
         e.preventDefault();
-
+        
         if (newPassword !== confirmPassword) {
             toast.error("New passwords do not match");
             return;
         }
 
         if (newPassword.length < 6) {
-            toast.error("Password must be at least 6 characters long");
+            toast.error("Password must be at least 6 characters");
             return;
         }
 
         setIsLoading(true);
         try {
             await changePassword(currentPassword, newPassword);
-            toast.success("Password changed successfully");
+            toast.success("Password updated successfully");
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (error) {
-            console.error("Failed to change password:", error);
-            let message = "Failed to change password. Please check your current password.";
-            if (error.code === 'auth/wrong-password' || error.message.includes('auth/wrong-password')) {
-                message = "Incorrect current password.";
-            } else if (error.code === 'auth/weak-password') {
-                message = "Password is too weak.";
-            } else if (error.code === 'auth/too-many-requests') {
-                message = "Too many failed attempts. Please try again later.";
-            }
-            toast.error(message);
+            console.error(error);
+            toast.error(error.message || "Failed to update password");
         } finally {
             setIsLoading(false);
         }
@@ -53,10 +81,14 @@ const ProfilePage = () => {
 
     const getRoleLabel = (role) => {
         switch (role) {
-            case 'superAdmin': return 'Super Admin';
-            case 'collegeAdmin': return 'College Admin';
-            case 'trainer': return 'Trainer';
-            default: return role;
+            case 'superAdmin':
+                return 'Super Admin';
+            case 'collegeAdmin':
+                return 'College Admin';
+            case 'trainer':
+                return 'Trainer';
+            default:
+                return 'User';
         }
     };
 
@@ -82,8 +114,29 @@ const ProfilePage = () => {
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Full Name</Label>
                             <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-lg border border-border/50 transition-colors hover:bg-muted/60">
-                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base border border-primary/20">
-                                    {user?.name?.charAt(0).toUpperCase()}
+                                <div className="relative group cursor-pointer">
+                                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl border-2 border-primary/20 overflow-hidden">
+                                        {user?.photoUrl ? (
+                                            <img src={user.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            user?.name?.charAt(0).toUpperCase()
+                                        )}
+                                        {isUploadingPhoto && (
+                                            <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Camera className="h-3 w-3" />
+                                    </div>
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={handlePhotoUpload}
+                                        disabled={isUploadingPhoto}
+                                    />
                                 </div>
                                 <span className="font-medium text-foreground text-lg">{user?.name}</span>
                             </div>
