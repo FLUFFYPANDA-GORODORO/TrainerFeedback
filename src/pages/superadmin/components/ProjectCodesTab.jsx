@@ -260,7 +260,6 @@ const ProjectCodesTab = () => {
                                         {pc.code}
                                     </TableCell>
                                     <TableCell>
-                                    <TableCell>
                                         {pc.collegeId ? (
                                             <div className="flex items-center gap-1.5">
                                                 <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
@@ -276,7 +275,6 @@ const ProjectCodesTab = () => {
                                                 </div>
                                             </div>
                                         )}
-                                    </TableCell>
                                     </TableCell>
                                     <TableCell>
                                         <div className="text-sm">{pc.course}</div>
