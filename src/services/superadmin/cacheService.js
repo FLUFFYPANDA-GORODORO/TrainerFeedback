@@ -137,10 +137,12 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
     const ratingSum = Object.entries(ratingDistribution || {}).reduce(
       (sum, [rating, count]) => sum + (Number(rating) * count), 0
     );
-    // Total individual ratings (not responses)
     const totalRatingsCount = Object.values(ratingDistribution || {}).reduce(
       (sum, count) => sum + count, 0
     );
+
+    // Calculate session hours
+    const sessionHours = (Number(session.sessionDuration) || 60) / 60;
 
     // Build category data increments
     const categoryIncrements = {};
@@ -171,6 +173,7 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
       addUpdate('totalResponses', increment(totalResponses * multiplier));
       addUpdate('totalRatingsCount', increment(totalRatingsCount * multiplier));
       addUpdate('ratingSum', increment(ratingSum * multiplier));
+      addUpdate('totalHours', increment(sessionHours * multiplier));
       addUpdate('updatedAt', new Date().toISOString());
 
       Object.entries(ratingDistribution || {}).forEach(([rating, count]) => {
@@ -228,6 +231,7 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
         totalResponses,
         totalRatingsCount,
         ratingSum,
+        totalHours: sessionHours,
         ratingDistribution: ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         categoryData: {},
         domains: {}, // Initialize domains map
@@ -346,6 +350,8 @@ export const updateTrainerCache = async (session, stats, isDelete = false, trans
     });
 
     const multiplier = isDelete ? -1 : 1;
+    // Calculate session hours
+    const sessionHours = (Number(session.sessionDuration) || 60) / 60;
 
     // ============ 3. WRITE PHASE ============
 
@@ -356,6 +362,7 @@ export const updateTrainerCache = async (session, stats, isDelete = false, trans
         totalResponses: increment(totalResponses * multiplier),
         totalRatingsCount: increment(totalRatingsCount * multiplier),
         ratingSum: increment(ratingSum * multiplier),
+        totalHours: increment(sessionHours * multiplier),
         updatedAt: new Date().toISOString()
       };
 
@@ -375,7 +382,10 @@ export const updateTrainerCache = async (session, stats, isDelete = false, trans
         totalSessions: 1,
         totalResponses,
         totalRatingsCount,
+        totalRatingsCount,
         ratingSum,
+        totalHours: sessionHours,
+        ratingDistribution: ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         ratingDistribution: ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         categoryData: {},
         updatedAt: new Date().toISOString()

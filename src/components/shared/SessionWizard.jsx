@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Loader2, Plus } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronLeft, ChevronRight, Loader2, Plus, Search, Check, ChevronsUpDown } from 'lucide-react';
 import { getAcademicConfig } from '@/services/superadmin/academicService';
 import { getAllTemplates as getTemplates } from '@/services/superadmin/templateService';
 import { createSession, updateSession } from '@/services/superadmin/sessionService';
@@ -15,8 +16,6 @@ const DOMAIN_OPTIONS = [
   "Soft Skills",
   "Tools",
   "Aptitude",
-  "Verbal",
-  "Management",
   "Other"
 ];
 
@@ -43,6 +42,10 @@ const SessionWizard = ({
   // [NEW] Project Code Selection
   const [selectedProjectCode, setSelectedProjectCode] = useState(session?.projectCode || '');
 
+  // [NEW] Trainer Search State
+  const [trainerSearch, setTrainerSearch] = useState("");
+  const [trainerPopoverOpen, setTrainerPopoverOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     collegeId: session?.collegeId || defaultCollegeId || '',
     collegeName: session?.collegeName || '',
@@ -59,7 +62,7 @@ const SessionWizard = ({
     sessionDuration: session?.sessionDuration || 60,
     questions: session?.questions || [],
     templateId: session?.templateId || '',
-    ttl: session?.ttl || '24',
+    ttl: session?.ttl || '1',
     projectCode: session?.projectCode || '' // [NEW] Verify storage
   });
 
@@ -114,11 +117,19 @@ const SessionWizard = ({
     }
   }, [colleges, formData.collegeId, formData.collegeName]);
 
-  // Filter Trainers based on Domain (Step 2)
+  // Filter Trainers based on Domain (Step 2) OR Search
+  // If searching, ignore domain filter. If not searching, use domain filter.
   useEffect(() => {
     if (step === 2) {
       let filtered = trainers;
-      if (formData.domain) {
+      
+      if (trainerSearch.trim()) {
+        const searchLower = trainerSearch.toLowerCase();
+        filtered = filtered.filter(t => 
+          t.name.toLowerCase().includes(searchLower) || 
+          t.specialisation?.toLowerCase().includes(searchLower)
+        );
+      } else if (formData.domain) {
         filtered = filtered.filter(t =>
           t.domain?.toLowerCase().includes(formData.domain.toLowerCase()) ||
           t.specialisation?.toLowerCase().includes(formData.domain.toLowerCase())
@@ -126,7 +137,7 @@ const SessionWizard = ({
       }
       setFilteredTrainers(filtered);
     }
-  }, [formData.domain, step, trainers]);
+  }, [formData.domain, step, trainers, trainerSearch]);
 
 
   // Handlers
@@ -406,22 +417,63 @@ const SessionWizard = ({
 
           <div className="space-y-2">
             <Label>Select Trainer *</Label>
-            <div className="max-h-[150px] overflow-y-auto border rounded-md p-2 space-y-2 bg-muted/20">
-              {filteredTrainers.map(t => (
-                <div
-                  key={t.id}
-                  className={`p-2 rounded cursor-pointer flex justify-between items-center transition-colors ${formData.assignedTrainer?.id === t.id ? 'bg-primary/10 border-primary border' : 'hover:bg-accent bg-card'}`}
-                  onClick={() => setFormData({ ...formData, assignedTrainer: { id: t.id, name: t.name } })}
+            <Popover open={trainerPopoverOpen} onOpenChange={setTrainerPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={trainerPopoverOpen}
+                  className="w-full justify-between"
                 >
-                  <div>
-                    <p className="font-medium text-sm">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.specialisation}</p>
-                  </div>
-                  {formData.assignedTrainer?.id === t.id && <div className="h-2 w-2 rounded-full bg-primary" />}
+                  {formData.assignedTrainer
+                    ? formData.assignedTrainer.name
+                    : "Select trainer..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[400px] p-0" align="start">
+                <div className="p-2 border-b">
+                   <div className="flex items-center px-2 py-1 border rounded-md bg-transparent">
+                     <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                     <input 
+                        className="flex h-6 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Search trainer..."
+                        value={trainerSearch}
+                        onChange={(e) => setTrainerSearch(e.target.value)}
+                     />
+                   </div>
                 </div>
-              ))}
-              {filteredTrainers.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No trainers match filters.</p>}
-            </div>
+                <div className="max-h-[300px] overflow-y-auto p-1">
+                    {filteredTrainers.length === 0 ? (
+                      <p className="p-4 text-sm text-center text-muted-foreground">No trainer found.</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {filteredTrainers.map((t) => (
+                          <div
+                            key={t.id}
+                            className={`flex items-center justify-between p-2 rounded-sm cursor-pointer hover:bg-accent hover:text-accent-foreground ${formData.assignedTrainer?.id === t.id ? 'bg-accent' : ''}`}
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                assignedTrainer: { id: t.id, name: t.name }
+                              });
+                              setTrainerPopoverOpen(false);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                                <span className="font-medium">{t.name}</span>
+                                <span className="text-xs text-muted-foreground">{t.specialisation}</span>
+                            </div>
+                            {formData.assignedTrainer?.id === t.id && (
+                              <Check className="h-4 w-4" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
@@ -457,12 +509,18 @@ const SessionWizard = ({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Duration (mins)</Label>
-              <Input
-                type="number"
-                value={formData.sessionDuration}
-                onChange={e => setFormData({ ...formData, sessionDuration: e.target.value })}
-              />
+              <Label>Duration (Hours)</Label>
+              <Select
+                value={String((formData.sessionDuration / 60) || 1)}
+                onValueChange={v => setFormData({ ...formData, sessionDuration: Number(v) * 60 })}
+              >
+                <SelectTrigger><SelectValue placeholder="Select Duration" /></SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(h => (
+                    <SelectItem key={h} value={String(h)}>{h} Hour{h > 1 ? 's' : ''}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Auto-Close (Hours)</Label>
@@ -470,7 +528,7 @@ const SessionWizard = ({
                 type="number"
                 value={formData.ttl}
                 onChange={e => setFormData({ ...formData, ttl: e.target.value })}
-                placeholder="24"
+                placeholder="1"
               />
             </div>
           </div>
