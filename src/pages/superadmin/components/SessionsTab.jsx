@@ -565,7 +565,12 @@ const SessionsTab = ({
               <Filter className="h-5 w-5 text-primary" />
               <CardTitle className="text-lg">Filters</CardTitle>
             </div>
-            <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
+              className="gap-2"
+            >
               <RotateCcw className="h-4 w-4" />
               Reset
             </Button>
@@ -657,7 +662,9 @@ const SessionsTab = ({
               <Label className="text-xs">Project Code</Label>
               <Select
                 value={filters.projectCode}
-                onValueChange={(v) => setFilters({ ...filters, projectCode: v })}
+                onValueChange={(v) =>
+                  setFilters({ ...filters, projectCode: v })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All Projects" />
@@ -680,7 +687,9 @@ const SessionsTab = ({
               <Input
                 placeholder="Search topics..."
                 value={filters.topic}
-                onChange={(e) => setFilters({ ...filters, topic: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, topic: e.target.value })
+                }
               />
             </div>
           </div>

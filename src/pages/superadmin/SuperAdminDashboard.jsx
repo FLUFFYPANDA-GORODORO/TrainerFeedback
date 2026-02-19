@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
+import html2canvas from "html2canvas";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   SuperAdminDataProvider,
@@ -28,6 +29,7 @@ import {
   Ticket,
   User,
   Plus,
+  Download,
 } from "lucide-react";
 
 // Import Tab Components
@@ -56,6 +58,8 @@ const SuperAdminDashboardInner = () => {
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   const [isProjectCodeImportOpen, setIsProjectCodeImportOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const dashboardRef = useRef(null);
 
   // Get data from context
   const {
@@ -68,6 +72,75 @@ const SuperAdminDashboardInner = () => {
     isInitialLoading,
     refreshAll,
   } = useSuperAdminData();
+
+  // Export screenshot handler
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+    // Wait for React to re-render with export layout
+    await new Promise((r) => setTimeout(r, 500));
+    try {
+      const el = dashboardRef.current;
+      if (!el) return;
+      // Temporarily remove overflow clipping so full content is captured
+      const mainEl = el.closest("main");
+      const parentDiv = el.closest(".flex-1.flex.flex-col");
+      const savedMainStyles = mainEl
+        ? {
+            overflow: mainEl.style.overflow,
+            maxHeight: mainEl.style.maxHeight,
+            height: mainEl.style.height,
+          }
+        : null;
+      const savedParentStyles = parentDiv
+        ? {
+            overflow: parentDiv.style.overflow,
+            maxHeight: parentDiv.style.maxHeight,
+            height: parentDiv.style.height,
+          }
+        : null;
+      if (mainEl) {
+        mainEl.style.overflow = "visible";
+        mainEl.style.maxHeight = "none";
+        mainEl.style.height = "auto";
+      }
+      if (parentDiv) {
+        parentDiv.style.overflow = "visible";
+        parentDiv.style.maxHeight = "none";
+        parentDiv.style.height = "auto";
+      }
+      await new Promise((r) => setTimeout(r, 200));
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        scrollY: -window.scrollY,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+      });
+      // Restore original styles
+      if (mainEl && savedMainStyles) {
+        mainEl.style.overflow = savedMainStyles.overflow;
+        mainEl.style.maxHeight = savedMainStyles.maxHeight;
+        mainEl.style.height = savedMainStyles.height;
+      }
+      if (parentDiv && savedParentStyles) {
+        parentDiv.style.overflow = savedParentStyles.overflow;
+        parentDiv.style.maxHeight = savedParentStyles.maxHeight;
+        parentDiv.style.height = savedParentStyles.height;
+      }
+      const link = document.createElement("a");
+      link.download = `dashboard-export-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error("Export failed:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, []);
 
   // Legacy data from mock/local storage (academicConfig, globalStats)
   const academicConfig = academicConfigApi.getActive() || {};
@@ -254,7 +327,11 @@ const SuperAdminDashboardInner = () => {
               >
                 <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0 overflow-hidden">
                   {user?.photoUrl ? (
-                     <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+                    <img
+                      src={user.photoUrl}
+                      alt={user.name}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     user?.name?.charAt(0).toUpperCase()
                   )}
@@ -275,11 +352,15 @@ const SuperAdminDashboardInner = () => {
               onClick={() => navigate("/super-admin/profile")}
               title="Go to Profile"
             >
-               {user?.photoUrl ? (
-                 <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
-               ) : (
-                 user?.name?.charAt(0).toUpperCase()
-               )}
+              {user?.photoUrl ? (
+                <img
+                  src={user.photoUrl}
+                  alt={user.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                user?.name?.charAt(0).toUpperCase()
+              )}
             </div>
           )}
         </div>
@@ -410,6 +491,17 @@ const SuperAdminDashboardInner = () => {
               </Button>
             )}
 
+            {/* Export Button */}
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {isExporting ? "Exporting..." : "Export"}
+            </Button>
+
             {/* Refresh Button */}
             <Button variant="outline" onClick={refreshAll} className="gap-2">
               <RefreshCw className="h-4 w-4" />
@@ -421,6 +513,7 @@ const SuperAdminDashboardInner = () => {
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-muted/5 p-6 scroll-smooth">
           <div
+            ref={dashboardRef}
             className={`max-w-8xl mx-auto transition-all duration-300 ${isSidebarCollapsed ? "px-6" : "px-0"}`}
           >
             {activeTab === "overview" && (
@@ -429,6 +522,7 @@ const SuperAdminDashboardInner = () => {
                 admins={admins}
                 sessions={sessions}
                 projectCodes={projectCodes} // [NEW] Pass project codes
+                isExporting={isExporting}
               />
             )}
 
