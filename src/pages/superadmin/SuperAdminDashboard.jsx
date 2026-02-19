@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   SuperAdminDataProvider,
@@ -58,7 +58,7 @@ const SuperAdminDashboardInner = () => {
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   const [isProjectCodeImportOpen, setIsProjectCodeImportOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+
   const dashboardRef = useRef(null);
 
   // Get data from context
@@ -75,70 +75,22 @@ const SuperAdminDashboardInner = () => {
 
   // Export screenshot handler
   const handleExport = useCallback(async () => {
-    setIsExporting(true);
-    // Wait for React to re-render with export layout
-    await new Promise((r) => setTimeout(r, 500));
     try {
       const el = dashboardRef.current;
       if (!el) return;
-      // Temporarily remove overflow clipping so full content is captured
-      const mainEl = el.closest("main");
-      const parentDiv = el.closest(".flex-1.flex.flex-col");
-      const savedMainStyles = mainEl
-        ? {
-            overflow: mainEl.style.overflow,
-            maxHeight: mainEl.style.maxHeight,
-            height: mainEl.style.height,
-          }
-        : null;
-      const savedParentStyles = parentDiv
-        ? {
-            overflow: parentDiv.style.overflow,
-            maxHeight: parentDiv.style.maxHeight,
-            height: parentDiv.style.height,
-          }
-        : null;
-      if (mainEl) {
-        mainEl.style.overflow = "visible";
-        mainEl.style.maxHeight = "none";
-        mainEl.style.height = "auto";
-      }
-      if (parentDiv) {
-        parentDiv.style.overflow = "visible";
-        parentDiv.style.maxHeight = "none";
-        parentDiv.style.height = "auto";
-      }
-      await new Promise((r) => setTimeout(r, 200));
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
+
+      const dataUrl = await toPng(el, {
+        quality: 1.0,
         backgroundColor: "#ffffff",
-        scrollY: -window.scrollY,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight,
-        width: el.scrollWidth,
-        height: el.scrollHeight,
+        pixelRatio: 2, // Higher resolution
       });
-      // Restore original styles
-      if (mainEl && savedMainStyles) {
-        mainEl.style.overflow = savedMainStyles.overflow;
-        mainEl.style.maxHeight = savedMainStyles.maxHeight;
-        mainEl.style.height = savedMainStyles.height;
-      }
-      if (parentDiv && savedParentStyles) {
-        parentDiv.style.overflow = savedParentStyles.overflow;
-        parentDiv.style.maxHeight = savedParentStyles.maxHeight;
-        parentDiv.style.height = savedParentStyles.height;
-      }
+
       const link = document.createElement("a");
       link.download = `dashboard-export-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.click();
     } catch (err) {
       console.error("Export failed:", err);
-    } finally {
-      setIsExporting(false);
     }
   }, []);
 
@@ -495,11 +447,10 @@ const SuperAdminDashboardInner = () => {
             <Button
               variant="outline"
               onClick={handleExport}
-              disabled={isExporting}
               className="gap-2"
             >
               <Download className="h-4 w-4" />
-              {isExporting ? "Exporting..." : "Export"}
+              Export
             </Button>
 
             {/* Refresh Button */}
@@ -522,7 +473,6 @@ const SuperAdminDashboardInner = () => {
                 admins={admins}
                 sessions={sessions}
                 projectCodes={projectCodes} // [NEW] Pass project codes
-                isExporting={isExporting}
               />
             )}
 
