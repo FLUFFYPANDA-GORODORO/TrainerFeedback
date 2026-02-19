@@ -403,6 +403,26 @@ const SessionAnalytics = ({ session, onBack }) => {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ratingDataAll}>
+                  <defs>
+                    <linearGradient
+                      id="barGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={1}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={0.6}
+                      />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-muted"
@@ -421,7 +441,7 @@ const SessionAnalytics = ({ session, onBack }) => {
                   />
                   <Bar
                     dataKey="value"
-                    fill="hsl(var(--primary))"
+                    fill="url(#barGradient)"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -455,11 +475,12 @@ const SessionAnalytics = ({ session, onBack }) => {
                         const { payload, x, y, textAnchor, index } = props;
                         const categoryData = radarData[index];
                         if (categoryData) {
+                          const isBottom = y > 128;
                           return (
                             <g>
                               <text
                                 x={x}
-                                y={y - 5}
+                                y={isBottom ? y + 15 : y - 22}
                                 textAnchor={textAnchor}
                                 fill="hsl(var(--foreground))"
                                 fontSize={10}
@@ -469,7 +490,7 @@ const SessionAnalytics = ({ session, onBack }) => {
                               </text>
                               <text
                                 x={x}
-                                y={y + 8}
+                                y={isBottom ? y + 29 : y - 8}
                                 textAnchor={textAnchor}
                                 fill="hsl(var(--primary))"
                                 fontSize={11}

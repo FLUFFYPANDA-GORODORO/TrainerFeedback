@@ -166,7 +166,11 @@ const AdminDashboardContent = () => {
               >
                 <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0 overflow-hidden">
                   {user.photoUrl ? (
-                    <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+                    <img
+                      src={user.photoUrl}
+                      alt={user.name}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     user.name.charAt(0).toUpperCase()
                   )}
@@ -190,7 +194,11 @@ const AdminDashboardContent = () => {
               title="Go to Profile"
             >
               {user.photoUrl ? (
-                <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+                <img
+                  src={user.photoUrl}
+                  alt={user.name}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 user.name.charAt(0).toUpperCase()
               )}

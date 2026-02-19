@@ -8,6 +8,7 @@ import {
 } from "@/contexts/SuperAdminDataContext";
 import { usersApi, academicConfigApi, analyticsApi } from "@/lib/dataService";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Tooltip,
   TooltipContent,
@@ -75,22 +76,48 @@ const SuperAdminDashboardInner = () => {
 
   // Export screenshot handler
   const handleExport = useCallback(async () => {
+    const toastId = toast.loading("Generating snapshot...");
     try {
       const el = dashboardRef.current;
-      if (!el) return;
+      if (!el) {
+        toast.error("Dashboard content not found", { id: toastId });
+        return;
+      }
+
+      // Small delay for chart rendering
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
       const dataUrl = await toPng(el, {
-        quality: 1.0,
+        quality: 0.95,
         backgroundColor: "#ffffff",
-        pixelRatio: 2, // Higher resolution
+        pixelRatio: 2, // 2x is usually enough and faster
+        cacheBust: true,
+        style: {
+          fontFamily: "Inter, sans-serif",
+        },
+        filter: (node) => {
+          if (
+            node.classList &&
+            (node.classList.contains("print:hidden") ||
+              node.classList.contains("snapshot-ignore"))
+          ) {
+            return false;
+          }
+          return true;
+        },
       });
 
       const link = document.createElement("a");
-      link.download = `dashboard-export-${new Date().toISOString().slice(0, 10)}.png`;
+      link.download = `FacultyInsight-Snapshot-${new Date().toLocaleDateString().replace(/\//g, "-")}.png`;
       link.href = dataUrl;
       link.click();
+      toast.success("Snapshot saved", { id: toastId });
     } catch (err) {
       console.error("Export failed:", err);
+      toast.error(
+        "Export failed. Check internet connection or CORS settings.",
+        { id: toastId },
+      );
     }
   }, []);
 
@@ -126,10 +153,19 @@ const SuperAdminDashboardInner = () => {
       case "profile":
         return "profile";
       default:
-        return "overview";
+        // Check if we are in a sub-view (analytics) within colleges/trainers
+        // We handle this by making the snapshot button always visible for these base tabs
+        return section;
     }
   };
   const activeTab = getActiveTab(currentSection);
+
+  // Determine if snapshot is allowed (including sub-views)
+  const isSnapshotAllowed =
+    activeTab === "overview" ||
+    activeTab === "colleges" ||
+    activeTab === "trainers" ||
+    activeTab === "analytics";
 
   const handleLogout = () => {
     logout();
@@ -443,15 +479,17 @@ const SuperAdminDashboardInner = () => {
               </Button>
             )}
 
-            {/* Export Button */}
-            <Button
-              variant="outline"
-              onClick={handleExport}
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
+            {/* Snapshot Button */}
+            {isSnapshotAllowed && (
+              <Button
+                variant="outline"
+                onClick={handleExport}
+                className="gap-2 border-primary/20 hover:bg-primary/5 shadow-sm print:hidden"
+              >
+                <Download className="h-4 w-4 text-primary" />
+                <span className="text-primary font-medium">Snapshot</span>
+              </Button>
+            )}
 
             {/* Refresh Button */}
             <Button variant="outline" onClick={refreshAll} className="gap-2">

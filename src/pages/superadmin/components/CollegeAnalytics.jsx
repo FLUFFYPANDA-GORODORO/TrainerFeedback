@@ -19,6 +19,7 @@ import {
   RotateCcw,
   MessageSquare,
   RefreshCw,
+  Clock,
 } from "lucide-react";
 import {
   Select,
@@ -37,6 +38,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  AreaChart,
+  Area,
   LineChart,
   Line,
   RadarChart,
@@ -56,7 +59,7 @@ import { getAllSessions } from "@/services/superadmin/sessionService";
 import { getAllTrainers } from "@/services/superadmin/trainerService";
 import { getAcademicConfig } from "@/services/superadmin/academicService";
 
-const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
+const CollegeAnalytics = ({ collegeId, collegeName, collegeLogo, onBack }) => {
   const [loading, setLoading] = useState(true);
 
   // Data State
@@ -342,6 +345,7 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
         totalSessions: cache.totalSessions || 0,
         totalResponses: cache.totalResponses || 0,
         totalRatingsCount: cache.totalRatingsCount || 0,
+        totalHours: cache.totalHours || 0,
         avgRating,
         ratingDistribution: cache.ratingDistribution || {
           1: 0,
@@ -383,6 +387,7 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
             totalSessions: 0,
             totalResponses: targetData.totalResponses || 0,
             totalRatingsCount: targetData.totalRatingsCount || 0,
+            totalHours: targetData.totalHours || 0,
             avgRating: avg,
             ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
             categoryAverages: {},
@@ -442,6 +447,7 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
         totalSessions: filteredSessions.length,
         totalResponses: stats.totalResponses,
         totalRatingsCount: stats.totalRatingsCount,
+        totalHours: 0, // Mock for now, need field in compiledStats/cache
         avgRating,
         ratingDistribution: stats.ratingDistribution,
         categoryAverages,
@@ -611,18 +617,22 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
   return (
     <div className="space-y-6">
       {/* Header with Back Button */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="hover:bg-primary/5"
+          >
+            <ArrowLeft className="h-6 w-6 text-primary" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Building2 className="h-6 w-6" />
+          <div className="flex flex-col">
+            <h1 className="text-3xl font-bold text-foreground">
               {collegeName || "College Analytics"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Aggregate performance across all sessions
+              Deep dive into institutional performance and feedback
             </p>
           </div>
         </div>
@@ -863,17 +873,15 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
 
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Rating Count
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {aggregatedStats.totalRatingsCount || 0}
+              {aggregatedStats.totalHours || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Individual Ratings Given
+              Training Hours Delivered
             </p>
           </CardContent>
         </Card>
@@ -892,6 +900,26 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={domainAnalyticsData.chartData}>
+                    <defs>
+                      <linearGradient
+                        id="barGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={1}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.6}
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       className="stroke-muted"
@@ -910,7 +938,7 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
                     />
                     <Bar
                       dataKey="avgRating"
-                      fill="hsl(var(--primary))"
+                      fill="url(#barGradient)"
                       radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
@@ -937,13 +965,87 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
                   <RadarChart
                     cx="50%"
                     cy="50%"
-                    outerRadius="70%"
+                    outerRadius="65%"
                     data={categoryRadarData}
                   >
-                    <PolarGrid stroke="hsl(var(--border))" />
+                    <defs>
+                      <linearGradient
+                        id="radarGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.6}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.2}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <PolarGrid stroke="hsl(var(--primary))" opacity={0.1} />
                     <PolarAngleAxis
                       dataKey="category"
-                      tick={{ fill: "hsl(var(--foreground))", fontSize: 10 }}
+                      tick={(props) => {
+                        const { payload, x, y, textAnchor, index } = props;
+                        const categoryData = categoryRadarData[index];
+                        if (categoryData && categoryRadarData.length > 0) {
+                          const isTop = y < 115;
+                          const isBottom = y > 145;
+                          const isRight = textAnchor === "start";
+                          const isLeft = textAnchor === "end";
+
+                          let dy = 0;
+                          if (isTop) dy = -40;
+                          else if (isBottom) dy = 30;
+                          else dy = 0;
+
+                          let dx = 0;
+                          if (isRight) dx = 12;
+                          if (isLeft) dx = -12;
+
+                          return (
+                            <g className="recharts-layer recharts-polar-angle-axis-tick">
+                              <text
+                                x={x + dx}
+                                y={y + dy}
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--foreground))"
+                                fontSize={10}
+                                fontWeight="600"
+                              >
+                                {payload.value}
+                              </text>
+                              <text
+                                x={x + dx}
+                                y={y + dy + 15}
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--primary))"
+                                fontSize={11}
+                                fontWeight="800"
+                              >
+                                {categoryData.score.toFixed(1)}
+                              </text>
+                            </g>
+                          );
+                        }
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            textAnchor={textAnchor}
+                            fill="hsl(var(--foreground))"
+                            fontSize={10}
+                          >
+                            {payload.value}
+                          </text>
+                        );
+                      }}
                     />
                     <PolarRadiusAxis
                       angle={90}
@@ -958,9 +1060,14 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
                       name="Score"
                       dataKey="score"
                       stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
-                      fillOpacity={0.4}
+                      fill="url(#radarGradient)"
+                      fillOpacity={1}
                       strokeWidth={2}
+                      dot={{
+                        fill: "hsl(var(--primary))",
+                        r: 3,
+                        fillOpacity: 1,
+                      }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -996,6 +1103,26 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ratingDistributionData}>
+                  <defs>
+                    <linearGradient
+                      id="barGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={1}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={0.6}
+                      />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-muted"
@@ -1014,7 +1141,7 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
                   />
                   <Bar
                     dataKey="count"
-                    fill="hsl(var(--primary))"
+                    fill="url(#barGradient)"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -1039,9 +1166,30 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
             <div className="h-64">
               {responseTrend.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={responseTrend}>
+                  <AreaChart data={responseTrend}>
+                    <defs>
+                      <linearGradient
+                        id="colorResponses"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.15}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.01}
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
+                      vertical={false}
                       className="stroke-muted"
                     />
                     <XAxis
@@ -1068,14 +1216,17 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
                         });
                       }}
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="responses"
                       stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--primary))" }}
+                      strokeWidth={3}
+                      dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                      activeDot={{ r: 6 }}
+                      fillOpacity={1}
+                      fill="url(#colorResponses)"
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">

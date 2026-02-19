@@ -29,7 +29,7 @@ import {
   ModalTitle,
   ModalDescription,
   ModalFooter,
-  ModalClose
+  ModalClose,
 } from "@/components/ui/modal";
 import { toast } from "sonner";
 import {
@@ -103,7 +103,8 @@ const CollegesTab = ({
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB limit
       toast.error("File size should be less than 5MB");
       return;
     }
@@ -166,9 +167,9 @@ const CollegesTab = ({
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.name.endsWith('.json')) {
+    if (!file.name.endsWith(".json")) {
       toast.error("Please upload a .json file");
-      e.target.value = '';
+      e.target.value = "";
       return;
     }
 
@@ -234,6 +235,7 @@ const CollegesTab = ({
       <CollegeAnalytics
         collegeId={selectedCollegeForAnalytics.id}
         collegeName={selectedCollegeForAnalytics.name}
+        collegeLogo={selectedCollegeForAnalytics.logoUrl}
         filters={{}} // No course/batch filters in this view
         onBack={() => setSelectedCollegeForAnalytics(null)}
       />
@@ -250,16 +252,30 @@ const CollegesTab = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => { closeBulkDialog(); setBulkDialogOpen(true); }} variant="outline" className="shadow hover:shadow-md transition-all duration-300">
+          <Button
+            onClick={() => {
+              closeBulkDialog();
+              setBulkDialogOpen(true);
+            }}
+            variant="outline"
+            className="shadow hover:shadow-md transition-all duration-300"
+          >
             <ListPlus className="mr-2 h-4 w-4" /> Bulk Add
           </Button>
-          <Button onClick={openCreateCollegeDialog} className="gradient-hero text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300">
+          <Button
+            onClick={openCreateCollegeDialog}
+            className="gradient-hero text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+          >
             <Plus className="mr-2 h-4 w-4" /> Add College
           </Button>
         </div>
       </div>
 
-      <Modal open={collegeDialogOpen} onOpenChange={setCollegeDialogOpen} className="p-5">
+      <Modal
+        open={collegeDialogOpen}
+        onOpenChange={setCollegeDialogOpen}
+        className="p-5"
+      >
         <ModalContent>
           <ModalClose onClose={closeCollegeDialog} />
           <ModalHeader>
@@ -296,7 +312,7 @@ const CollegesTab = ({
                 placeholder="e.g., GIT"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Logo</Label>
               <div className="flex items-center gap-4">
@@ -326,11 +342,16 @@ const CollegesTab = ({
                   />
                   <div className="text-xs text-muted-foreground">
                     Or stick with URL:
-                    <Input 
-                        value={newCollege.logoUrl}
-                        onChange={(e) => setNewCollege({ ...newCollege, logoUrl: e.target.value })}
-                        placeholder="https://..."
-                        className="h-7 mt-1 text-xs"
+                    <Input
+                      value={newCollege.logoUrl}
+                      onChange={(e) =>
+                        setNewCollege({
+                          ...newCollege,
+                          logoUrl: e.target.value,
+                        })
+                      }
+                      placeholder="https://..."
+                      className="h-7 mt-1 text-xs"
                     />
                   </div>
                 </div>
@@ -338,10 +359,7 @@ const CollegesTab = ({
             </div>
           </div>
           <ModalFooter>
-            <Button
-              variant="outline"
-              onClick={closeCollegeDialog}
-            >
+            <Button variant="outline" onClick={closeCollegeDialog}>
               Cancel
             </Button>
             <Button
@@ -355,18 +373,26 @@ const CollegesTab = ({
       </Modal>
 
       {/* Bulk Add Modal */}
-      <Modal open={bulkDialogOpen} onOpenChange={setBulkDialogOpen} className="p-5">
+      <Modal
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        className="p-5"
+      >
         <ModalContent className="max-w-2xl">
           <ModalClose onClose={closeBulkDialog} />
           <ModalHeader>
             <ModalTitle>Bulk Add Colleges</ModalTitle>
             <ModalDescription>
-              Upload a <strong>.json</strong> file containing an array of colleges with <strong>"Name"</strong> and <strong>"College Code"</strong> fields.
+              Upload a <strong>.json</strong> file containing an array of
+              colleges with <strong>"Name"</strong> and{" "}
+              <strong>"College Code"</strong> fields.
             </ModalDescription>
           </ModalHeader>
           <div className="space-y-4 py-4">
             <div className="rounded-lg bg-muted/40 border border-border/50 p-3">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Expected JSON format:</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1">
+                Expected JSON format:
+              </p>
               <pre className="text-xs text-foreground/80 whitespace-pre-wrap">{`[\n  { "Name": "College Name", "College Code": "CODE" },\n  { "Name": "Another College", "College Code": "AC" }\n]`}</pre>
             </div>
 
@@ -389,17 +415,29 @@ const CollegesTab = ({
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-border/50">
-                        <th className="text-left py-1 px-2 text-muted-foreground font-medium">#</th>
-                        <th className="text-left py-1 px-2 text-muted-foreground font-medium">Name</th>
-                        <th className="text-left py-1 px-2 text-muted-foreground font-medium">Code</th>
+                        <th className="text-left py-1 px-2 text-muted-foreground font-medium">
+                          #
+                        </th>
+                        <th className="text-left py-1 px-2 text-muted-foreground font-medium">
+                          Name
+                        </th>
+                        <th className="text-left py-1 px-2 text-muted-foreground font-medium">
+                          Code
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {bulkPreview.entries.map((entry, i) => (
                         <tr key={i} className="border-b border-border/30">
-                          <td className="py-1 px-2 text-muted-foreground">{i + 1}</td>
-                          <td className="py-1 px-2">{entry.Name || entry.name || '—'}</td>
-                          <td className="py-1 px-2 font-mono">{entry['College Code'] || entry.code || '—'}</td>
+                          <td className="py-1 px-2 text-muted-foreground">
+                            {i + 1}
+                          </td>
+                          <td className="py-1 px-2">
+                            {entry.Name || entry.name || "—"}
+                          </td>
+                          <td className="py-1 px-2 font-mono">
+                            {entry["College Code"] || entry.code || "—"}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -423,9 +461,13 @@ const CollegesTab = ({
               className="gradient-hero text-primary-foreground"
             >
               {isBulkAdding ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
+                </>
               ) : (
-                <><ListPlus className="mr-2 h-4 w-4" /> Add All</>
+                <>
+                  <ListPlus className="mr-2 h-4 w-4" /> Add All
+                </>
               )}
             </Button>
           </ModalFooter>

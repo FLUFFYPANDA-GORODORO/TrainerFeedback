@@ -239,9 +239,7 @@ const TrainerDashboard = () => {
       {/* Sidebar - hidden on mobile, shown as overlay when menu open */}
       <aside
         className={`bg-primary text-primary-foreground border-r border-primary/80 flex flex-col transition-all duration-300 ease-in-out h-screen z-50
-          ${
-            isSidebarCollapsed ? "w-20" : "w-64"
-          }
+          ${isSidebarCollapsed ? "w-20" : "w-64"}
           fixed lg:relative
           ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
@@ -287,12 +285,19 @@ const TrainerDashboard = () => {
             <div className="flex items-center justify-start">
               <div
                 className="flex items-center gap-3 cursor-pointer hover:bg-primary-foreground/10 p-2 -ml-2 rounded-md transition-colors"
-                onClick={() => { navigate("/trainer/profile"); setIsMobileMenuOpen(false); }}
+                onClick={() => {
+                  navigate("/trainer/profile");
+                  setIsMobileMenuOpen(false);
+                }}
                 title="Go to Profile"
               >
                 <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0 overflow-hidden">
                   {user?.photoUrl ? (
-                    <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+                    <img
+                      src={user.photoUrl}
+                      alt={user.name}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     user?.name?.charAt(0).toUpperCase()
                   )}
@@ -308,11 +313,18 @@ const TrainerDashboard = () => {
           ) : (
             <div
               className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform overflow-hidden"
-              onClick={() => { navigate("/trainer/profile"); setIsMobileMenuOpen(false); }}
+              onClick={() => {
+                navigate("/trainer/profile");
+                setIsMobileMenuOpen(false);
+              }}
               title="Go to Profile"
             >
               {user?.photoUrl ? (
-                <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+                <img
+                  src={user.photoUrl}
+                  alt={user.name}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 user?.name?.charAt(0).toUpperCase()
               )}
@@ -405,7 +417,12 @@ const TrainerDashboard = () => {
 
           {/* Right: Action Buttons */}
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <Button variant="outline" onClick={loadData} className="gap-2" size="sm">
+            <Button
+              variant="outline"
+              onClick={loadData}
+              className="gap-2"
+              size="sm"
+            >
               <RefreshCw
                 className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
               />

@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Loader2,
   BookOpen,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +39,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  AreaChart,
+  Area,
   LineChart,
   Line,
   RadarChart,
@@ -325,6 +328,7 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
         totalSessions: cache.totalSessions || 0,
         totalResponses: cache.totalResponses || 0,
         totalRatingsCount: cache.totalRatingsCount || 0,
+        totalHours: cache.totalHours || 0,
         avgRating,
         ratingDistribution: cache.ratingDistribution || {
           1: 0,
@@ -341,7 +345,7 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
               ]),
             )
           : {},
-        qualitative: cache.qualitative || { high: [], low: [], avg: [] },
+        qualitative: cache.qualitative || { high: [], low: [], future: [] },
       };
     }
 
@@ -353,6 +357,11 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
       ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       categoryTotals: {},
       categoryCounts: {},
+      qualitative: {
+        high: [],
+        low: [],
+        future: [],
+      },
     };
 
     filteredSessions.forEach((session) => {
@@ -360,6 +369,16 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
       if (!cs) return;
 
       stats.totalResponses += cs.totalResponses || 0;
+
+      // Aggregate qualitative feedback if it exists
+      if (cs.qualitative) {
+        if (cs.qualitative.high)
+          stats.qualitative.high.push(...cs.qualitative.high);
+        if (cs.qualitative.low)
+          stats.qualitative.low.push(...cs.qualitative.low);
+        if (cs.qualitative.future)
+          stats.qualitative.future.push(...cs.qualitative.future);
+      }
 
       Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
         stats.ratingDistribution[rating] =
@@ -393,10 +412,11 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
       totalSessions: filteredSessions.length,
       totalResponses: stats.totalResponses,
       totalRatingsCount: stats.totalRatingsCount,
+      totalHours: 0, // Mock for now
       avgRating,
       ratingDistribution: stats.ratingDistribution,
       categoryAverages,
-      qualitative: { high: [], low: [], avg: [] },
+      qualitative: stats.qualitative,
     };
   }, [filteredSessions, cache, filters]);
 
@@ -476,32 +496,25 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="hover:bg-primary/5"
+          >
+            <ArrowLeft className="h-6 w-6 text-primary" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="h-6 w-6" />
+          <div className="flex flex-col">
+            <h1 className="text-3xl font-bold text-foreground">
               {trainerName || "Trainer Analytics"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Overall performance across all sessions
+              Detailed breakdown of trainer performance and feedback
             </p>
           </div>
         </div>
-
-        {/* Filter Reset */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={resetFilters}
-          disabled={Object.values(filters).every((v) => v === "all")}
-        >
-          <RotateCcw className="h-4 w-4 mr-2" />
-          Reset Filters
-        </Button>
       </div>
 
       {/* Filters */}
@@ -730,17 +743,15 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
 
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Rating Count
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {aggregatedStats.totalRatingsCount}
+              {aggregatedStats.totalHours || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Individual Ratings Given
+              Training Hours Delivered
             </p>
           </CardContent>
         </Card>
@@ -763,21 +774,109 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                   <RadarChart
                     cx="50%"
                     cy="50%"
-                    outerRadius="70%"
+                    outerRadius="65%"
                     data={categoryRadarData}
                   >
-                    <PolarGrid />
+                    <defs>
+                      <linearGradient
+                        id="radarGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.6}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.2}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <PolarGrid stroke="hsl(var(--primary))" opacity={0.1} />
                     <PolarAngleAxis
                       dataKey="category"
-                      tick={{ fontSize: 10 }}
+                      tick={(props) => {
+                        const { payload, x, y, textAnchor, index } = props;
+                        const categoryData = categoryRadarData[index];
+                        if (categoryData && categoryRadarData.length > 0) {
+                          const isTop = y < 115;
+                          const isBottom = y > 145;
+                          const isRight = textAnchor === "start";
+                          const isLeft = textAnchor === "end";
+
+                          let dy = 0;
+                          if (isTop) dy = -40;
+                          else if (isBottom) dy = 30;
+                          else dy = 0;
+
+                          let dx = 0;
+                          if (isRight) dx = 12;
+                          if (isLeft) dx = -12;
+
+                          return (
+                            <g className="recharts-layer recharts-polar-angle-axis-tick">
+                              <text
+                                x={x + dx}
+                                y={y + dy}
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--foreground))"
+                                fontSize={10}
+                                fontWeight="600"
+                              >
+                                {payload.value}
+                              </text>
+                              <text
+                                x={x + dx}
+                                y={y + dy + 15}
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--primary))"
+                                fontSize={11}
+                                fontWeight="800"
+                              >
+                                {categoryData.score.toFixed(1)}
+                              </text>
+                            </g>
+                          );
+                        }
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            textAnchor={textAnchor}
+                            fill="hsl(var(--foreground))"
+                            fontSize={10}
+                          >
+                            {payload.value}
+                          </text>
+                        );
+                      }}
                     />
-                    <PolarRadiusAxis angle={90} domain={[0, 5]} />
+                    <PolarRadiusAxis
+                      angle={90}
+                      domain={[0, 5]}
+                      tick={{
+                        fill: "hsl(var(--muted-foreground))",
+                        fontSize: 9,
+                      }}
+                      tickCount={6}
+                    />
                     <Radar
                       name="Score"
                       dataKey="score"
                       stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
-                      fillOpacity={0.4}
+                      fill="url(#radarGradient)"
+                      fillOpacity={1}
+                      strokeWidth={2}
+                      dot={{
+                        fill: "hsl(var(--primary))",
+                        r: 3,
+                        fillOpacity: 1,
+                      }}
                     />
                     <Tooltip
                       contentStyle={{ borderRadius: "8px" }}
@@ -809,6 +908,26 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ratingDistributionData}>
+                  <defs>
+                    <linearGradient
+                      id="barGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={1}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={0.6}
+                      />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-muted"
@@ -823,7 +942,7 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                   />
                   <Bar
                     dataKey="count"
-                    fill="hsl(var(--primary))"
+                    fill="url(#barGradient)"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -845,9 +964,30 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
             <div className="h-64">
               {responseTrend.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={responseTrend}>
+                  <AreaChart data={responseTrend}>
+                    <defs>
+                      <linearGradient
+                        id="colorResponses"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.15}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.01}
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
+                      vertical={false}
                       className="stroke-muted"
                     />
                     <XAxis
@@ -863,14 +1003,17 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                         borderRadius: "8px",
                       }}
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="responses"
                       stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--primary))" }}
+                      strokeWidth={3}
+                      dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                      activeDot={{ r: 6 }}
+                      fillOpacity={1}
+                      fill="url(#colorResponses)"
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -886,14 +1029,14 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
           <CardHeader>
             <div className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
-              <CardTitle>Student Voices</CardTitle>
+              <CardTitle>Future Topics & Comments</CardTitle>
             </div>
             <CardDescription>Highlights from student feedback</CardDescription>
           </CardHeader>
           <CardContent>
             {aggregatedStats.qualitative && (
               <Tabs defaultValue="high" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
                   <TabsTrigger
                     value="high"
                     className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs"
@@ -906,9 +1049,15 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                   >
                     Concerns
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="future"
+                    className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 text-xs"
+                  >
+                    Future Topics
+                  </TabsTrigger>
                 </TabsList>
 
-                {["high", "low"].map((type) => (
+                {["high", "low", "future"].map((type) => (
                   <TabsContent key={type} value={type} className="mt-0">
                     <div className="space-y-3 max-h-64 overflow-y-auto">
                       {aggregatedStats.qualitative[type]?.length > 0 ? (

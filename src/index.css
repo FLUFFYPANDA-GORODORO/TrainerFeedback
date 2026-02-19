@@ -224,3 +224,7 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/30;
 }
+
+[data-html2canvas-ignore] {
+  display: none !important;
+}

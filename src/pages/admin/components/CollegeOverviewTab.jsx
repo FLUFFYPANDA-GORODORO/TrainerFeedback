@@ -37,6 +37,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  AreaChart,
+  Area,
   LineChart,
   Line,
   RadarChart,
@@ -845,6 +847,26 @@ const CollegeOverviewTab = () => {
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={domainAnalyticsData.chartData}>
+                    <defs>
+                      <linearGradient
+                        id="barGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={1}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.6}
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       className="stroke-muted"
@@ -863,7 +885,7 @@ const CollegeOverviewTab = () => {
                     />
                     <Bar
                       dataKey="avgRating"
-                      fill="hsl(var(--primary))"
+                      fill="url(#barGradient)"
                       radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
@@ -896,7 +918,48 @@ const CollegeOverviewTab = () => {
                     <PolarGrid stroke="hsl(var(--border))" />
                     <PolarAngleAxis
                       dataKey="category"
-                      tick={{ fill: "hsl(var(--foreground))", fontSize: 10 }}
+                      tick={(props) => {
+                        const { payload, x, y, textAnchor, index } = props;
+                        const categoryData = categoryRadarData[index];
+                        if (categoryData) {
+                          const isBottom = y > 128; // Center is roughly 128 for h-64
+                          return (
+                            <g>
+                              <text
+                                x={x}
+                                y={isBottom ? y + 15 : y - 22}
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--foreground))"
+                                fontSize={10}
+                                fontWeight="normal"
+                              >
+                                {payload.value}
+                              </text>
+                              <text
+                                x={x}
+                                y={isBottom ? y + 29 : y - 8}
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--primary))"
+                                fontSize={11}
+                                fontWeight="bold"
+                              >
+                                {categoryData.score.toFixed(1)}
+                              </text>
+                            </g>
+                          );
+                        }
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            textAnchor={textAnchor}
+                            fill="hsl(var(--foreground))"
+                            fontSize={10}
+                          >
+                            {payload.value}
+                          </text>
+                        );
+                      }}
                     />
                     <PolarRadiusAxis
                       angle={90}
@@ -949,6 +1012,26 @@ const CollegeOverviewTab = () => {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ratingDistributionData}>
+                  <defs>
+                    <linearGradient
+                      id="barGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={1}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={0.6}
+                      />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-muted"
@@ -967,7 +1050,7 @@ const CollegeOverviewTab = () => {
                   />
                   <Bar
                     dataKey="count"
-                    fill="hsl(var(--primary))"
+                    fill="url(#barGradient)"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -991,9 +1074,30 @@ const CollegeOverviewTab = () => {
             <div className="h-64">
               {responseTrend.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={responseTrend}>
+                  <AreaChart data={responseTrend}>
+                    <defs>
+                      <linearGradient
+                        id="colorResponses"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.15}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.01}
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
+                      vertical={false}
                       className="stroke-muted"
                     />
                     <XAxis
@@ -1020,14 +1124,17 @@ const CollegeOverviewTab = () => {
                         });
                       }}
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="responses"
                       stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--primary))" }}
+                      strokeWidth={3}
+                      dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                      activeDot={{ r: 6 }}
+                      fillOpacity={1}
+                      fill="url(#colorResponses)"
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">

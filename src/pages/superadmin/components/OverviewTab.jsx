@@ -37,6 +37,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  AreaChart,
+  Area,
   LineChart,
   Line,
   RadarChart,
@@ -834,7 +836,7 @@ const OverviewTab = ({
   return (
     <div className="space-y-6">
       {/* Filter Bar */}
-      <Card>
+      <Card className="border-primary/10">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -845,7 +847,7 @@ const OverviewTab = ({
               variant="ghost"
               size="sm"
               onClick={resetFilters}
-              className="gap-2"
+              className="gap-2 hover:bg-primary/5 text-primary"
             >
               <RotateCcw className="h-4 w-4" />
               Reset
@@ -1124,6 +1126,26 @@ const OverviewTab = ({
               {allCollegesPerformance.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={allCollegesPerformance}>
+                    <defs>
+                      <linearGradient
+                        id="barGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={1}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.6}
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       className="stroke-muted"
@@ -1153,7 +1175,7 @@ const OverviewTab = ({
                     />
                     <Bar
                       dataKey="avgRating"
-                      fill="hsl(var(--primary))"
+                      fill="url(#barGradient)"
                       radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
@@ -1181,6 +1203,26 @@ const OverviewTab = ({
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={domainAnalyticsData.chartData}>
+                    <defs>
+                      <linearGradient
+                        id="barGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={1}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.6}
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       className="stroke-muted"
@@ -1199,7 +1241,7 @@ const OverviewTab = ({
                     />
                     <Bar
                       dataKey="avgRating"
-                      fill="hsl(var(--primary))"
+                      fill="url(#barGradient)"
                       radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
@@ -1226,13 +1268,93 @@ const OverviewTab = ({
                   <RadarChart
                     cx="50%"
                     cy="50%"
-                    outerRadius="70%"
+                    outerRadius="65%"
                     data={categoryRadarData}
                   >
-                    <PolarGrid stroke="hsl(var(--border))" />
+                    <defs>
+                      <linearGradient
+                        id="radarGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.6}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.2}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <PolarGrid stroke="hsl(var(--primary))" opacity={0.1} />
                     <PolarAngleAxis
                       dataKey="category"
-                      tick={{ fill: "hsl(var(--foreground))", fontSize: 10 }}
+                      tick={(props) => {
+                        const { payload, x, y, textAnchor, index } = props;
+                        const categoryData = categoryRadarData[index];
+                        if (categoryData && categoryRadarData.length > 0) {
+                          // Standardize offsets for better visibility and to avoid grid collision
+                          // Top labels (y < 115), Bottom labels (y > 145), Sides (others)
+                          // For Communication which specifically overlaps at the top (idx 1 usually)
+                          const isTop = y < 115;
+                          const isBottom = y > 145;
+                          const isRight = textAnchor === "start";
+                          const isLeft = textAnchor === "end";
+
+                          let dy = 0;
+                          if (isTop)
+                            dy = -40; // Move top labels significantly higher up to avoid 5.0 overlap
+                          else if (isBottom) dy = 30;
+                          else dy = 0;
+
+                          // Horizontal offset for side labels
+                          let dx = 0;
+                          if (isRight) dx = 12;
+                          if (isLeft) dx = -12;
+                          if (textAnchor === "middle") dx = 0;
+
+                          return (
+                            <g className="recharts-layer recharts-polar-angle-axis-tick">
+                              <text
+                                x={x + dx}
+                                y={y + dy}
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--foreground))"
+                                fontSize={10}
+                                fontWeight="600"
+                              >
+                                {payload.value}
+                              </text>
+                              <text
+                                x={x + dx}
+                                y={y + dy + 15}
+                                textAnchor={textAnchor}
+                                fill="hsl(var(--primary))"
+                                fontSize={11}
+                                fontWeight="800"
+                              >
+                                {categoryData.score.toFixed(1)}
+                              </text>
+                            </g>
+                          );
+                        }
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            textAnchor={textAnchor}
+                            fill="hsl(var(--foreground))"
+                            fontSize={10}
+                          >
+                            {payload.value}
+                          </text>
+                        );
+                      }}
                     />
                     <PolarRadiusAxis
                       angle={90}
@@ -1247,9 +1369,14 @@ const OverviewTab = ({
                       name="Score"
                       dataKey="score"
                       stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
-                      fillOpacity={0.4}
+                      fill="url(#radarGradient)"
+                      fillOpacity={1}
                       strokeWidth={2}
+                      dot={{
+                        fill: "hsl(var(--primary))",
+                        r: 3,
+                        fillOpacity: 1,
+                      }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -1285,6 +1412,26 @@ const OverviewTab = ({
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ratingDistributionData}>
+                  <defs>
+                    <linearGradient
+                      id="barGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={1}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={0.6}
+                      />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-muted"
@@ -1303,7 +1450,7 @@ const OverviewTab = ({
                   />
                   <Bar
                     dataKey="count"
-                    fill="hsl(var(--primary))"
+                    fill="url(#barGradient)"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -1328,9 +1475,30 @@ const OverviewTab = ({
             <div className="h-64">
               {responseTrend.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={responseTrend}>
+                  <AreaChart data={responseTrend}>
+                    <defs>
+                      <linearGradient
+                        id="colorResponses"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.15}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.01}
+                        />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
+                      vertical={false}
                       className="stroke-muted"
                     />
                     <XAxis
@@ -1347,14 +1515,17 @@ const OverviewTab = ({
                       }}
                       labelFormatter={(day) => `Day ${day}`}
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="responses"
                       stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--primary))" }}
+                      strokeWidth={3}
+                      dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                      activeDot={{ r: 6 }}
+                      fillOpacity={1}
+                      fill="url(#colorResponses)"
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
