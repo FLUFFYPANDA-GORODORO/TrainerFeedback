@@ -1,0 +1,2009 @@
+[
+  {
+    "trainer_id": "GA-T001",
+    "name": "Rishikesh Sonawane",
+    "email": "rdsonawane23@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Japanese",
+    "password": "GA-T001",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T002",
+    "name": "Laxmikant Sinde",
+    "email": "shindel.0021@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T002",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T003",
+    "name": "Sumant Kumar Tiwari",
+    "email": "Sumant.tiwari@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T003",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T004",
+    "name": "V. Kalyan Kumar",
+    "email": "swotint@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T004",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T005",
+    "name": "Abhijeet Chandra",
+    "email": "abhijeetchandra33366@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T005",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T006",
+    "name": "Fatema Tinwala",
+    "email": "tinwalaf.52@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T006",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T007",
+    "name": "Geetu",
+    "email": "geetu2091@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T007",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T008",
+    "name": "Shruti",
+    "email": "takshatialchemy@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T008",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T009",
+    "name": "Sandeep Powar",
+    "email": "sandeep.twins@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Soft Skills & Adavanced Excel",
+    "password": "GA-T009",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T010",
+    "name": "Anupama Deskmukh",
+    "email": "anupamadeshmukh@ymail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T010",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T011",
+    "name": "Mohan Patel",
+    "email": "mnp.fetr@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Electrical",
+    "password": "GA-T011",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T012",
+    "name": "Irshad Ali",
+    "email": "ali.acs786@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Electrical",
+    "password": "GA-T012",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T013",
+    "name": "Vishal Hiremath",
+    "email": "vishalhiremath29@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Mechanical",
+    "password": "GA-T013",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T014",
+    "name": "Tushar Kute",
+    "email": "tushar.kute@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Computer Science",
+    "password": "GA-T014",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T015",
+    "name": "Amit Vibhandik",
+    "email": "amit_vibhandik@rediffmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Mechanical",
+    "password": "GA-T015",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T016",
+    "name": "Harsh Sareen",
+    "email": "harshsareen03@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Full Stack, Java, DSA",
+    "password": "GA-T016",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T017",
+    "name": "Prashant Patil",
+    "email": "apexconsultant3986@gmail.com / psp3986@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Civil",
+    "password": "GA-T017",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T018",
+    "name": "Pritesh Chumble",
+    "email": "chumble_pritesh87@rediffmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T018",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T019",
+    "name": "Shaik Abdul Hafeez",
+    "email": "mrhafeez.ysrfau@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T019",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T020",
+    "name": "Vinesh Vijay Khair",
+    "email": "vineshkhair2@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T020",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T021",
+    "name": "Aparna Hardikar",
+    "email": "bhagwat.aparna2000@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T021",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T022",
+    "name": "Karuna Ballani",
+    "email": "karunadb@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T022",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T023",
+    "name": "Ponnammal Subramaniam",
+    "email": "ponnammal.s@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T023",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T024",
+    "name": "Sheetal Dhoot",
+    "email": "sheetal.dhoott@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T024",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T025",
+    "name": "Sanjay Wani",
+    "email": "saurabhwani4365@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Electrical",
+    "password": "GA-T025",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T026",
+    "name": "Maninder Kaur",
+    "email": "freelancer.aptitude@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T026",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T027",
+    "name": "G S V PRASAD",
+    "email": "gsvp1012@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Electrical",
+    "password": "GA-T027",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T028",
+    "name": "Pratap Pawar",
+    "email": "princeofnavy@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Industry Expert",
+    "password": "GA-T028",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T029",
+    "name": "Shirish Kaulgud",
+    "email": "kaulgud.shirish@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T029",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T030",
+    "name": "Afsar Rashid",
+    "email": "rashidakgec@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T030",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T031",
+    "name": "Mahendra Patel",
+    "email": "mahendra31p@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Digital Marketing, Marketing Analytics",
+    "password": "GA-T031",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T032",
+    "name": "Nitin Kapse",
+    "email": "fromnitin@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-IOT",
+    "password": "GA-T032",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T033",
+    "name": "Vivekanand S J",
+    "email": "viveksj2920@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Machine Learning",
+    "password": "GA-T033",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T034",
+    "name": "Ashirbad Padhi",
+    "email": "ashirbadpadhi010@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical - Java Fullstack",
+    "password": "GA-T034",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T035",
+    "name": "Prawin Rambhojan",
+    "email": "prawin.rambhojan@outlook.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T035",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T036",
+    "name": "Sanya Chugh",
+    "email": "sanyachugh@thescalingskills.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T036",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T037",
+    "name": "Madhu C. Prodhan",
+    "email": "madhuprodhan@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft skills",
+    "password": "GA-T037",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T038",
+    "name": "Arvind Ganumala",
+    "email": "aravindrush@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical",
+    "password": "GA-T038",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T039",
+    "name": "Reenu Anjan",
+    "email": "reenuanjansalgia@outlook.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T039",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T040",
+    "name": "SHAKEEB HUSSAIN",
+    "email": "SHAKEEB7HUSSAIN@GMAIL.COM",
+    "domain": "Technical",
+    "specialisation": "PLC PROGRAMMING & SCADA",
+    "password": "GA-T040",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T041",
+    "name": "Nilesh Borade",
+    "email": "nileshborade29@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical - Mech",
+    "password": "GA-T041",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T042",
+    "name": "Karen Fernandes",
+    "email": "karenkfernandes10@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical- IMC",
+    "password": "GA-T042",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T043",
+    "name": "Sachin Namdeo Lohar",
+    "email": "sachinnlohar@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical - CS",
+    "password": "GA-T043",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T044",
+    "name": "Budha Chandra",
+    "email": "budhachandra573@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T044",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T045",
+    "name": "Janhavi Dhani",
+    "email": "janhavi.vcs@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Softskills",
+    "password": "GA-T045",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T046",
+    "name": "Shashank Sahay",
+    "email": "shashankmsahay@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T046",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T047",
+    "name": "Ashish Dudhale",
+    "email": "Ashish.dudhale@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical",
+    "password": "GA-T047",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T048",
+    "name": "Kajal Rajvaidya",
+    "email": "kajalrajvaidya@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-IOT",
+    "password": "GA-T048",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T049",
+    "name": "Vijay Bhattad",
+    "email": "kajalrajvaidya@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-DSA",
+    "password": "GA-T049",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T050",
+    "name": "Vinay Gosavi",
+    "email": "vinaygosavi2@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T050",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T051",
+    "name": "Dr. Solomon Sane",
+    "email": "solomonsane@yahoo.co.in",
+    "domain": "Soft Skills",
+    "specialisation": "Soft skills",
+    "password": "GA-T051",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T052",
+    "name": "Snehal Pratik Wani",
+    "email": "snehal.wani77@gmail.com",
+    "domain": "Technical",
+    "specialisation": "MCA",
+    "password": "GA-T052",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T053",
+    "name": "Moin Anis Hasanfatta",
+    "email": "hasanfattamoin@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Java MERN n AWS",
+    "password": "GA-T053",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T054",
+    "name": "Mona Mendonca",
+    "email": "monastacy@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T054",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T055",
+    "name": "Priyanka Deo",
+    "email": "deopriyanka03@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Python",
+    "password": "GA-T055",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T056",
+    "name": "Shweta Sanjay Adayprabhu",
+    "email": "adaypprabhushwetas@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Mechanical",
+    "password": "GA-T056",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T057",
+    "name": "Devdeep Bhattacharya",
+    "email": "devaryam@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Leadership, Behaviors and Communications",
+    "password": "GA-T057",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T058",
+    "name": "Nikhil Kulkarni",
+    "email": "nikhilkulkarni003@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Finance, Communication Skills",
+    "password": "GA-T058",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T059",
+    "name": "Dr. Sreystha Beppari",
+    "email": "sreystha.beppari@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Psychology of Communication & Emotional Wellbeing",
+    "password": "GA-T059",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T060",
+    "name": "Suraj Rajesh Narkhede",
+    "email": "srn2226@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Civil Engineering",
+    "password": "GA-T060",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T061",
+    "name": "Dr. LeeAna Sane",
+    "email": "leeana7@yahoo.com",
+    "domain": "Technical",
+    "specialisation": "Psychology of Communication & Emotional Wellbeing",
+    "password": "GA-T061",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T062",
+    "name": "Khushboo jadhav",
+    "email": "khushboo.jadhav@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft skills",
+    "password": "GA-T062",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T063",
+    "name": "Dr Abha Parchure",
+    "email": "drabhaparchure@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft skills",
+    "password": "GA-T063",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T064",
+    "name": "Rani Ishwarya",
+    "email": "Raniishwarya.r@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T064",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T065",
+    "name": "Dr Pratima Khandelwal",
+    "email": "pratima2k1@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Food Tech and Professional skills for teachers and students",
+    "password": "GA-T065",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T066",
+    "name": "Nidhi Kasetwar",
+    "email": "nidhi.kasetwar@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Excel & Power BI",
+    "password": "GA-T066",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T067",
+    "name": "SHASHANK VYAS",
+    "email": "saffron.shashank@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-CS",
+    "password": "GA-T067",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T068",
+    "name": "Vijay Chandra Bose Komarapu",
+    "email": "vkomarapu@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Techinical",
+    "password": "GA-T068",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T069",
+    "name": "Sudipta Saha",
+    "email": "ssudipta.official@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "SoftSkills Trainer",
+    "password": "GA-T069",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T070",
+    "name": "Karishma Ghuge",
+    "email": "ghugekarishma@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft skills trainer",
+    "password": "GA-T070",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T071",
+    "name": "Anju Innani",
+    "email": "edu.anjunurai2009@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Excel, Power Bi",
+    "password": "GA-T071",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T072",
+    "name": "swapnil pillai",
+    "email": "pillai.swapnil@gmail.com",
+    "domain": "Technical",
+    "specialisation": "HR",
+    "password": "GA-T072",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T073",
+    "name": "Milind Bapat",
+    "email": "bapat.milind@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Finance, Accounts, Management, Leadership, Corporate Finance",
+    "password": "GA-T073",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T074",
+    "name": "Pooja Rao",
+    "email": "pooja.rao.s@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft skills",
+    "password": "GA-T074",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T075",
+    "name": "Smruti Mehadia",
+    "email": "smrutimehadia@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills Trainer",
+    "password": "GA-T075",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T076",
+    "name": "Pinky DOSHI",
+    "email": "pinkyshah18july@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills Trainer",
+    "password": "GA-T076",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T077",
+    "name": "Kishor Notandas Jashnani",
+    "email": "knjashnani@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Generative AI and HR Soft Skill Trainings",
+    "password": "GA-T077",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T078",
+    "name": "Paresh Yadav",
+    "email": "pareshy@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Sales and Marketing, Soft Skills, Soft Skills Trainer",
+    "password": "GA-T078",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T079",
+    "name": "Chandu J",
+    "email": "chandujaysy7@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "SoftSkills Trainer",
+    "password": "GA-T079",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T080",
+    "name": "Sowjanya",
+    "email": "ssowjanya02@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-AIML",
+    "password": "GA-T080",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T081",
+    "name": "Yogesh Anand",
+    "email": "yananth97@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Civil",
+    "password": "GA-T081",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T082",
+    "name": "Tejasvini Ekhe",
+    "email": "tejasvini.ekhe30@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Behavioral Softskills/ Team building/campus to corpPOSH",
+    "password": "GA-T082",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T083",
+    "name": "Amita Fabin Roosevelt",
+    "email": "amita.thimothy@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "HR Soft skill",
+    "password": "GA-T083",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T084",
+    "name": "Astha Sinha",
+    "email": "astha23sinha@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-AI/ML",
+    "password": "GA-T084",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T085",
+    "name": "ADGAONKER SHASHANK",
+    "email": "androidjavashashank@gmail.com",
+    "domain": "Technical",
+    "specialisation": "CORPORATE Trainer",
+    "password": "GA-T085",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T086",
+    "name": "Sagar Sarkar",
+    "email": "sagarsarkar043@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Java Full Stack, Technical-Python, SQL, ML",
+    "password": "GA-T086",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T087",
+    "name": "Nivedita Shah",
+    "email": "shahj.nivedita@gmail.com",
+    "domain": "Technical",
+    "specialisation": "MS Office and Data Analysis using Power BI",
+    "password": "GA-T087",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T088",
+    "name": "Krishnan G",
+    "email": "krishnan6789@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Finance",
+    "password": "GA-T088",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T089",
+    "name": "Tanushree Ghosh",
+    "email": "tanushreekghosh@yahoo.com",
+    "domain": "Soft Skills",
+    "specialisation": "Softskills",
+    "password": "GA-T089",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T090",
+    "name": "Jaydeep Shirote",
+    "email": "jaydeepshirote9@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude Training",
+    "password": "GA-T090",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T091",
+    "name": "Maninder Kaur",
+    "email": "freelancer.aptitude@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T091",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T093",
+    "name": "RAVI ACHALIYA",
+    "email": "ravi.achaliya@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Power BI, Microsoft Excel, PowerPoint, Word, Human Resource Management",
+    "password": "GA-T093",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T094",
+    "name": "Sumit Sunil Gaikwad",
+    "email": "aptitudebysumit@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "LR QA Aptitude",
+    "password": "GA-T094",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T095",
+    "name": "Ganesh Jadhav",
+    "email": "Ganeshjadhav1982@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Chemical Techniqal Campus interview",
+    "password": "GA-T095",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T097",
+    "name": "SAHIL SARAF",
+    "email": "sahilsaraf.saraf@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Marketing",
+    "password": "GA-T097",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T098",
+    "name": "Coach Shamli Powar",
+    "email": "coachshamlipowar@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Verbal Aptitude, Life Skills, Leadership Training",
+    "password": "GA-T098",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T099",
+    "name": "Mrs. Dipali Mohan Shinde",
+    "email": "dipalishinde2626@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Softskills and Verbal ability",
+    "password": "GA-T099",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T100",
+    "name": "Amol Bapat",
+    "email": "amolbapat78@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "English",
+    "password": "GA-T100",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T101",
+    "name": "JAYDEEP BABASO SHIROTE",
+    "email": "jaydeepshirote9@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude Training",
+    "password": "GA-T101",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T102",
+    "name": "Parag Deshmukh",
+    "email": "paraag85@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Java, .net, C, C++",
+    "password": "GA-T102",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T103",
+    "name": "Ashok Baburao Sindkar",
+    "email": "sindkar.ashok@gmail.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "Advance Excel and Power BI",
+    "password": "GA-T103",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T104",
+    "name": "Swapnil Patil",
+    "email": "swapnil.patil1133@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Aptitude (QA & LE )",
+    "password": "GA-T104",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T105",
+    "name": "Sakshi Khilare",
+    "email": "sakshikhilare@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skill Trainer",
+    "password": "GA-T105",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T106",
+    "name": "Vivek Deokate",
+    "email": "deokatevivek@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T106",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T107",
+    "name": "Sneha More",
+    "email": "moresneha2429@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical (MS-Excel and Power BI)",
+    "password": "GA-T107",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T108",
+    "name": "V. Suresh nair",
+    "email": "Sureshnr9@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft skills",
+    "password": "GA-T108",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T109",
+    "name": "Deepa Deo",
+    "email": "deodeepa@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft skills, Corporate Performance improvement, Business Communication, Business English",
+    "password": "GA-T109",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T110",
+    "name": "Vickram Varma",
+    "email": "meetvikramsir@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Finance, Excel+AI",
+    "password": "GA-T110",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T111",
+    "name": "Rahul Khatri",
+    "email": "Khatrirahul1113@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Data Analytics - BI",
+    "password": "GA-T111",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T112",
+    "name": "srushti vijay kulkarni",
+    "email": "srushtikulkarni1524@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical(Java)",
+    "password": "GA-T112",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T113",
+    "name": "M Krishna Chaithanya",
+    "email": "chaithanya.433@gmail.com",
+    "domain": "Technical",
+    "specialisation": "M.Tech(ES)",
+    "password": "GA-T113",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T114",
+    "name": "PRASHANT KULKARNI",
+    "email": "prashant2k1@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Techinical Sales",
+    "password": "GA-T114",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T116",
+    "name": "Vishal Jagannath Shinde",
+    "email": "vishalsatarkar7@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude Training",
+    "password": "GA-T116",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T117",
+    "name": "Sanjay Karampuri",
+    "email": "Sanjay.karampuri@yahoo.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "Information Technology, Excel & Power BI, Analytics",
+    "password": "GA-T117",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T118",
+    "name": "Yatender Singh",
+    "email": "1993yatender@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T118",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T119",
+    "name": "Steven Mankina",
+    "email": "dev.mankina@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-Computer Science",
+    "password": "GA-T119",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T120",
+    "name": "YOGESH CHAVAN",
+    "email": "myogeshchavan97@gmail.com",
+    "domain": "Technical",
+    "specialisation": "MERN Full Stack Trainer",
+    "password": "GA-T120",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T121",
+    "name": "Nitin Thokare",
+    "email": "ndthokare86@gmail.com",
+    "domain": "Technical",
+    "specialisation": "AI-ML and Data Science",
+    "password": "GA-T121",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T122",
+    "name": "Bhupesh P Chaudhri",
+    "email": "bhupeshp2304@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Personal finance",
+    "password": "GA-T122",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T123",
+    "name": "Vishal Sapkal",
+    "email": "sapkalvishal2001@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical-CS",
+    "password": "GA-T123",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T124",
+    "name": "KULDEEP SINGH MANHAS",
+    "email": "connect@kuldeepmanhas.com",
+    "domain": "Technical",
+    "specialisation": "Sales & Marketing, Leadership, Softskills",
+    "password": "GA-T124",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T125",
+    "name": "harshal varkhedkar",
+    "email": "hvanacon.info@gmail.com",
+    "domain": "Technical",
+    "specialisation": "data analytics, project mgmt, ITIL, Six Sigma",
+    "password": "GA-T125",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T126",
+    "name": "Dr. Khushboo Vora",
+    "email": "vorakhushboo89@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Finance",
+    "password": "GA-T126",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T127",
+    "name": "Darshan Shah",
+    "email": "darshanshah86@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Finance",
+    "password": "GA-T127",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T128",
+    "name": "Sanika Mahadik",
+    "email": "Mahadik.sanikaa@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "English, Behavioral Soft Skills / Team Building / Campus to Corporate / POSH, Soft Skills Trainer, Soft skills",
+    "password": "GA-T128",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T129",
+    "name": "Rohit Shelwante",
+    "email": "rohitshelwante@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Techanical-Digital Marketing",
+    "password": "GA-T129",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T130",
+    "name": "Pradeep Khot",
+    "email": "Pradeep.Khot@opulentia.in",
+    "domain": "Technical",
+    "specialisation": "Techanical, Finance, Personal Finance",
+    "password": "GA-T130",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T131",
+    "name": "Ummer Shanan",
+    "email": "shananummer@gmail.com",
+    "domain": "Technical",
+    "specialisation": "PLC PROGRAMMING & SCADA",
+    "password": "GA-T131",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T132",
+    "name": "Shriram Pendse",
+    "email": "shrirampendse@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Automation & Robotics",
+    "password": "GA-T132",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T133",
+    "name": "Azib Hasan",
+    "email": "azibhv@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Power BI",
+    "password": "GA-T133",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T134",
+    "name": "Simran Johnson",
+    "email": "simranjohnson.7969@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical Sales",
+    "password": "GA-T134",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T135",
+    "name": "Hari Prakash Karcherla",
+    "email": "hapra44@yahoo.com",
+    "domain": "Technical",
+    "specialisation": "Technical Sales, Sales and Marketing",
+    "password": "GA-T135",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T136",
+    "name": "Dr. Ravi Kumar KS",
+    "email": "ravikumar142560@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical Sales, Sales, Marketing, Leadership, Soft Skills, Sales and Marketing",
+    "password": "GA-T136",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T137",
+    "name": "Sandeep Subhash Shevade ",
+    "email": "sandeepshevade@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Python, Java Full Stack, c, c++",
+    "password": "GA-T137",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T138",
+    "name": "Mukesh Ranjith ",
+    "email": "mukeshjs@tutanota.com",
+    "domain": "Technical",
+    "specialisation": "Java, React, Node, Angular",
+    "password": "GA-T138",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T139",
+    "name": "Dr. Tasneem",
+    "email": "drtasneem.in@gmail.com",
+    "domain": "Technical",
+    "specialisation": "HR, Technical",
+    "password": "GA-T139",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T140",
+    "name": "Onkar Holkar ",
+    "email": "onkarholkar19@gmail.com",
+    "domain": "Technical",
+    "specialisation": "CS (Computer Science), Java based project implementation, Pre Assessment, Multithreading, Normal Synchronisation, Method Synchronisation, Block Synchronisation, Static Synchronisation, UI Development, Event Handling using Java and JDBC, UI to Backend to Database connection using Java, DSA, DSA and Servlet connection",
+    "password": "GA-T140",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T141",
+    "name": "Saeed Ahmed Davawala",
+    "email": "Saeedd772@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Java",
+    "password": "GA-T141",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T142",
+    "name": "Deepak Pithadia",
+    "email": "imdeepakpithadia@gmail.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "Python, Advanced Excel and Power BI, Excel, PowerBI, Tableau",
+    "password": "GA-T142",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T143",
+    "name": "Dr VIRAJ VIJAY ATRE",
+    "email": "atre.viraj@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Operations, Production, Projects, Quality, Reliability, Six Sigma Supply Chain Management. Statistical analysis. ISO standard's.",
+    "password": "GA-T143",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T144",
+    "name": "Anuradha Dnyaneshwar gosavi",
+    "email": "anuradhapuri5@gmail.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "Power-BI, Excel, Python Data Analysis",
+    "password": "GA-T144",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T145",
+    "name": "Neeraj Athavale",
+    "email": "askneeraj@outlook.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T145",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T146",
+    "name": "Siddharth Gautam",
+    "email": "Siddtrainer@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Fintech & Wealth/Investment Industry",
+    "password": "GA-T146",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T147",
+    "name": "Dr Tasneem Khokhar",
+    "email": "drtasneem.in@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "HR",
+    "password": "GA-T147",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T148",
+    "name": "Prajakt Pande",
+    "email": "Prajakt.Pande@bhaskar-solutions.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "Advance Execel Power BI",
+    "password": "GA-T148",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T149",
+    "name": "Aishwarya Kalyanshetti",
+    "email": "aishwarya.kalyanshetti@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Technical- Finance",
+    "password": "GA-T149",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T150",
+    "name": "Namrita Singh",
+    "email": "Trainer.namrita@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Communication and soft skills",
+    "password": "GA-T150",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T151",
+    "name": "Nisreen Karmalawala",
+    "email": "axisdigisol@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Digits Marketing Trainer",
+    "password": "GA-T151",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T152",
+    "name": "nitin thokare",
+    "email": "ndthokare86@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "DSA, AIML & Data Science",
+    "password": "GA-T152",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T153",
+    "name": "Esha Arora",
+    "email": "esha.arora1313@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T153",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T154",
+    "name": "Deepak Dayashankar Yadav",
+    "email": "deepakdayashankaryadav@outlook.com",
+    "domain": "Technical ",
+    "specialisation": "Finance/ Excel/ Power BI/ Financial Modelling",
+    "password": "GA-T154",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T155",
+    "name": "Apurva Chandrakant Oak",
+    "email": "Apurvafrench@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft skills training and French &Japanese Language coach",
+    "password": "GA-T155",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T156",
+    "name": "Mukesh Sharma",
+    "email": "mukesh.sharma@eduit.in",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude and SoftSkills",
+    "password": "GA-T156",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T157",
+    "name": "Satyajeet Mitra",
+    "email": "Satyajeet.mit@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Chemical Engineering",
+    "password": "GA-T157",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T158",
+    "name": "Tejdipty Pawade",
+    "email": "tejdiptypawade@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T158",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T159",
+    "name": "PRASAD JAGANNATH KADAM",
+    "email": "prasadk301182@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Electric vehicles, Industrial Automation PLC SCADA, Embedded system",
+    "password": "GA-T159",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T160",
+    "name": "Azib Hasan",
+    "email": "azibhv@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Trainer",
+    "password": "GA-T160",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T161",
+    "name": "Hari Prakash Karcherla",
+    "email": "hapra44@yahoo.com",
+    "domain": "Technical ",
+    "specialisation": "Marketing",
+    "password": "GA-T161",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T162",
+    "name": "Nutan Kumari",
+    "email": "nutan.atreya@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude Trainer",
+    "password": "GA-T162",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T163",
+    "name": "Manoj Rawal",
+    "email": "manojrawal656@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Accounting, Finance and International business economics",
+    "password": "GA-T163",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T164",
+    "name": "Ritu Bhardwaj",
+    "email": "ritubhardwaj1@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills, Marketing, Sales, Leadership, Life Coaching",
+    "password": "GA-T164",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T165",
+    "name": "Poonam Sinha",
+    "email": "sinhaspoonam@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Project Management",
+    "password": "GA-T165",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T166",
+    "name": "Jason Pillay",
+    "email": "chrjas@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Project Management",
+    "password": "GA-T166",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T167",
+    "name": "Dr Ravi Kumar KS",
+    "email": "ravikumar142560@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Soft Skills, Verbal Ability, Sales, Retail, FMCG, POSH, POCSO",
+    "password": "GA-T167",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T168",
+    "name": "Rajeev Sharma",
+    "email": "rajeevsharma.consultant@gmail.com",
+    "domain": "Technical ",
+    "specialisation": "Automotive",
+    "password": "GA-T168",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T169",
+    "name": "Harsh Dalal",
+    "email": "harshdalal79@gmail.com",
+    "domain": "Technical",
+    "specialisation": "AI/ML",
+    "password": "GA-T169",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T170",
+    "name": "Suraj Bansode",
+    "email": "surajbansode51@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical - Civil",
+    "password": "GA-T170",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T171",
+    "name": "Hassan sazil",
+    "email": "shazilhasan78@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Information Technology",
+    "password": "GA-T171",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T172",
+    "name": "mantha chakradhar",
+    "email": "mantha747@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical - Computer Science, DevOps",
+    "password": "GA-T172",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T173",
+    "name": "Vikrant Vijay Gawai",
+    "email": "vickygawai23@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Mechanical",
+    "password": "GA-T173",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T174",
+    "name": "Atul Shrivastava",
+    "email": "atul.shrivastava406@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Java Full Stack",
+    "password": "GA-T174",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T175",
+    "name": "Shaik Abdul Hafeez (Mr Hafeez)",
+    "email": "mrhafeez.ysrfau@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Python, MCA (Master of Computer Applications)",
+    "password": "GA-T175",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T176",
+    "name": "Harishankar.K",
+    "email": "hari.wgl24@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T176",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T177",
+    "name": "Ravi Achaliya",
+    "email": "ravi.achaliya@gmail.com",
+    "domain": "Tools",
+    "specialisation": "Advanced Excel and Power BI",
+    "password": "GA-T177",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T178",
+    "name": "Shridhar Ramamoorthy",
+    "email": "rsridhar70@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills, Corporate Performance Improvement, Business Communication, Business English, Soft Skills and Verbal Ability",
+    "password": "GA-T178",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T179",
+    "name": "Jayshree Mukund Tawari",
+    "email": "jayu1214@gmail.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "Advanced Excel and Power BI",
+    "password": "GA-T179",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T180",
+    "name": "Tushar pawar",
+    "email": "Tammy12490@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T180",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T181",
+    "name": "Mihir Kamboj",
+    "email": "mihirkamboj96@gmail.com",
+    "domain": "Technical",
+    "specialisation": "HR",
+    "password": "GA-T181",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T182",
+    "name": "Monika Rawal",
+    "email": "Mona.mca84@gmail.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "Data Analytics - BI",
+    "password": "GA-T182",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T183",
+    "name": "Shalini Gupta",
+    "email": "shalini.gupta@ailearningsolution.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "Data Analytics - BI",
+    "password": "GA-T183",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T184",
+    "name": "Suhas Jayprakash Bhavsar",
+    "email": "bhawsarsuhas@yahoo.co.in",
+    "domain": "Technical",
+    "specialisation": "Mechanical",
+    "password": "GA-T184",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T185",
+    "name": "KARKALE  PRATIMA  PADMAKAR",
+    "email": "pratimakarkale@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Behavioral Soft Skills / Team Building / Campus to Corporate / POSH",
+    "password": "GA-T185",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T186",
+    "name": "Parnavi Phadke ",
+    "email": "parnavi1948@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T186",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T187",
+    "name": "V. Suresh nair ",
+    "email": "Sureshnr9@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Marketing",
+    "password": "GA-T187",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T188",
+    "name": "Rishu Raj verma",
+    "email": "rishu.raj4@gmail.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "MS Office and Data Analysis using Power BI",
+    "password": "GA-T188",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T189",
+    "name": "Shalini Gupta",
+    "email": "shalini.gupta@ailearningsolution.com",
+    "domain": "Technical",
+    "specialisation": "Data Analytics - BI",
+    "password": "GA-T189",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T190",
+    "name": "Raman Tiwari ",
+    "email": "raman12395@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T190",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T191",
+    "name": "Mihir Kamboj",
+    "email": "mihirkamboj96@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T191",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T192",
+    "name": "MAHESH ARUN SALE",
+    "email": "maheshsale333@gmail.com",
+    "domain": "Technical",
+    "specialisation": "CS (Computer Science)",
+    "password": "GA-T192",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T193",
+    "name": "Vipin kumar ",
+    "email": "vipinajmer@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T193",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T194",
+    "name": "Rahul Patil",
+    "email": "rahul.patil523@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T194",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T195",
+    "name": "Madhumitha Palani",
+    "email": "madhumithapalani26@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T195",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T196",
+    "name": "Tushar Kshirsagar ",
+    "email": "tusharvkshirsagar@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T196",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T197",
+    "name": "Tushar Kale",
+    "email": "trainer.tusharkale@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Java, .NET, C, C++, Java Full Stack",
+    "password": "GA-T197",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T198",
+    "name": "Mohammad Sarosh",
+    "email": "sarosh.mohammad@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Industry Expert",
+    "password": "GA-T198",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T199",
+    "name": "Dr. Devika Dhumal ",
+    "email": "devikad.fld@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T199",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T200",
+    "name": "Swapan nair",
+    "email": "swapan.nair75@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Soft Skills",
+    "password": "GA-T200",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T201",
+    "name": "RAVI ACHALIYA",
+    "email": "ravi.achaliya@gmail.com",
+    "domain": "Tools (Excel - Power BI)",
+    "specialisation": "Excel & Power BI",
+    "password": "GA-T201",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T202",
+    "name": "Prajakt Pande",
+    "email": "Prajakt.Pande@bhaskar-solutions.com",
+    "domain": "Technical",
+    "specialisation": "Data Analytics - BI",
+    "password": "GA-T202",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T203",
+    "name": "Anamika Shukla",
+    "email": "writewithanamika@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T203",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T204",
+    "name": "Anil Baburao Donwade ",
+    "email": "anil.donwade4@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Java, .NET, C, C++",
+    "password": "GA-T204",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T205",
+    "name": "JITHIN KUMAR RUDRARAJU",
+    "email": "rjithinkumar@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T205",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T206",
+    "name": "Swasti Khandelwal",
+    "email": "swastikhandale@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T206",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T207",
+    "name": "Sonali Gawali ",
+    "email": "gawalisonali10@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T207",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T208",
+    "name": "Anuradha Dnyaneshwar gosavi ",
+    "email": "anuradhapuri5@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Excel & Power BI",
+    "password": "GA-T208",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T209",
+    "name": "Mohini Vikas Yadav",
+    "email": "mohinikvy@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T209",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T210",
+    "name": "Pranav Thorat",
+    "email": "pr.thorat91@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T210",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T211",
+    "name": "Chaitanya Abhangrao",
+    "email": "chaitanyaabhangrao@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T211",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T212",
+    "name": "Bhalchandra Shridhar Deshpande",
+    "email": "mranand.deshpande10@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T212",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T213",
+    "name": "Pooja govind suryawanshi ",
+    "email": "pujagsuryawanshi1211@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T213",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T214",
+    "name": "Ashwini Kakade",
+    "email": "ashwinikakadeb@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Java Full Stack",
+    "password": "GA-T214",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T215",
+    "name": "Amol Anant Patankar",
+    "email": "Amoljipatankar@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Aptitude, PLC Programming & SCADA",
+    "password": "GA-T215",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T216",
+    "name": "Pramod Mali",
+    "email": "pramod.mahajan18@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Finance, Soft Skills",
+    "password": "GA-T216",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T217",
+    "name": "Mamta Chhatre ",
+    "email": "mamta81tiwari@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T217",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T218",
+    "name": "Paresh Yadav",
+    "email": "pareshy@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T218",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T219",
+    "name": "Pramod Mali",
+    "email": "pramod.mahajan18@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T219",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T220",
+    "name": "Deepak T. Gurao",
+    "email": "deepakself2804@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Java Full Stack",
+    "password": "GA-T220",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T221",
+    "name": "Sandeep Walinjkar",
+    "email": "sandeepwalinjkar@yahoo.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T221",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T222",
+    "name": "Prachika Vitthalrao Mahalle",
+    "email": "prachika.mahalle@gmail.com",
+    "domain": "Aptitude",
+    "specialisation": "Aptitude",
+    "password": "GA-T222",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T223",
+    "name": "Shikha Goel ",
+    "email": "enhanceshikhagoel@gmail.com",
+    "domain": "Soft Skills",
+    "specialisation": "Soft Skills",
+    "password": "GA-T223",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T224",
+    "name": "Rakesh ",
+    "email": "rakeshmbara@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Technical",
+    "password": "GA-T224",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T225",
+    "name": "Akshay Godhamgaonkar",
+    "email": "gakshay2005@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Finance, SAP",
+    "password": "GA-T225",
+    "topics": []
+  },
+  {
+    "trainer_id": "GA-T226",
+    "name": "Rakesh Barapatre ",
+    "email": "Rakeshmbara@gmail.com",
+    "domain": "Technical",
+    "specialisation": "Finance",
+    "password": "GA-T226",
+    "topics": []
+  }
+]
