@@ -104,7 +104,9 @@ const DEFAULT_QUESTIONS = [
   { id: 'q6', text: "Was the session pace appropriate?", type: 'mcq', options: ["Too Fast", "Just Right", "Too Slow"], required: true },
   { id: 'q7', text: "How would you rate the audio/video quality?", type: 'rating', required: true, category: 'delivery' },
   { id: 'q8', text: "Overall, how satisfied are you with this session?", type: 'rating', required: true, category: 'overall' },
-  { id: 'q9', text: "Any additional comments or suggestions?", type: 'text', required: false }
+  { id: 'q9', text: "Any additional comments or suggestions?", type: 'text', required: false },
+  { id: 'q10', text: "What did you learn today?", type: 'topicslearned', required: false },
+  { id: 'q11', text: "What topics would you like covered in future sessions?", type: 'futureSession', required: false }
 ];
 
 /**
@@ -177,7 +179,7 @@ const extractAcademicCombinations = (config) => {
 /**
  * Generate responses for a session
  */
-const generateResponses = async (sessionId, count, quality = 'average') => {
+const generateResponses = async (sessionId, count, quality = 'average', domain = 'Technical') => {
   const responses = [];
   
   for (let i = 0; i < count; i++) {
@@ -198,6 +200,25 @@ const generateResponses = async (sessionId, count, quality = 'average') => {
           return { questionId: q.id, type: 'text', value: pickRandom(commentPool) };
         }
         return { questionId: q.id, type: 'text', value: '' };
+      } else if (q.type === 'topicslearned') {
+        const domainTopics = TOPICS[domain] || TOPICS.Technical;
+        const learned = [];
+        const tCount = Math.floor(Math.random() * 3) + 2; 
+        for(let j=0; j<tCount; j++) learned.push(pickRandom(domainTopics));
+        return { questionId: q.id, type: 'topicslearned', value: learned.join(', ') };
+      } else if (q.type === 'futureSession') {
+        if (Math.random() < 0.4) {
+          const suggestions = [
+            "More hands-on labs",
+            "Real-world case studies",
+            "Advanced implementation details",
+            "Troubleshooting and debugging",
+            "Best practices and design patterns",
+            "Integration with other frameworks"
+          ];
+          return { questionId: q.id, type: 'futureSession', value: pickRandom(suggestions) };
+        }
+        return { questionId: q.id, type: 'futureSession', value: '' };
       }
       return { questionId: q.id, type: q.type, value: '' };
     });
@@ -315,7 +336,7 @@ export const seedSessionsAndResponses = async (options = {}) => {
         console.log(`      👥 Adding ${responseCount} responses (${quality} quality)...`);
 
         // Generate responses
-        const responses = await generateResponses(session.id, responseCount, quality);
+        const responses = await generateResponses(session.id, responseCount, quality, domain);
         results.totalResponses += responses.length;
 
         console.log(`      📊 Closing session and compiling stats...`);

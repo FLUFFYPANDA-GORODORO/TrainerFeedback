@@ -14,12 +14,19 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, user, isLoading } = useAuth();
+  const { login, logout, user, isLoading } = useAuth();
   const navigate = useNavigate();
 
   // Handle navigation when user data becomes available after login
   useEffect(() => {
     if (user && !isLoading) {
+      if (user.role === 'guest') {
+        // User authenticated but has no profile in Firestore
+        setError('Your account is not set up yet. Please contact the administrator to register your profile.');
+        setIsSubmitting(false);
+        logout();
+        return;
+      }
       const redirectPath = getRedirectPath(user.role);
       navigate(redirectPath);
     }

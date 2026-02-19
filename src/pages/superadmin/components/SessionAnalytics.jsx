@@ -701,18 +701,46 @@ const SessionAnalytics = ({ session, onBack }) => {
                 <TabsTrigger value="future">Future Topics</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="learned" className="space-y-3 mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Topics learned data will be available when Firebase service is
-                  updated
-                </p>
+              <TabsContent value="learned" className="space-y-4 mt-4">
+                {(stats.topicsLearned || []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No data collected yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.topicsLearned.map((topic, i) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <div className="flex flex-col flex-1 gap-1">
+                          <div className="flex justify-between text-sm pr-4">
+                            <span className="font-medium">{topic.name}</span>
+                            <span className="text-muted-foreground">{topic.count} mentions</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary" 
+                              style={{ width: `${Math.min(100, (topic.count / stats.totalResponses) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
-              <TabsContent value="future" className="space-y-3 mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Future topics data will be available when Firebase service is
-                  updated
-                </p>
+              <TabsContent value="future" className="mt-4">
+                {(stats.futureTopics || []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No suggestions collected yet</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {stats.futureTopics.map((topic, i) => (
+                      <div 
+                        key={i} 
+                        className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
+                      >
+                        {topic.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>

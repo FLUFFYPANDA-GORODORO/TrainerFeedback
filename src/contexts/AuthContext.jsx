@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { auth, db } from '../services/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { toast } from 'sonner';
 
 const AuthContext = createContext(undefined);
 
@@ -89,6 +90,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
+      toast.dismiss(); // Clear any pending toasts before signing out
       await signOut(auth);
       // State clear handled by onAuthStateChanged
     } catch (error) {

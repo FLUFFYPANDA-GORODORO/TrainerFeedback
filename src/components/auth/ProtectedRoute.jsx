@@ -29,16 +29,19 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     // Logged in but doesn't have required role
-    // Redirect to their appropriate dashboard or a 403 page
-    // For now, mostly likely simple redirect to a generic 'unauthorized' or home
     console.warn(`Access denied for role: ${user.role}. Required: ${allowedRoles.join(', ')}`);
     
+    // Guest/unknown role — send back to login
+    if (!user.role || user.role === 'guest') {
+      return <Navigate to="/login" replace />;
+    }
+
     // Intelligent redirect based on role
     if (user.role === 'superAdmin') return <Navigate to="/super-admin/dashboard" replace />;
     if (user.role === 'collegeAdmin') return <Navigate to="/admin/dashboard" replace />;
     if (user.role === 'trainer') return <Navigate to="/trainer/dashboard" replace />;
     
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;

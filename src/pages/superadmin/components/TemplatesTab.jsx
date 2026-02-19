@@ -72,6 +72,7 @@ const QUESTION_TYPES = [
   { value: "text", label: "Long Answer" },
   { value: "futureSession", label: "Future Expectations" },
   { value: "yesno", label: "Yes/No" },
+  { value: "topicslearned", label: "Topics Learned" },
 ];
 
 const TemplatesTab = () => {
@@ -229,7 +230,7 @@ const TemplatesTab = () => {
               id: Date.now().toString() + sIdx + qIdx,
               text: q.text || "",
               // Default to 'rating' if type is invalid or not provided
-              type: ["rating", "mcq", "multiselect", "futureSession", "text", "boolean"].includes(q.type)
+              type: ["rating", "mcq", "multiselect", "futureSession", "text", "boolean", "topicslearned"].includes(q.type)
                 ? q.type
                 : "rating",
               // Set category for rating questions, use default for others
@@ -253,7 +254,7 @@ const TemplatesTab = () => {
               questions: importedData.questions.map((q, qIdx) => ({
                 id: Date.now().toString() + qIdx,
                 text: q.text || "",
-                type: ["rating", "mcq", "multiselect", "text", "boolean"].includes(q.type)
+                type: ["rating", "mcq", "multiselect", "text", "boolean", "topicslearned"].includes(q.type)
                   ? q.type
                   : "rating",
                 category: q.category || DEFAULT_CATEGORY,
@@ -846,8 +847,12 @@ const TemplatesTab = () => {
                           Multiple Choice (requires "options" array)
                         </li>
                         <li>
-                          <code className="bg-muted px-1 rounded">text</code> -
-                          Long Answer
+                          <code className="bg-muted px-1 rounded">futureSession</code> -
+                          Future Expectations
+                        </li>
+                        <li>
+                          <code className="bg-muted px-1 rounded">topicslearned</code> -
+                          Topics Learned (comma-separated)
                         </li>
                       </ul>
                     </div>
@@ -1288,6 +1293,24 @@ const TemplatesTab = () => {
                                 <div className="space-y-2">
                                   <Textarea
                                     placeholder="What topics or skills would you like covered in future sessions?"
+                                    value={previewResponses[key] || ""}
+                                    onChange={(e) =>
+                                      setPreviewResponses((prev) => ({
+                                        ...prev,
+                                        [key]: e.target.value,
+                                      }))
+                                    }
+                                    rows={3}
+                                  />
+                                </div>
+                              )}
+
+                              {/* Topics Learned Type */}
+                              {q.type === "topicslearned" && (
+                                <div className="space-y-2">
+                                  <p className="text-xs text-muted-foreground mb-2">Please list the topics covered today, separated by commas (e.g. React Hooks, State, Effects)</p>
+                                  <Textarea
+                                    placeholder="e.g. Topic 1, Topic 2, Topic 3"
                                     value={previewResponses[key] || ""}
                                     onChange={(e) =>
                                       setPreviewResponses((prev) => ({

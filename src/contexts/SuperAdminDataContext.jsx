@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { auth } from '@/services/firebase';
 import { getAllColleges } from '@/services/superadmin/collegeService';
 import { getAllTrainers } from '@/services/superadmin/trainerService';
 import { getAllSessions, subscribeToSessions } from '@/services/superadmin/sessionService';
@@ -259,7 +260,15 @@ export const SuperAdminDataProvider = ({ children }) => {
 
   // Initial load and session subscription
   useEffect(() => {
+    let cancelled = false;
+
     const initializeData = async () => {
+      // Skip if no authenticated user (prevents post-logout errors)
+      if (!auth.currentUser) {
+        setLoading(prev => ({ ...prev, initial: false }));
+        return;
+      }
+
       await Promise.all([
         loadColleges(),
         loadTrainers(),
@@ -267,18 +276,29 @@ export const SuperAdminDataProvider = ({ children }) => {
         loadAdmins(),
         loadProjectCodes()
       ]);
-      setLoading(prev => ({ ...prev, initial: false }));
+
+      if (!cancelled) {
+        setLoading(prev => ({ ...prev, initial: false }));
+      }
     };
 
     initializeData();
 
-    // Subscribe to real-time session updates
-    const unsubscribe = subscribeToSessions((updatedSessions) => {
-      setSessions(updatedSessions);
-      setLoaded(prev => ({ ...prev, sessions: true }));
-    });
+    // Subscribe to real-time session updates only if authenticated
+    let unsubscribe;
+    if (auth.currentUser) {
+      unsubscribe = subscribeToSessions((updatedSessions) => {
+        if (!cancelled) {
+          setSessions(updatedSessions);
+          setLoaded(prev => ({ ...prev, sessions: true }));
+        }
+      });
+    }
 
-    return () => unsubscribe && unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe && unsubscribe();
+    };
   }, []); // Only run once on mount
 
   const updateTrainersList = useCallback((updater) => {
