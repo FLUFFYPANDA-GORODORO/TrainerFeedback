@@ -893,7 +893,7 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
           <CardContent>
             {aggregatedStats.qualitative && (
               <Tabs defaultValue="high" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
                   <TabsTrigger
                     value="high"
                     className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs"
@@ -905,6 +905,12 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                     className="data-[state=active]:bg-red-100 data-[state=active]:text-red-800 text-xs"
                   >
                     Concerns
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="future"
+                    className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 text-xs"
+                  >
+                    Future Topics
                   </TabsTrigger>
                 </TabsList>
 
@@ -953,6 +959,28 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                     </div>
                   </TabsContent>
                 ))}
+
+                {/* Future Topics as Tags */}
+                <TabsContent value="future" className="mt-0">
+                  <div className="max-h-64 overflow-y-auto">
+                    {aggregatedStats.qualitative?.future?.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 p-1">
+                        {aggregatedStats.qualitative.future.map((topic, idx) => (
+                          <div 
+                            key={idx}
+                            className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
+                          >
+                            {topic.text}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                        No future topics suggested yet.
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
               </Tabs>
             )}
           </CardContent>

@@ -112,9 +112,28 @@ const AdminDashboardContent = () => {
           <h1 className="text-xl font-semibold text-foreground mb-2">
             Access Denied
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             You don't have permission to access this page.
           </p>
+          <Button onClick={handleLogout} variant="outline">Sign Out</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if college admin has a collegeId assigned
+  if (user.role === "collegeAdmin" && !user.collegeId) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center max-w-md">
+          <GraduationCap className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-foreground mb-2">
+            No College Assigned
+          </h1>
+          <p className="text-muted-foreground mb-4">
+            Your account does not have a college assigned. Please contact the Super Admin to link your account to a college.
+          </p>
+          <Button onClick={handleLogout} variant="outline">Sign Out</Button>
         </div>
       </div>
     );

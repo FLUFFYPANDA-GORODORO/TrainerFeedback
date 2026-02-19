@@ -19,6 +19,7 @@ import {
   RotateCcw,
   MessageSquare,
   RefreshCw,
+  BookOpen,
 } from "lucide-react";
 import {
   Select,
@@ -351,7 +352,11 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
           5: 0,
         },
         categoryAverages,
-        qualitative: cache.qualitative || { high: [], low: [], avg: [] },
+        qualitative: cache.qualitative || { high: [], low: [], avg: [], future: [] },
+        topicsLearned: Object.entries(cache.topicsLearned || {})
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, count]) => ({ name, count }))
+          .slice(0, 10),
       };
     }
 
@@ -455,6 +460,8 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
       avgRating: "0.00",
       ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       categoryAverages: {},
+      qualitative: { high: [], low: [], avg: [], future: [] },
+      topicsLearned: [],
     };
   }, [filteredSessions, cache, filters]);
 
@@ -1025,8 +1032,42 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
       </div>
 
       {/* Response Trend & Student Voices - Side by Side */}
-      {/* Response Trend & Student Voices - Side by Side */}
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Topics Learned (Aggregated) */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <CardTitle>What Students Learned</CardTitle>
+            </div>
+            <CardDescription>Most mentioned topics across sessions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(aggregatedStats.topicsLearned || []).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                No topic data available yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                {aggregatedStats.topicsLearned.map((topic, i) => (
+                  <div key={i} className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium text-foreground/90">{topic.name}</span>
+                      <span className="text-muted-foreground">{topic.count} mentions</span>
+                    </div>
+                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary/80 transition-all" 
+                        style={{ width: `${Math.min(100, (topic.count / (aggregatedStats.totalResponses || 1)) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Response Trend Line Chart - LEFT */}
         <Card>
           <CardHeader>
@@ -1098,7 +1139,7 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
           <CardContent>
             {aggregatedStats.qualitative && (
               <Tabs defaultValue="high" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
                   <TabsTrigger
                     value="high"
                     className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs"
@@ -1110,6 +1151,12 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
                     className="data-[state=active]:bg-red-100 data-[state=active]:text-red-800 text-xs"
                   >
                     Concerns
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="future"
+                    className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 text-xs"
+                  >
+                    Future Topics
                   </TabsTrigger>
                 </TabsList>
 
@@ -1163,6 +1210,28 @@ const CollegeAnalytics = ({ collegeId, collegeName, onBack }) => {
                     </div>
                   </TabsContent>
                 ))}
+
+                {/* Future Topics as Tags */}
+                <TabsContent value="future" className="mt-0">
+                  <div className="max-h-64 overflow-y-auto">
+                    {aggregatedStats.qualitative.future?.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 p-1">
+                        {aggregatedStats.qualitative.future.map((topic, idx) => (
+                          <div 
+                            key={idx}
+                            className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
+                          >
+                            {topic.text}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                        No future topics suggested yet.
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
               </Tabs>
             )}
           </CardContent>

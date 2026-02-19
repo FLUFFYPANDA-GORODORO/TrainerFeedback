@@ -176,6 +176,17 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
       addUpdate('totalHours', increment(sessionHours * multiplier));
       addUpdate('updatedAt', new Date().toISOString());
 
+      // Update Topics Learned
+      (stats.topicsLearned || []).forEach(({ name, count }) => {
+        try {
+          const topicPath = new FieldPath('topicsLearned', name);
+          addUpdate(topicPath, increment(count * multiplier));
+        } catch (err) {
+          const safeName = sanitizeFieldName(name);
+          addUpdate(`topicsLearned.${safeName}`, increment(count * multiplier));
+        }
+      });
+
       Object.entries(ratingDistribution || {}).forEach(([rating, count]) => {
         addUpdate(`ratingDistribution.${rating}`, increment(count * multiplier));
       });
@@ -192,6 +203,17 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
         addUpdate(`domains.${domain}.totalRatingsCount`, increment(totalRatingsCount * multiplier));
         addUpdate(`domains.${domain}.ratingSum`, increment(ratingSum * multiplier));
       }
+
+      // Update Topics Learned
+      (stats.topicsLearned || []).forEach(({ name, count }) => {
+        try {
+          const topicPath = new FieldPath('topicsLearned', name);
+          addUpdate(topicPath, increment(count * multiplier));
+        } catch (err) {
+          const safeName = sanitizeFieldName(name);
+          addUpdate(`topicsLearned.${safeName}`, increment(count * multiplier));
+        }
+      });
 
       // Course Hierarchy Updates (using FieldPath for safety with special chars in names)
       try {
@@ -235,6 +257,10 @@ export const updateCollegeCache = async (session, stats, isDelete = false, trans
         ratingDistribution: ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         categoryData: {},
         domains: {}, // Initialize domains map
+        topicsLearned: (stats.topicsLearned || []).reduce((acc, { name, count }) => {
+          acc[name] = count;
+          return acc;
+        }, {}),
         courses: {
           [courseName]: {
             totalResponses,
@@ -357,35 +383,49 @@ export const updateTrainerCache = async (session, stats, isDelete = false, trans
 
     // --- Update Trainer Main Cache ---
     if (cacheDoc.exists()) {
-      const updates = {
-        totalSessions: increment(1 * multiplier),
-        totalResponses: increment(totalResponses * multiplier),
-        totalRatingsCount: increment(totalRatingsCount * multiplier),
-        ratingSum: increment(ratingSum * multiplier),
-        totalHours: increment(sessionHours * multiplier),
-        updatedAt: new Date().toISOString()
-      };
+      const flatUpdates = [];
+      const addUpdate = (field, value) => flatUpdates.push(field, value);
+
+      addUpdate('totalSessions', increment(1 * multiplier));
+      addUpdate('totalResponses', increment(totalResponses * multiplier));
+      addUpdate('totalRatingsCount', increment(totalRatingsCount * multiplier));
+      addUpdate('ratingSum', increment(ratingSum * multiplier));
+      addUpdate('totalHours', increment(sessionHours * multiplier));
+      addUpdate('updatedAt', new Date().toISOString());
+
+      // Update Topics Learned
+      (stats.topicsLearned || []).forEach(({ name, count }) => {
+        try {
+          const topicPath = new FieldPath('topicsLearned', name);
+          addUpdate(topicPath, increment(count * multiplier));
+        } catch (err) {
+          const safeName = sanitizeFieldName(name);
+          addUpdate(`topicsLearned.${safeName}`, increment(count * multiplier));
+        }
+      });
 
       Object.entries(ratingDistribution || {}).forEach(([rating, count]) => {
-        updates[`ratingDistribution.${rating}`] = increment(count * multiplier);
+        addUpdate(`ratingDistribution.${rating}`, increment(count * multiplier));
       });
       Object.entries(categoryIncrements).forEach(([cat, data]) => {
-        updates[`categoryData.${cat}.sum`] = increment(data.sum * multiplier);
-        updates[`categoryData.${cat}.count`] = increment(data.count * multiplier);
+        addUpdate(`categoryData.${cat}.sum`, increment(data.sum * multiplier));
+        addUpdate(`categoryData.${cat}.count`, increment(data.count * multiplier));
       });
 
-      if (transaction) transaction.update(cacheRef, updates);
-      else await updateDoc(cacheRef, updates);
+      if (transaction) transaction.update(cacheRef, ...flatUpdates);
+      else await updateDoc(cacheRef, ...flatUpdates);
 
     } else if (!isDelete) {
        const newCache = {
         totalSessions: 1,
         totalResponses,
         totalRatingsCount,
-        totalRatingsCount,
         ratingSum,
         totalHours: sessionHours,
-        ratingDistribution: ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        topicsLearned: (stats.topicsLearned || []).reduce((acc, { name, count }) => {
+          acc[name] = count;
+          return acc;
+        }, {}),
         ratingDistribution: ratingDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         categoryData: {},
         updatedAt: new Date().toISOString()
@@ -559,12 +599,12 @@ const mergeComments = (existing, incoming, type) => {
     // Lowest Rating first, then Newest
     combined.sort((a, b) => (a.rating - b.rating) || (new Date(b.date) - new Date(a.date)));
   } else {
-    // Avg / Recent: Just Newest
+    // Avg / Recent / Future: Just Newest
     combined.sort((a, b) => new Date(b.date) - new Date(a.date));
   }
 
-  // 4. Keep Top 3
-  return combined.slice(0, 3);
+  // 4. Keep Top 5 (Increased from 3 for better insights)
+  return combined.slice(0, 5);
 };
 
 /**
@@ -574,12 +614,12 @@ const mergeComments = (existing, incoming, type) => {
  */
 export const updateQualitativeCache = async (session, stats) => {
   try {
-    const { topComments, leastRatedComments, avgComments } = stats;
+    const { topComments, leastRatedComments, avgComments, futureTopics } = stats;
     
     // Helper to format comments for cache (add metadata)
     const formatForCache = (comments) => comments.map(c => ({
       text: c.text,
-      rating: c.avgRating,
+      rating: c.avgRating || 0,
       responseId: c.responseId,
       sessionId: session.id,
       date: session.sessionDate || new Date().toISOString(),
@@ -590,6 +630,7 @@ export const updateQualitativeCache = async (session, stats) => {
     const newHigh = formatForCache(topComments || []);
     const newLow = formatForCache(leastRatedComments || []);
     const newAvg = formatForCache(avgComments || []);
+    const newFuture = formatForCache(futureTopics || []);
 
     // 1. Update College Cache
     if (session.collegeId) {
@@ -597,12 +638,13 @@ export const updateQualitativeCache = async (session, stats) => {
       const collegeDoc = await getDoc(collegeRef);
       
       if (collegeDoc.exists()) {
-        const currentData = collegeDoc.data().qualitative || { high: [], low: [], avg: [] };
+        const currentData = collegeDoc.data().qualitative || { high: [], low: [], avg: [], future: [] };
         
         const updatedQualitative = {
           high: mergeComments(currentData.high, newHigh, 'high'),
           low: mergeComments(currentData.low, newLow, 'low'),
-          avg: mergeComments(currentData.avg, newAvg, 'avg')
+          avg: mergeComments(currentData.avg, newAvg, 'avg'),
+          future: mergeComments(currentData.future, newFuture, 'future')
         };
         
         await updateDoc(collegeRef, { qualitative: updatedQualitative });
@@ -615,12 +657,13 @@ export const updateQualitativeCache = async (session, stats) => {
       const trainerDoc = await getDoc(trainerRef);
       
       if (trainerDoc.exists()) {
-        const currentData = trainerDoc.data().qualitative || { high: [], low: [], avg: [] };
+        const currentData = trainerDoc.data().qualitative || { high: [], low: [], avg: [], future: [] };
         
         const updatedQualitative = {
           high: mergeComments(currentData.high, newHigh, 'high'),
           low: mergeComments(currentData.low, newLow, 'low'),
-          avg: mergeComments(currentData.avg, newAvg, 'avg')
+          avg: mergeComments(currentData.avg, newAvg, 'avg'),
+          future: mergeComments(currentData.future, newFuture, 'future')
         };
         
         await updateDoc(trainerRef, { qualitative: updatedQualitative });

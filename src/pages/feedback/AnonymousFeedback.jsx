@@ -88,7 +88,7 @@ export const AnonymousFeedback = () => {
   const handleTextChange = (index, text) => {
     setResponses(prev => ({
       ...prev,
-      [index]: { ...prev[index], value: text, type: 'text' }
+      [index]: { ...prev[index], value: text }
     }));
   };
 
@@ -261,6 +261,18 @@ export const AnonymousFeedback = () => {
              const shuffled = [...q.options].sort(() => 0.5 - Math.random());
              const count = Math.floor(Math.random() * shuffled.length) + 1;
              value = shuffled.slice(0, count);
+          } else if (type === 'topicslearned') {
+             const sessionTopics = ["React Hooks", "State Management", "Prop Drilling", "Vite Setup", "CSS Modules", "Tailwind Flow", "Deployment"];
+             const count = Math.floor(Math.random() * 3) + 2;
+             value = [...sessionTopics].sort(() => 0.5 - Math.random()).slice(0, count).join(", ");
+          } else if (type === 'futureSession') {
+             const suggestions = [
+               "Advanced React patterns", "System Design deep dive", 
+               "Microservices architecture", "Security best practices",
+               "Performance optimization", "Automated testing", 
+               "CI/CD workflows", "Cloud native development"
+             ];
+             value = suggestions[Math.floor(Math.random() * suggestions.length)];
           } else {
              value = comments[Math.floor(Math.random() * comments.length)];
           }
@@ -485,6 +497,19 @@ export const AnonymousFeedback = () => {
                       <div className="space-y-2">
                         <Textarea
                           placeholder="What topics or skills would you like covered in future sessions?"
+                          value={responses[index]?.value || ''}
+                          onChange={(e) => handleTextChange(index, e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+                    )}
+
+                    {/* Topics Learned Type */}
+                    {question.type === 'topicslearned' && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground mb-2">Please list the topics covered today, separated by commas (e.g. React Hooks, State, Effects)</p>
+                        <Textarea
+                          placeholder="e.g. Topic 1, Topic 2, Topic 3"
                           value={responses[index]?.value || ''}
                           onChange={(e) => handleTextChange(index, e.target.value)}
                           rows={3}

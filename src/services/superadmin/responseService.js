@@ -171,6 +171,44 @@ export const compileSessionStats = async (sessionId) => {
     const leastRatedComments = extractComments(lowRated, 5);
     const avgComments = extractComments(avgRated, 5);
 
+    // [NEW] Extract Topics Learned & Future Expectations
+    const topicsLearnedRaw = [];
+    const futureTopicsRaw = [];
+
+    responses.forEach(resp => {
+      (resp.answers || []).forEach(ans => {
+        if (ans.type === 'topicslearned' && ans.value?.trim()) {
+          // Split by commas and clean up
+          const topics = ans.value.split(',').map(t => t.trim()).filter(Boolean);
+          topicsLearnedRaw.push(...topics);
+        }
+        if (ans.type === 'futureSession' && ans.value?.trim()) {
+          futureTopicsRaw.push({
+            text: ans.value,
+            avgRating: 0, // We'll fill this if needed
+            responseId: resp.id
+          });
+        }
+      });
+    });
+
+    // Process Topics Learned (Unique and Counted)
+    const topicCounts = {};
+    topicsLearnedRaw.forEach(t => {
+      const normalized = t.toLowerCase();
+      topicCounts[normalized] = (topicCounts[normalized] || 0) + 1;
+    });
+    
+    // Sort and get top 15 topics
+    const topicsLearned = Object.entries(topicCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count }))
+      .slice(0, 15);
+
+    // Process Future Topics (Top 5 Recent/Relevant)
+    // For now we just take the first 5 unique ones
+    const futureTopics = futureTopicsRaw.slice(0, 5);
+
     // Global rating stats
     const avgRating = globalAvgRating;
     const topRating = allRatings.length > 0 ? Math.max(...allRatings) : 0;
@@ -276,6 +314,8 @@ export const compileSessionStats = async (sessionId) => {
       avgComments,
       questionStats,
       categoryAverages,
+      topicsLearned,
+      futureTopics,
       compiledAt: new Date().toISOString()
     };
   } catch (error) {

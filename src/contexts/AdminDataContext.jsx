@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { auth } from '@/services/firebase';
 import { collegesApi, sessionsApi, usersApi, feedbackApi } from '@/lib/dataService';
 import { getAllSessions } from '@/services/superadmin/sessionService';
 import { getCollegeById } from '@/services/superadmin/collegeService';
@@ -193,13 +194,22 @@ export const AdminDataProvider = ({ children }) => {
   // Initial load - ONLY College Info + Cache
   // Depends on user?.collegeId (primitive) so it only re-runs on actual college change
   useEffect(() => {
-    if (user?.collegeId) {
+    let cancelled = false;
+
+    if (user?.collegeId && auth.currentUser) {
       const init = async () => {
         await loadCollege();
-        setLoading(prev => ({ ...prev, initial: false }));
+        if (!cancelled) {
+          setLoading(prev => ({ ...prev, initial: false }));
+        }
       };
       init();
+    } else if (user) {
+      // User exists but has no collegeId — clear loading to avoid permanent spinner
+      setLoading(prev => ({ ...prev, initial: false }));
     }
+
+    return () => { cancelled = true; };
   }, [user?.collegeId, loadCollege]);
 
   const value = {
