@@ -9,6 +9,7 @@ import {
   MoreVertical,
   Upload,
   Loader2,
+  ListPlus,
 } from "lucide-react";
 import { uploadImage } from "@/services/cloudinaryService";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ import {
   addCollege,
   updateCollege,
   deleteCollege,
+  bulkAddColleges,
 } from "@/services/superadmin/collegeService";
 import CollegeAnalytics from "./CollegeAnalytics";
 
@@ -60,6 +62,12 @@ const CollegesTab = ({
   const [isEditingCollege, setIsEditingCollege] = useState(false);
   const [editingCollegeId, setEditingCollegeId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Bulk add states
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [bulkFile, setBulkFile] = useState(null);
+  const [bulkPreview, setBulkPreview] = useState(null); // { count, entries } after file parsed
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
 
   // Analytics view state
   const [selectedCollegeForAnalytics, setSelectedCollegeForAnalytics] =
@@ -154,6 +162,72 @@ const CollegesTab = ({
     }
   };
 
+  const handleBulkFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.json')) {
+      toast.error("Please upload a .json file");
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const sanitized = evt.target.result.trim().replace(/,\s*]/g, "]");
+        const parsed = JSON.parse(sanitized);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          toast.error("JSON file must contain a non-empty array.");
+          return;
+        }
+        setBulkFile(parsed);
+        setBulkPreview({
+          count: parsed.length,
+          entries: parsed.slice(0, 5), // show first 5 as preview
+        });
+      } catch {
+        toast.error("Invalid JSON in file. Please check the format.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleBulkAdd = async () => {
+    if (!bulkFile || bulkFile.length === 0) {
+      toast.error("Please upload a JSON file first");
+      return;
+    }
+
+    setIsBulkAdding(true);
+    try {
+      const result = await bulkAddColleges(bulkFile);
+      const messages = [];
+      if (result.added > 0) messages.push(`${result.added} added`);
+      if (result.skipped > 0) messages.push(`${result.skipped} skipped`);
+      toast.success(`Bulk add complete: ${messages.join(", ")}`);
+
+      if (result.errors.length > 0) {
+        toast.warning(result.errors.slice(0, 5).join("\n"), { duration: 8000 });
+      }
+
+      setBulkDialogOpen(false);
+      setBulkFile(null);
+      setBulkPreview(null);
+      onRefresh();
+    } catch (error) {
+      toast.error(error.message || "Bulk add failed");
+    } finally {
+      setIsBulkAdding(false);
+    }
+  };
+
+  const closeBulkDialog = () => {
+    setBulkDialogOpen(false);
+    setBulkFile(null);
+    setBulkPreview(null);
+  };
+
   // If a college is selected for analytics, show analytics view
   if (selectedCollegeForAnalytics) {
     return (
@@ -175,9 +249,14 @@ const CollegesTab = ({
             {colleges.length} Total
           </span>
         </div>
-        <Button onClick={openCreateCollegeDialog} className="gradient-hero text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300">
-          <Plus className="mr-2 h-4 w-4" /> Add College
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => { closeBulkDialog(); setBulkDialogOpen(true); }} variant="outline" className="shadow hover:shadow-md transition-all duration-300">
+            <ListPlus className="mr-2 h-4 w-4" /> Bulk Add
+          </Button>
+          <Button onClick={openCreateCollegeDialog} className="gradient-hero text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300">
+            <Plus className="mr-2 h-4 w-4" /> Add College
+          </Button>
+        </div>
       </div>
 
       <Modal open={collegeDialogOpen} onOpenChange={setCollegeDialogOpen} className="p-5">
@@ -270,6 +349,84 @@ const CollegesTab = ({
               className="gradient-hero text-primary-foreground"
             >
               {isEditingCollege ? "Update" : "Create"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Bulk Add Modal */}
+      <Modal open={bulkDialogOpen} onOpenChange={setBulkDialogOpen} className="p-5">
+        <ModalContent className="max-w-2xl">
+          <ModalClose onClose={closeBulkDialog} />
+          <ModalHeader>
+            <ModalTitle>Bulk Add Colleges</ModalTitle>
+            <ModalDescription>
+              Upload a <strong>.json</strong> file containing an array of colleges with <strong>"Name"</strong> and <strong>"College Code"</strong> fields.
+            </ModalDescription>
+          </ModalHeader>
+          <div className="space-y-4 py-4">
+            <div className="rounded-lg bg-muted/40 border border-border/50 p-3">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Expected JSON format:</p>
+              <pre className="text-xs text-foreground/80 whitespace-pre-wrap">{`[\n  { "Name": "College Name", "College Code": "CODE" },\n  { "Name": "Another College", "College Code": "AC" }\n]`}</pre>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Select JSON File</Label>
+              <Input
+                type="file"
+                accept=".json"
+                onChange={handleBulkFileChange}
+                className="cursor-pointer"
+              />
+            </div>
+
+            {bulkPreview && (
+              <div className="rounded-lg border border-border/50 p-3 space-y-2">
+                <p className="text-sm font-medium text-foreground">
+                  📄 {bulkPreview.count} college(s) found in file
+                </p>
+                <div className="max-h-40 overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border/50">
+                        <th className="text-left py-1 px-2 text-muted-foreground font-medium">#</th>
+                        <th className="text-left py-1 px-2 text-muted-foreground font-medium">Name</th>
+                        <th className="text-left py-1 px-2 text-muted-foreground font-medium">Code</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bulkPreview.entries.map((entry, i) => (
+                        <tr key={i} className="border-b border-border/30">
+                          <td className="py-1 px-2 text-muted-foreground">{i + 1}</td>
+                          <td className="py-1 px-2">{entry.Name || entry.name || '—'}</td>
+                          <td className="py-1 px-2 font-mono">{entry['College Code'] || entry.code || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {bulkPreview.count > 5 && (
+                    <p className="text-xs text-muted-foreground mt-1 px-2">
+                      ...and {bulkPreview.count - 5} more
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          <ModalFooter>
+            <Button variant="outline" onClick={closeBulkDialog}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBulkAdd}
+              disabled={isBulkAdding || !bulkFile}
+              className="gradient-hero text-primary-foreground"
+            >
+              {isBulkAdding ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</>
+              ) : (
+                <><ListPlus className="mr-2 h-4 w-4" /> Add All</>
+              )}
             </Button>
           </ModalFooter>
         </ModalContent>

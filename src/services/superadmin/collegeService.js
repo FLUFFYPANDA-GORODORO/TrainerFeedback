@@ -95,3 +95,58 @@ export const getCollegeById = async (id) => {
     throw error;
   }
 };
+
+// Bulk add colleges
+export const bulkAddColleges = async (collegesArray) => {
+  try {
+    if (!Array.isArray(collegesArray) || collegesArray.length === 0) {
+      throw new Error('Please provide a non-empty array of colleges.');
+    }
+
+    // Fetch all existing codes to check for duplicates
+    const existingSnapshot = await getDocs(collection(db, COLLECTION_NAME));
+    const existingCodes = new Set(
+      existingSnapshot.docs.map(doc => doc.data().code?.toUpperCase())
+    );
+
+    let added = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (const item of collegesArray) {
+      const name = (item.Name || item.name || '').trim();
+      const code = (item['College Code'] || item.code || '').trim().toUpperCase();
+      const logoUrl = (item.logoUrl || item.LogoUrl || '').trim();
+
+      if (!name || !code) {
+        skipped++;
+        errors.push(`Skipped entry with missing name or code: ${JSON.stringify(item)}`);
+        continue;
+      }
+
+      if (existingCodes.has(code)) {
+        skipped++;
+        errors.push(`Skipped duplicate code: ${code}`);
+        continue;
+      }
+
+      try {
+        await addDoc(collection(db, COLLECTION_NAME), {
+          name,
+          code,
+          logoUrl,
+          createdAt: serverTimestamp()
+        });
+        existingCodes.add(code); // prevent duplicates within the same batch
+        added++;
+      } catch (err) {
+        errors.push(`Failed to add ${code}: ${err.message}`);
+      }
+    }
+
+    return { added, skipped, errors };
+  } catch (error) {
+    console.error('Error bulk adding colleges:', error);
+    throw error;
+  }
+};
