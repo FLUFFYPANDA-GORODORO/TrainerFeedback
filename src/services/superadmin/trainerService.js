@@ -18,10 +18,43 @@ import {
 import { createUserWithoutLoggingIn } from '../authService';
 
 const COLLECTION_NAME = 'trainers';
+const COUNTER_COLLECTION = 'counters';
+const TRAINER_COUNTER_DOC = 'trainers';
+const TRAINER_ID_REGEX = /^GA-T\d{3}$/;
+
+// Get the current trainer ID counter
+export const getTrainerIdCounter = async () => {
+    try {
+        const docRef = doc(db, COUNTER_COLLECTION, TRAINER_COUNTER_DOC);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return docSnap.data().lastId || 0;
+        }
+        return 0;
+    } catch (error) {
+        console.error('Error getting trainer ID counter:', error);
+        return 0;
+    }
+};
+
+// Update the trainer ID counter
+export const updateTrainerIdCounter = async (newValue) => {
+    try {
+        const docRef = doc(db, COUNTER_COLLECTION, TRAINER_COUNTER_DOC);
+        await setDoc(docRef, { lastId: newValue }, { merge: true });
+    } catch (error) {
+        console.error('Error updating trainer ID counter:', error);
+    }
+};
 
 // Add a new trainer
 export const addTrainer = async ({ trainer_id, name, domain, specialisation, topics = [], email, password }) => {
   try {
+    // Validate ID format
+    if (!TRAINER_ID_REGEX.test(trainer_id)) {
+        throw new Error(`Invalid Trainer ID format. Must be GA-TXXX (e.g., GA-T001). Received: ${trainer_id}`);
+    }
+
     // Check for duplicate trainer_id
     const q = query(collection(db, COLLECTION_NAME), where('trainer_id', '==', trainer_id));
     const querySnapshot = await getDocs(q);
@@ -131,24 +164,63 @@ export const getTrainerById = async (id) => {
   }
 };
 
-// Batch add trainers
+// Batch add trainers with skip-if-exists and client-side ID generation
 export const addTrainersBatch = async (trainers) => {
     const results = {
         success: [],
-        errors: []
+        errors: [],
+        skipped: []
     };
+    
+    // 1. Fetch initial counter
+    let currentCounter = await getTrainerIdCounter();
+    const initialCounter = currentCounter;
+
+    // 2. Fetch existing trainer IDs to check for duplicates efficiently
+    const existingIds = new Set();
+    const q = query(collection(db, COLLECTION_NAME));
+    const snapshot = await getDocs(q);
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.trainer_id) existingIds.add(data.trainer_id);
+    });
     
     for (const trainer of trainers) {
         try {
-            const added = await addTrainer(trainer);
+            // Check if trainer_id already exists
+            if (trainer.trainer_id && existingIds.has(trainer.trainer_id)) {
+                results.skipped.push({
+                    trainer_id: trainer.trainer_id,
+                    name: trainer.name,
+                    reason: 'ID already exists'
+                });
+                continue;
+            }
+
+            // Assign ID if not present or needs to follow sequence (based on user request)
+            // If they didn't provide an ID, we generate GA-TXXX
+            let trainerData = { ...trainer };
+            if (!trainerData.trainer_id) {
+                currentCounter++;
+                trainerData.trainer_id = `GA-T${currentCounter.toString().padStart(3, '0')}`;
+                trainerData.password = trainerData.trainer_id; // Set ID as password if generated
+            }
+
+            const added = await addTrainer(trainerData);
             results.success.push(added);
+            existingIds.add(trainerData.trainer_id); // Add to local set to avoid duplicates within batch
         } catch (error) {
             results.errors.push({
-                trainer_id: trainer.trainer_id,
+                trainer_id: trainer.trainer_id || 'Generating...',
                 name: trainer.name,
                 error: error.message
             });
         }
+    }
+    
+    // 3. Update counter if it changed
+    if (currentCounter > initialCounter) {
+        await updateTrainerIdCounter(currentCounter);
     }
     
     return results;

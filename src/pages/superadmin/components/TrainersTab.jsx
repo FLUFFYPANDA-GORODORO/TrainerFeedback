@@ -22,6 +22,8 @@ import {
   updateTrainer,
   deleteTrainer,
   addTrainersBatch,
+  getTrainerIdCounter,
+  updateTrainerIdCounter,
 } from "@/services/superadmin/trainerService";
 import { useSuperAdminData } from "@/contexts/SuperAdminDataContext";
 import TrainerAnalytics from "./TrainerAnalytics";
@@ -42,6 +44,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// Helper to generate formatted trainer ID
+const formatTrainerId = (num) => `GA-T${num.toString().padStart(3, "0")}`;
+
+const TRAINER_ID_REGEX = /^GA-T\d{3}$/;
 
 const TrainersTab = () => {
   // Get trainers from context (cached, no re-fetch on tab switch)
@@ -93,11 +100,21 @@ const TrainersTab = () => {
   });
 
   // Handlers
-  const openCreateDialog = () => {
-    setCurrentTrainer(defaultTrainerState);
-    setIsEditing(false);
-    setEditingId(null);
-    setTrainerDialogOpen(true);
+  const openCreateDialog = async () => {
+    try {
+        const lastId = await getTrainerIdCounter();
+        const nextId = formatTrainerId(lastId + 1);
+        setCurrentTrainer({
+          ...defaultTrainerState,
+          trainer_id: nextId,
+          password: nextId,
+        });
+        setIsEditing(false);
+        setEditingId(null);
+        setTrainerDialogOpen(true);
+    } catch (error) {
+        toast.error("Failed to fetch ID counter");
+    }
   };
 
   const openEditDialog = (trainer) => {
@@ -136,8 +153,14 @@ const TrainersTab = () => {
       .map((t) => t.trim())
       .filter((t) => t);
 
+    // Validate ID format
+    if (!TRAINER_ID_REGEX.test(currentTrainer.trainer_id.trim())) {
+      toast.error("Trainer ID must be in GA-TXXX format (e.g., GA-T001)");
+      return;
+    }
+
     const trainerData = {
-      trainer_id: currentTrainer.trainer_id.trim(),
+      trainer_id: currentTrainer.trainer_id.trim().toUpperCase(),
       name: currentTrainer.name.trim(),
       email: currentTrainer.email.trim(),
       domain: currentTrainer.domain.trim(),
@@ -161,6 +184,14 @@ const TrainersTab = () => {
         );
       } else {
         await addTrainer(trainerData);
+        // If we created a GA-TXXX ID, update the centralized counter
+        if (TRAINER_ID_REGEX.test(trainerData.trainer_id)) {
+            const num = parseInt(trainerData.trainer_id.replace("GA-T", ""), 10);
+            const currentCounter = await getTrainerIdCounter();
+            if (num > currentCounter) {
+                await updateTrainerIdCounter(num);
+            }
+        }
         toast.success("Trainer created successfully");
         refreshTrainers(); // Reload to get fresh list
       }
@@ -206,17 +237,17 @@ const TrainersTab = () => {
 
         const results = await addTrainersBatch(json);
 
-        if (results.success.length > 0) {
-          toast.success(
-            `Successfully added ${results.success.length} trainers`,
-          );
-        }
-
+        let message = `Import Result: ${results.success.length} added`;
+        if (results.skipped.length > 0) message += `, ${results.skipped.length} skipped (duplicates)`;
+        if (results.errors.length > 0) message += `, ${results.errors.length} failed`;
+        
         if (results.errors.length > 0) {
-          toast.warning(
-            `Failed to add ${results.errors.length} trainers (duplicates or errors)`,
-          );
+          toast.error(message);
           console.warn("Batch errors:", results.errors);
+        } else if (results.skipped.length > 0) {
+          toast.warning(message);
+        } else {
+          toast.success(message);
         }
 
         setBatchDialogOpen(false);
@@ -346,17 +377,20 @@ const TrainersTab = () => {
                 <div className="p-6 pt-0 overflow-y-auto space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Trainer ID *</Label>
+                      <Label>Trainer ID * (Format: GA-TXXX)</Label>
                       <Input
                         value={currentTrainer.trainer_id}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
                           setCurrentTrainer({
                             ...currentTrainer,
-                            trainer_id: e.target.value,
-                          })
-                        }
+                            trainer_id: val,
+                            // If create mode, also update password if they were matched
+                            password: !isEditing && currentTrainer.password === currentTrainer.trainer_id ? val : currentTrainer.password
+                          });
+                        }}
                         disabled={isEditing}
-                        placeholder="TR-1001"
+                        placeholder="GA-T001"
                       />
                     </div>
                     <div className="space-y-2">
