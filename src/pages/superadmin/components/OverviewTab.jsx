@@ -11,6 +11,8 @@ import {
   MessageSquare,
   FolderCode,
   Clock,
+  BookOpen,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +22,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -35,7 +43,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   AreaChart,
   Area,
@@ -105,6 +113,8 @@ const OverviewTab = ({
   const [aggregatedCacheStats, setAggregatedCacheStats] = useState(null);
   // Per-college cache data (for college performance & domain charts)
   const [perCollegeCaches, setPerCollegeCaches] = useState({});
+  // Cache for the currently selected college (when filtering by college)
+  const [selectedCollegeCache, setSelectedCollegeCache] = useState(null);
   // Sessions fetched by dynamic query (for charts on filtered view)
   const [fetchedFilteredSessions, setFetchedFilteredSessions] = useState([]);
 
@@ -187,9 +197,13 @@ const OverviewTab = ({
             getCollegeCache(filters.collegeId),
           ]);
           setCollegeTrends(trends);
-          setQualitativeCache(cache?.qualitative || { high: [], low: [] });
+          setSelectedCollegeCache(cache);
+          setQualitativeCache(
+            cache?.qualitative || { high: [], low: [], future: [] },
+          );
         } else {
           // All colleges - fetch trends and cache for all
+          setSelectedCollegeCache(null);
           const promises = colleges.map((c) =>
             Promise.all([
               getCollegeTrends(c.id || c.code),
@@ -206,7 +220,7 @@ const OverviewTab = ({
           };
 
           // Aggregate Qualitative
-          const aggregatedQualitative = { high: [], low: [] };
+          const aggregatedQualitative = { high: [], low: [], future: [] };
 
           // Aggregate Stats from all college caches
           const aggStats = {
@@ -214,9 +228,11 @@ const OverviewTab = ({
             totalResponses: 0,
             totalRatingsCount: 0,
             ratingSum: 0,
+            totalHours: 0,
             ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
             categoryTotals: {},
             categoryCounts: {},
+            topicsLearned: {},
           };
 
           results.forEach(([trend, cache]) => {
@@ -234,6 +250,8 @@ const OverviewTab = ({
                 aggregatedQualitative.high.push(...cache.qualitative.high);
               if (cache.qualitative.low)
                 aggregatedQualitative.low.push(...cache.qualitative.low);
+              if (cache.qualitative.future)
+                aggregatedQualitative.future.push(...cache.qualitative.future);
             }
 
             // Aggregate Stats
@@ -242,6 +260,18 @@ const OverviewTab = ({
               aggStats.totalResponses += cache.totalResponses || 0;
               aggStats.totalRatingsCount += cache.totalRatingsCount || 0;
               aggStats.ratingSum += cache.ratingSum || 0;
+              aggStats.totalHours += cache.totalHours || 0;
+
+              // Aggregate Topics Learned
+              if (cache.topicsLearned) {
+                Object.entries(cache.topicsLearned).forEach(
+                  ([topic, count]) => {
+                    aggStats.topicsLearned[topic] =
+                      (aggStats.topicsLearned[topic] || 0) + count;
+                  },
+                );
+              }
+
               Object.entries(cache.ratingDistribution || {}).forEach(
                 ([r, c]) => {
                   aggStats.ratingDistribution[r] =
@@ -259,6 +289,12 @@ const OverviewTab = ({
             }
           });
 
+          // Sort and slice topics for aggregated view
+          aggStats.topicsLearned = Object.entries(aggStats.topicsLearned)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => ({ name, count }))
+            .slice(0, 10);
+
           // Build per-college cache map
           const collegeCacheMap = {};
           colleges.forEach((college, idx) => {
@@ -274,7 +310,7 @@ const OverviewTab = ({
       } catch (err) {
         console.error("Failed to load college data:", err);
         setCollegeTrends(null);
-        setQualitativeCache({ high: [], low: [] });
+        setQualitativeCache({ high: [], low: [], future: [] });
       }
     };
 
@@ -372,6 +408,7 @@ const OverviewTab = ({
       totalResponses: 0,
       totalRatingsCount: 0,
       ratingSum: 0,
+      totalHours: 0,
       ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       categoryTotals: {},
       categoryCounts: {},
@@ -384,6 +421,7 @@ const OverviewTab = ({
       if (!cs) return;
 
       stats.totalResponses += cs.totalResponses || 0;
+      stats.totalHours += (Number(session.sessionDuration) || 60) / 60;
 
       Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
         stats.ratingDistribution[rating] =
@@ -418,6 +456,7 @@ const OverviewTab = ({
       totalSessions: stats.totalSessions,
       totalResponses: stats.totalResponses,
       totalRatingsCount: stats.totalRatingsCount,
+      totalHours: stats.totalHours,
       avgRating,
       ratingDistribution: stats.ratingDistribution,
       categoryAverages,
@@ -438,9 +477,23 @@ const OverviewTab = ({
     );
   }, [filters]);
 
+  // Helper to check if we can use cached hierarchical data instead of session aggregation
+  const isCacheSupportedView = useMemo(() => {
+    // We can use cache if we're in default view (global)
+    // OR if we have only hierarchical filters (College, Course, Year, Batch)
+    // and NO complex filters (Trainer, Project, DateRange)
+    if (isDefaultView) return true;
+
+    return (
+      filters.trainerId === "all" &&
+      filters.projectCode === "all" &&
+      filters.dateRange === "all"
+    );
+  }, [filters, isDefaultView]);
+
   useEffect(() => {
-    // Skip dynamic fetch when default view — we use aggregated cache instead
-    if (isDefaultView) {
+    // Skip dynamic fetch when we can use cache instead
+    if (isCacheSupportedView) {
       setAnalyticsData(null);
       setFetchedFilteredSessions([]);
       return;
@@ -532,11 +585,76 @@ const OverviewTab = ({
           5: 0,
         },
         categoryAverages,
-        qualitative: qualitativeCache || { high: [], low: [] },
+        qualitative: qualitativeCache || { high: [], low: [], future: [] },
+        topicsLearned: aggregatedCacheStats.topicsLearned || [],
       };
     }
 
-    // 2. Filtered View -> Use dynamic data
+    // 2. Hierarchical View -> Use selected college cache structure
+    if (
+      isCacheSupportedView &&
+      filters.collegeId !== "all" &&
+      selectedCollegeCache
+    ) {
+      let targetData = selectedCollegeCache;
+
+      // Navigate hierarchy: Course -> Year -> Batch
+      if (filters.course !== "all" && targetData.courses?.[filters.course]) {
+        targetData = targetData.courses[filters.course];
+        if (filters.year !== "all" && targetData.years?.[filters.year]) {
+          targetData = targetData.years[filters.year];
+          if (filters.batch !== "all" && targetData.batches?.[filters.batch]) {
+            targetData = targetData.batches[filters.batch];
+          }
+        }
+      }
+
+      const avgRating =
+        targetData.totalRatingsCount > 0
+          ? (targetData.ratingSum / targetData.totalRatingsCount).toFixed(2)
+          : "0.00";
+
+      const categoryAverages = {};
+      const catData = targetData.categoryData || {};
+      Object.keys(catData).forEach((cat) => {
+        categoryAverages[cat] =
+          catData[cat].count > 0
+            ? (catData[cat].sum / catData[cat].count).toFixed(2)
+            : 0;
+      });
+
+      // Convert topicsLearned map to sorted array if it exists
+      const topicsLearned = targetData.topicsLearned
+        ? Object.entries(targetData.topicsLearned)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => ({ name, count }))
+            .slice(0, 10)
+        : [];
+
+      return {
+        totalSessions: targetData.totalSessions || 0,
+        totalResponses: targetData.totalResponses || 0,
+        totalRatingsCount: targetData.totalRatingsCount || 0,
+        totalHours: targetData.totalHours || 0,
+        avgRating,
+        ratingDistribution: targetData.ratingDistribution || {
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+          5: 0,
+        },
+        categoryAverages,
+        qualitative: targetData.qualitative || {
+          high: [],
+          low: [],
+          future: [],
+        },
+        topicsLearned,
+      };
+    }
+
+    // 3. Filtered View -> Use dynamic session-sum data
     return (
       analyticsData || {
         totalSessions: 0,
@@ -546,10 +664,19 @@ const OverviewTab = ({
         avgRating: 0,
         ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         categoryAverages: {},
-        qualitative: { high: [], low: [] },
+        qualitative: { high: [], low: [], future: [] },
+        topicsLearned: [],
       }
     );
-  }, [isDefaultView, aggregatedCacheStats, analyticsData, qualitativeCache]);
+  }, [
+    isDefaultView,
+    isCacheSupportedView,
+    aggregatedCacheStats,
+    selectedCollegeCache,
+    analyticsData,
+    qualitativeCache,
+    filters,
+  ]);
 
   // College performance data for bar chart
   const allCollegesPerformance = useMemo(() => {
@@ -686,6 +813,18 @@ const OverviewTab = ({
           domains[domain].responses += data.totalResponses || 0;
         });
       });
+    } else if (isCacheSupportedView && selectedCollegeCache) {
+      // Hierarchical view with no complex filters: use selected college cache
+      // Note: domains are currently global per-college in cache
+      Object.entries(selectedCollegeCache.domains || {}).forEach(
+        ([domain, data]) => {
+          if (!domains[domain])
+            domains[domain] = { ratingSum: 0, ratingCount: 0, responses: 0 };
+          domains[domain].ratingSum += data.ratingSum || 0;
+          domains[domain].ratingCount += data.totalRatingsCount || 0;
+          domains[domain].responses += data.totalResponses || 0;
+        },
+      );
     } else {
       // Filtered view: use fetched sessions from dynamic query
       fetchedFilteredSessions.forEach((session) => {
@@ -718,7 +857,13 @@ const OverviewTab = ({
       chartData,
       totalResponses: chartData.reduce((sum, d) => sum + d.responses, 0),
     };
-  }, [isDefaultView, perCollegeCaches, fetchedFilteredSessions]);
+  }, [
+    isDefaultView,
+    isCacheSupportedView,
+    perCollegeCaches,
+    selectedCollegeCache,
+    fetchedFilteredSessions,
+  ]);
 
   // Qualitative data (aggregate from filtered sessions)
   // Qualitative data - Filter what we have in cache
@@ -1160,7 +1305,7 @@ const OverviewTab = ({
                       height={60}
                     />
                     <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
-                    <Tooltip
+                    <RechartsTooltip
                       cursor={false}
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
@@ -1230,7 +1375,7 @@ const OverviewTab = ({
                     />
                     <XAxis dataKey="name" className="text-xs" />
                     <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
-                    <Tooltip
+                    <RechartsTooltip
                       cursor={false}
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
@@ -1378,7 +1523,7 @@ const OverviewTab = ({
                         fillOpacity: 1,
                       }}
                     />
-                    <Tooltip
+                    <RechartsTooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
@@ -1439,7 +1584,7 @@ const OverviewTab = ({
                   />
                   <XAxis dataKey="rating" className="text-xs" />
                   <YAxis allowDecimals={false} className="text-xs" />
-                  <Tooltip
+                  <RechartsTooltip
                     cursor={false}
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
@@ -1507,7 +1652,7 @@ const OverviewTab = ({
                       tickFormatter={(day) => `${day}`}
                     />
                     <YAxis allowDecimals={false} className="text-xs" />
-                    <Tooltip
+                    <RechartsTooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
@@ -1644,7 +1789,7 @@ const OverviewTab = ({
               </div>
             ) : (
               <Tabs defaultValue="high" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsList className="grid w-full grid-cols-4 mb-4">
                   <TabsTrigger
                     value="high"
                     className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs"
@@ -1657,18 +1802,30 @@ const OverviewTab = ({
                   >
                     Concerns
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="topics"
+                    className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 text-xs"
+                  >
+                    Learned
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="future"
+                    className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 text-xs"
+                  >
+                    Future
+                  </TabsTrigger>
                 </TabsList>
 
                 {["high", "low"].map((type) => (
                   <TabsContent key={type} value={type} className="mt-0">
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {qualitativeData[type]?.length > 0 ? (
-                        qualitativeData[type]
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                      {aggregatedStats.qualitative?.[type]?.length > 0 ? (
+                        aggregatedStats.qualitative[type]
                           .slice(0, 5)
                           .map((comment, idx) => (
                             <div
                               key={idx}
-                              className="flex flex-col p-3 rounded-lg bg-muted/30 border border-border/50"
+                              className={`flex flex-col p-3 rounded-lg border ${type === "high" ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}
                             >
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-0.5">
@@ -1683,32 +1840,92 @@ const OverviewTab = ({
                                   {new Date(comment.date).toLocaleDateString()}
                                 </span>
                               </div>
-
-                              <p className="text-sm italic text-foreground/80 line-clamp-2 mb-2">
+                              <p className="text-sm italic text-foreground/80 mb-2">
                                 "{comment.text}"
                               </p>
-
-                              <div className="pt-2 border-t border-border/30 flex justify-between items-center text-xs text-muted-foreground">
+                              <div
+                                className={`pt-2 border-t flex justify-between items-center text-xs text-muted-foreground font-medium ${type === "high" ? "border-green-100" : "border-red-100"}`}
+                              >
                                 <span
-                                  className="truncate max-w-[100px]"
+                                  className="truncate max-w-[120px]"
                                   title={comment.trainerName}
                                 >
                                   {comment.trainerName || "Unknown Trainer"}
                                 </span>
-                                <span className="opacity-70">
+                                <span
+                                  className={`opacity-70 px-1.5 py-0.5 bg-white/50 rounded-md border ${type === "high" ? "border-green-200/50" : "border-red-200/50"}`}
+                                >
                                   {comment.course}
                                 </span>
                               </div>
                             </div>
                           ))
                       ) : (
-                        <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                          No comments available yet.
+                        <div className="text-center py-8 text-muted-foreground text-sm italic">
+                          No {type === "high" ? "praise" : "concerns"} yet.
                         </div>
                       )}
                     </div>
                   </TabsContent>
                 ))}
+
+                {/* Topics Learned Tab */}
+                <TabsContent value="topics" className="mt-0">
+                  <div className="max-h-80 overflow-y-auto pr-1">
+                    {aggregatedStats.topicsLearned?.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 p-2">
+                        <TooltipProvider>
+                          {aggregatedStats.topicsLearned.map((topic, idx) => (
+                            <Tooltip key={idx}>
+                              <TooltipTrigger asChild>
+                                <div className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-100 text-sm font-semibold hover:bg-amber-600 hover:text-white hover:border-amber-600 transition-all cursor-default shadow-sm hover:shadow-md">
+                                  <div className="flex items-center justify-center bg-white/80 group-hover:bg-amber-500 group-hover:text-white rounded px-1 min-w-[20px] h-5 text-[10px] border border-amber-200/50 transition-colors">
+                                    {topic.count}
+                                  </div>
+                                  {topic.name}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p className="font-semibold text-xs">
+                                  {topic.count} Student Mentions
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </TooltipProvider>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground text-sm italic">
+                        No topics recorded yet.
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Future Topics Tab */}
+                <TabsContent value="future" className="mt-0">
+                  <div className="max-h-80 overflow-y-auto pr-1">
+                    {aggregatedStats.qualitative?.future?.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 p-2">
+                        {aggregatedStats.qualitative.future.map(
+                          (topic, idx) => (
+                            <div
+                              key={idx}
+                              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-sm font-semibold hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all cursor-default shadow-sm hover:shadow-md"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 opacity-70 group-hover:animate-pulse" />
+                              {topic.text}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground text-sm italic">
+                        No future topics suggested yet.
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
               </Tabs>
             )}
           </CardContent>

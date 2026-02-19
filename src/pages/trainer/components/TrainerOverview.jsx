@@ -271,6 +271,7 @@ const TrainerOverview = () => {
       if (!cs) return;
 
       stats.totalResponses += cs.totalResponses || 0;
+      stats.totalHours += (Number(session.sessionDuration) || 60) / 60;
 
       Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
         stats.ratingDistribution[rating] =
@@ -304,6 +305,7 @@ const TrainerOverview = () => {
       totalSessions: stats.totalSessions,
       totalResponses: stats.totalResponses,
       totalRatingsCount: stats.totalRatingsCount,
+      totalHours: stats.totalHours,
       avgRating,
       ratingDistribution: stats.ratingDistribution,
       categoryAverages,
@@ -982,14 +984,16 @@ const TrainerOverview = () => {
                   <div className="max-h-64 overflow-y-auto">
                     {aggregatedStats.qualitative.future?.length > 0 ? (
                       <div className="flex flex-wrap gap-2 p-1">
-                        {aggregatedStats.qualitative.future.map((topic, idx) => (
-                          <div 
-                            key={idx}
-                            className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
-                          >
-                            {topic.text}
-                          </div>
-                        ))}
+                        {aggregatedStats.qualitative.future.map(
+                          (topic, idx) => (
+                            <div
+                              key={idx}
+                              className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
+                            >
+                              {topic.text}
+                            </div>
+                          ),
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">

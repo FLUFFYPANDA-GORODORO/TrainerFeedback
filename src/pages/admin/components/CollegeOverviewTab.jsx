@@ -36,7 +36,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   AreaChart,
   Area,
@@ -51,10 +51,17 @@ import {
   PieChart,
   Pie,
 } from "recharts";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminData } from "@/contexts/AdminDataContext";
 import { getAcademicConfig } from "@/services/superadmin/academicService";
 import { getAnalyticsSessions } from "@/services/superadmin/sessionService"; // New import
+import { Sparkles, Hash } from "lucide-react";
 
 const CollegeOverviewTab = () => {
   const {
@@ -275,6 +282,7 @@ const CollegeOverviewTab = () => {
       totalResponses: 0,
       totalRatingsCount: 0,
       ratingSum: 0,
+      totalHours: 0,
       ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       categoryTotals: {},
       categoryCounts: {},
@@ -287,6 +295,7 @@ const CollegeOverviewTab = () => {
       if (!cs) return;
 
       stats.totalResponses += cs.totalResponses || 0;
+      stats.totalHours += (Number(session.sessionDuration) || 60) / 60;
 
       Object.entries(cs.ratingDistribution || {}).forEach(([rating, count]) => {
         stats.ratingDistribution[rating] =
@@ -320,15 +329,18 @@ const CollegeOverviewTab = () => {
       totalSessions: stats.totalSessions,
       totalResponses: stats.totalResponses,
       totalRatingsCount: stats.totalRatingsCount,
+      totalHours: stats.totalHours,
       avgRating,
       ratingDistribution: stats.ratingDistribution,
       categoryAverages,
-      topicsLearned: Object.entries(sessionList.reduce((acc, s) => {
-        (s.compiledStats?.topicsLearned || []).forEach(t => {
-          acc[t.name] = (acc[t.name] || 0) + t.count;
-        });
-        return acc;
-      }, {}))
+      topicsLearned: Object.entries(
+        sessionList.reduce((acc, s) => {
+          (s.compiledStats?.topicsLearned || []).forEach((t) => {
+            acc[t.name] = (acc[t.name] || 0) + t.count;
+          });
+          return acc;
+        }, {}),
+      )
         .sort((a, b) => b[1] - a[1])
         .map(([name, count]) => ({ name, count }))
         .slice(0, 15),
@@ -429,7 +441,16 @@ const CollegeOverviewTab = () => {
           5: 0,
         },
         categoryAverages,
-        qualitative: cache.qualitative || { high: [], low: [], avg: [], future: [] },
+        qualitative: cache.qualitative || {
+          high: [],
+          low: [],
+          avg: [],
+          future: [],
+        },
+        topicsLearned: Object.entries(cache.topicsLearned || {})
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, count]) => ({ name, count }))
+          .slice(0, 15),
       };
     }
 
@@ -444,10 +465,12 @@ const CollegeOverviewTab = () => {
         ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         categoryAverages: {},
         qualitative: { high: [], low: [], avg: [], future: [] },
-        topicsLearned: Object.entries(cache.topicsLearned || {})
-          .sort((a, b) => b[1] - a[1])
-          .map(([name, count]) => ({ name, count }))
-          .slice(0, 10),
+        topicsLearned: cache?.topicsLearned
+          ? Object.entries(cache.topicsLearned)
+              .sort((a, b) => b[1] - a[1])
+              .map(([name, count]) => ({ name, count }))
+              .slice(0, 15)
+          : [],
       }
     );
   }, [analyticsData, cache, filters]);
@@ -888,7 +911,7 @@ const CollegeOverviewTab = () => {
                     />
                     <XAxis dataKey="name" className="text-xs" />
                     <YAxis domain={[0, 5]} tickCount={6} className="text-xs" />
-                    <Tooltip
+                    <RechartsTooltip
                       cursor={false}
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
@@ -992,7 +1015,7 @@ const CollegeOverviewTab = () => {
                       fillOpacity={0.4}
                       strokeWidth={2}
                     />
-                    <Tooltip
+                    <RechartsTooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
@@ -1053,7 +1076,7 @@ const CollegeOverviewTab = () => {
                   />
                   <XAxis dataKey="rating" className="text-xs" />
                   <YAxis allowDecimals={false} className="text-xs" />
-                  <Tooltip
+                  <RechartsTooltip
                     cursor={false}
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
@@ -1075,43 +1098,6 @@ const CollegeOverviewTab = () => {
       </div>
 
       {/* Response Trend & Student Voices - Side by Side */}
-      <div className="grid gap-6 lg:grid-cols-1 mb-6">
-        {/* Topics Learned (Aggregated) */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              <CardTitle>What Students Learned</CardTitle>
-            </div>
-            <CardDescription>Most mentioned topics across sessions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {(aggregatedStats.topicsLearned || []).length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                No topic data available yet.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                {aggregatedStats.topicsLearned.map((topic, i) => (
-                  <div key={i} className="flex flex-col gap-1.5">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium text-foreground/90">{topic.name}</span>
-                      <span className="text-muted-foreground">{topic.count} mentions</span>
-                    </div>
-                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary/80 transition-all" 
-                        style={{ width: `${Math.min(100, (topic.count / (aggregatedStats.totalResponses || 1)) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Response Trend Line Chart - LEFT */}
         <Card>
@@ -1160,7 +1146,7 @@ const CollegeOverviewTab = () => {
                       }}
                     />
                     <YAxis allowDecimals={false} className="text-xs" />
-                    <Tooltip
+                    <RechartsTooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
@@ -1203,12 +1189,12 @@ const CollegeOverviewTab = () => {
               <MessageSquare className="h-5 w-5 text-primary" />
               <CardTitle>Student Voices</CardTitle>
             </div>
-            <CardDescription>Highlights from student feedback</CardDescription>
+            <CardDescription>Direct feedback and insights</CardDescription>
           </CardHeader>
           <CardContent>
             {aggregatedStats.qualitative && (
               <Tabs defaultValue="high" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsList className="grid w-full grid-cols-4 mb-4">
                   <TabsTrigger
                     value="high"
                     className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800 text-xs"
@@ -1222,23 +1208,29 @@ const CollegeOverviewTab = () => {
                     Concerns
                   </TabsTrigger>
                   <TabsTrigger
+                    value="topics"
+                    className="data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800 text-xs"
+                  >
+                    Learned
+                  </TabsTrigger>
+                  <TabsTrigger
                     value="future"
                     className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 text-xs"
                   >
-                    Future Topics
+                    Future
                   </TabsTrigger>
                 </TabsList>
 
                 {["high", "low"].map((type) => (
                   <TabsContent key={type} value={type} className="mt-0">
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {aggregatedStats.qualitative[type]?.length > 0 ? (
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                      {aggregatedStats.qualitative?.[type]?.length > 0 ? (
                         aggregatedStats.qualitative[type]
                           .slice(0, 5)
                           .map((comment, idx) => (
                             <div
                               key={idx}
-                              className="flex flex-col p-3 rounded-lg bg-muted/30 border border-border/50"
+                              className={`flex flex-col p-3 rounded-lg border ${type === "high" ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}
                             >
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-0.5">
@@ -1253,49 +1245,87 @@ const CollegeOverviewTab = () => {
                                   {new Date(comment.date).toLocaleDateString()}
                                 </span>
                               </div>
-
-                              <p className="text-sm italic text-foreground/80 line-clamp-2 mb-2">
+                              <p className="text-sm italic text-foreground/80 mb-2 truncate-2-lines">
                                 "{comment.text}"
                               </p>
-
-                              <div className="pt-2 border-t border-border/30 flex justify-between items-center text-xs text-muted-foreground">
+                              <div
+                                className={`pt-2 border-t flex justify-between items-center text-xs text-muted-foreground font-medium ${type === "high" ? "border-green-100" : "border-red-100"}`}
+                              >
                                 <span
-                                  className="truncate max-w-[100px]"
+                                  className="truncate max-w-[120px]"
                                   title={comment.trainerName}
                                 >
                                   {comment.trainerName || "Unknown Trainer"}
                                 </span>
-                                <span className="opacity-70">
+                                <span
+                                  className={`opacity-70 px-1.5 py-0.5 bg-white/50 rounded-md border ${type === "high" ? "border-green-200/50" : "border-red-200/50"}`}
+                                >
                                   {comment.course}
                                 </span>
                               </div>
                             </div>
                           ))
                       ) : (
-                        <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                          No comments available yet.
+                        <div className="text-center py-8 text-muted-foreground text-sm italic">
+                          No {type === "high" ? "praise" : "concerns"} yet.
                         </div>
                       )}
                     </div>
                   </TabsContent>
                 ))}
 
-                {/* Future Topics as Tags */}
-                <TabsContent value="future" className="mt-0">
-                  <div className="max-h-64 overflow-y-auto">
-                    {aggregatedStats.qualitative.future?.length > 0 ? (
-                      <div className="flex flex-wrap gap-2 p-1">
-                        {aggregatedStats.qualitative.future.map((topic, idx) => (
-                          <div 
-                            key={idx}
-                            className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
-                          >
-                            {topic.text}
-                          </div>
-                        ))}
+                {/* Topics Learned Tab */}
+                <TabsContent value="topics" className="mt-0">
+                  <div className="max-h-80 overflow-y-auto pr-1">
+                    {aggregatedStats.topicsLearned?.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 p-2">
+                        <TooltipProvider>
+                          {aggregatedStats.topicsLearned.map((topic, idx) => (
+                            <Tooltip key={idx}>
+                              <TooltipTrigger asChild>
+                                <div className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-100 text-sm font-semibold hover:bg-amber-600 hover:text-white hover:border-amber-600 transition-all cursor-default shadow-sm hover:shadow-md">
+                                  <div className="flex items-center justify-center bg-white/80 group-hover:bg-amber-500 group-hover:text-white rounded px-1 min-w-[20px] h-5 text-[10px] border border-amber-200/50 transition-colors">
+                                    {topic.count}
+                                  </div>
+                                  {topic.name}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p className="font-semibold text-xs">
+                                  {topic.count} Student Mentions
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </TooltipProvider>
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                      <div className="text-center py-8 text-muted-foreground text-sm italic">
+                        No topics recorded yet.
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Future Topics Tab */}
+                <TabsContent value="future" className="mt-0">
+                  <div className="max-h-80 overflow-y-auto pr-1">
+                    {aggregatedStats.qualitative?.future?.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 p-2">
+                        {aggregatedStats.qualitative.future.map(
+                          (topic, idx) => (
+                            <div
+                              key={idx}
+                              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-sm font-semibold hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all cursor-default shadow-sm hover:shadow-md"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 opacity-70 group-hover:animate-pulse" />
+                              {topic.text}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground text-sm italic">
                         No future topics suggested yet.
                       </div>
                     )}

@@ -354,6 +354,7 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
       totalResponses: 0,
       totalRatingsCount: 0,
       ratingSum: 0,
+      totalHours: 0,
       ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       categoryTotals: {},
       categoryCounts: {},
@@ -369,6 +370,7 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
       if (!cs) return;
 
       stats.totalResponses += cs.totalResponses || 0;
+      stats.totalHours += (Number(session.sessionDuration) || 60) / 60;
 
       // Aggregate qualitative feedback if it exists
       if (cs.qualitative) {
@@ -412,7 +414,7 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
       totalSessions: filteredSessions.length,
       totalResponses: stats.totalResponses,
       totalRatingsCount: stats.totalRatingsCount,
-      totalHours: 0, // Mock for now
+      totalHours: stats.totalHours,
       avgRating,
       ratingDistribution: stats.ratingDistribution,
       categoryAverages,
@@ -1108,14 +1110,16 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                   <div className="max-h-64 overflow-y-auto">
                     {aggregatedStats.qualitative?.future?.length > 0 ? (
                       <div className="flex flex-wrap gap-2 p-1">
-                        {aggregatedStats.qualitative.future.map((topic, idx) => (
-                          <div 
-                            key={idx}
-                            className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
-                          >
-                            {topic.text}
-                          </div>
-                        ))}
+                        {aggregatedStats.qualitative.future.map(
+                          (topic, idx) => (
+                            <div
+                              key={idx}
+                              className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
+                            >
+                              {topic.text}
+                            </div>
+                          ),
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
