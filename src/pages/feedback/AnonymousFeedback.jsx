@@ -1,18 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { useParams } from 'react-router-dom';
-import { getSessionById } from '@/services/superadmin/sessionService';
-import { addResponse } from '@/services/superadmin/responseService';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { GraduationCap, Star, CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { useParams } from "react-router-dom";
+import { getSessionById } from "@/services/superadmin/sessionService";
+import { addResponse } from "@/services/superadmin/responseService";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Star, CheckCircle, AlertCircle, XCircle, Loader2 } from "lucide-react";
 
 // Generate a unique device ID for localStorage tracking
 const getDeviceId = () => {
-  const key = 'feedback_device_id';
+  const key = "feedback_device_id";
   let deviceId = localStorage.getItem(key);
   if (!deviceId) {
     deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -23,14 +29,14 @@ const getDeviceId = () => {
 
 export const AnonymousFeedback = () => {
   const { sessionId } = useParams();
-  
+
   const [session, setSession] = useState(null);
   const [responses, setResponses] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isClosed, setIsClosed] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadSession();
@@ -41,21 +47,24 @@ export const AnonymousFeedback = () => {
     try {
       setIsLoading(true);
       const sessionData = await getSessionById(sessionId);
-      
+
       if (!sessionData) {
-        setError('Session not found');
+        setError("Session not found");
         setIsLoading(false);
         return;
       }
 
-      if (sessionData.status !== 'active') {
+      if (sessionData.status !== "active") {
         setIsClosed(true);
         setIsLoading(false);
         return;
       }
 
       // Check if session has expired
-      if (sessionData.expiresAt && new Date(sessionData.expiresAt) < new Date()) {
+      if (
+        sessionData.expiresAt &&
+        new Date(sessionData.expiresAt) < new Date()
+      ) {
         setIsClosed(true);
         setIsLoading(false);
         return;
@@ -63,8 +72,8 @@ export const AnonymousFeedback = () => {
 
       setSession(sessionData);
     } catch (err) {
-      console.error('Error loading session:', err);
-      setError('Failed to load feedback form');
+      console.error("Error loading session:", err);
+      setError("Failed to load feedback form");
     } finally {
       setIsLoading(false);
     }
@@ -79,35 +88,37 @@ export const AnonymousFeedback = () => {
   };
 
   const handleRatingChange = (index, rating) => {
-    setResponses(prev => ({
+    setResponses((prev) => ({
       ...prev,
-      [index]: { ...prev[index], value: parseInt(rating), type: 'rating' }
+      [index]: { ...prev[index], value: parseInt(rating), type: "rating" },
     }));
   };
 
   const handleTextChange = (index, text) => {
-    setResponses(prev => ({
+    setResponses((prev) => ({
       ...prev,
-      [index]: { ...prev[index], value: text }
+      [index]: { ...prev[index], value: text },
     }));
   };
 
   const handleMcqChange = (index, option) => {
-    setResponses(prev => ({
+    setResponses((prev) => ({
       ...prev,
-      [index]: { ...prev[index], value: option, type: 'mcq' }
+      [index]: { ...prev[index], value: option, type: "mcq" },
     }));
   };
 
   const handleMultiselectChange = (index, option) => {
-    setResponses(prev => {
-      const current = Array.isArray(prev[index]?.value) ? [...prev[index].value] : [];
+    setResponses((prev) => {
+      const current = Array.isArray(prev[index]?.value)
+        ? [...prev[index].value]
+        : [];
       const updated = current.includes(option)
-        ? current.filter(o => o !== option)
+        ? current.filter((o) => o !== option)
         : [...current, option];
       return {
         ...prev,
-        [index]: { ...prev[index], value: updated, type: 'multiselect' }
+        [index]: { ...prev[index], value: updated, type: "multiselect" },
       };
     });
   };
@@ -115,45 +126,52 @@ export const AnonymousFeedback = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError('');
+    setError("");
 
     try {
       const questions = session.questions || [];
-      
+
       // Validate required questions
-      const requiredQuestions = questions.map((q, idx) => ({ ...q, idx })).filter(q => q.required);
+      const requiredQuestions = questions
+        .map((q, idx) => ({ ...q, idx }))
+        .filter((q) => q.required);
       for (const q of requiredQuestions) {
         const val = responses[q.idx]?.value;
         if (!val || (Array.isArray(val) && val.length === 0)) {
-          setError('Please answer all required questions');
+          setError("Please answer all required questions");
           setIsSubmitting(false);
           return;
         }
       }
 
       // Format answers array
-      const answers = questions.map((q, index) => ({
-        questionId: q.id,
-        value: responses[index]?.value || null,
-        type: responses[index]?.type || q.type || 'rating'
-      })).filter(a => a.value !== null);
+      const answers = questions
+        .map((q, index) => ({
+          questionId: q.id,
+          value: responses[index]?.value || null,
+          type: responses[index]?.type || q.type || "rating",
+        }))
+        .filter((a) => a.value !== null);
 
       // Submit to Firebase subcollection
       await addResponse(sessionId, {
         deviceId: getDeviceId(),
-        answers
+        answers,
       });
 
       // Mark as submitted in localStorage
-      localStorage.setItem(`feedback_submitted_${sessionId}`, JSON.stringify({
-        submittedAt: new Date().toISOString(),
-        deviceId: getDeviceId()
-      }));
-      
+      localStorage.setItem(
+        `feedback_submitted_${sessionId}`,
+        JSON.stringify({
+          submittedAt: new Date().toISOString(),
+          deviceId: getDeviceId(),
+        }),
+      );
+
       setIsSubmitted(true);
     } catch (err) {
-      console.error('Error submitting feedback:', err);
-      setError('Failed to submit feedback. Please try again.');
+      console.error("Error submitting feedback:", err);
+      setError("Failed to submit feedback. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -195,7 +213,9 @@ export const AnonymousFeedback = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Unable to Load Form</h2>
+              <h2 className="text-xl font-semibold mb-2">
+                Unable to Load Form
+              </h2>
               <p className="text-muted-foreground">{error}</p>
             </div>
           </CardContent>
@@ -230,69 +250,90 @@ export const AnonymousFeedback = () => {
 
   const handleSeedData = async () => {
     if (!session || !session.questions) return;
-    
+
     setIsSubmitting(true);
     try {
       const promises = [];
       const feedbacksToGenerate = 10;
-      
+
       const comments = [
-        "Great session!", "Very informative.", "Trainer was knowledgeable.", 
-        "Could be better.", "Pace was too fast.", "Excellent examples.",
-        "Good interaction.", "Need more practicals.", "Satisfied.", "Average."
+        "Great session!",
+        "Very informative.",
+        "Trainer was knowledgeable.",
+        "Could be better.",
+        "Pace was too fast.",
+        "Excellent examples.",
+        "Good interaction.",
+        "Need more practicals.",
+        "Satisfied.",
+        "Average.",
       ];
 
       for (let i = 0; i < feedbacksToGenerate; i++) {
-        const answers = session.questions.map(q => {
+        const answers = session.questions.map((q) => {
           let value;
-          const type = q.type || 'rating';
-          
-          if (type === 'rating') {
+          const type = q.type || "rating";
+
+          if (type === "rating") {
             // Weighted random to favor 4s and 5s slightly for realism
             const rand = Math.random();
             if (rand > 0.6) value = 5;
             else if (rand > 0.3) value = 4;
             else if (rand > 0.15) value = 3;
             else value = Math.floor(Math.random() * 2) + 1; // 1 or 2
-          } else if (type === 'mcq' && q.options) {
-             value = q.options[Math.floor(Math.random() * q.options.length)];
-          } else if (type === 'multiselect' && q.options) {
-             // Pick a random subset (at least 1)
-             const shuffled = [...q.options].sort(() => 0.5 - Math.random());
-             const count = Math.floor(Math.random() * shuffled.length) + 1;
-             value = shuffled.slice(0, count);
-          } else if (type === 'topicslearned') {
-             const sessionTopics = ["React Hooks", "State Management", "Prop Drilling", "Vite Setup", "CSS Modules", "Tailwind Flow", "Deployment"];
-             const count = Math.floor(Math.random() * 3) + 2;
-             value = [...sessionTopics].sort(() => 0.5 - Math.random()).slice(0, count).join(", ");
-          } else if (type === 'futureSession') {
-             const suggestions = [
-               "Advanced React patterns", "System Design deep dive", 
-               "Microservices architecture", "Security best practices",
-               "Performance optimization", "Automated testing", 
-               "CI/CD workflows", "Cloud native development"
-             ];
-             value = suggestions[Math.floor(Math.random() * suggestions.length)];
+          } else if (type === "mcq" && q.options) {
+            value = q.options[Math.floor(Math.random() * q.options.length)];
+          } else if (type === "multiselect" && q.options) {
+            // Pick a random subset (at least 1)
+            const shuffled = [...q.options].sort(() => 0.5 - Math.random());
+            const count = Math.floor(Math.random() * shuffled.length) + 1;
+            value = shuffled.slice(0, count);
+          } else if (type === "topicslearned") {
+            const sessionTopics = [
+              "React Hooks",
+              "State Management",
+              "Prop Drilling",
+              "Vite Setup",
+              "CSS Modules",
+              "Tailwind Flow",
+              "Deployment",
+            ];
+            const count = Math.floor(Math.random() * 3) + 2;
+            value = [...sessionTopics]
+              .sort(() => 0.5 - Math.random())
+              .slice(0, count)
+              .join(", ");
+          } else if (type === "futureSession") {
+            const suggestions = [
+              "Advanced React patterns",
+              "System Design deep dive",
+              "Microservices architecture",
+              "Security best practices",
+              "Performance optimization",
+              "Automated testing",
+              "CI/CD workflows",
+              "Cloud native development",
+            ];
+            value = suggestions[Math.floor(Math.random() * suggestions.length)];
           } else {
-             value = comments[Math.floor(Math.random() * comments.length)];
+            value = comments[Math.floor(Math.random() * comments.length)];
           }
 
           return {
             questionId: q.id,
             value,
-            type
+            type,
           };
         });
 
         const deviceId = `seed_${Date.now()}_${i}`;
-        
+
         // Add minimal delay to avoid write contention triggers if any
         promises.push(addResponse(sessionId, { deviceId, answers }));
       }
 
       await Promise.all(promises);
       toast.success(`Seeded ${feedbacksToGenerate} responses!`);
-      
     } catch (err) {
       console.error("Seeding failed:", err);
       toast.error("Seeding failed");
@@ -311,53 +352,57 @@ export const AnonymousFeedback = () => {
       >
         {isSubmitting ? 'Seeding...' : 'DEBUG: Seed 10 Responses'}
       </Button> */}
-      {/* Google Forms-style Navbar */}
-      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-card/80 backdrop-blur-md border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-hero">
-              <GraduationCap className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="font-display text-lg font-bold text-foreground">Gryphon Academy</h1>
-              <p className="text-xs text-muted-foreground">Trainer Feedback System</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-medium text-foreground">{session?.collegeName}</p>
-            <p className="text-xs text-muted-foreground">{session?.sessionDate}</p>
-          </div>
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 bg-primary shadow-sm">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center">
+          <img
+            src="/logo.png"
+            alt="Gryphon Academy"
+            className="h-12 md:h-16 w-auto object-contain"
+          />
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto py-8 px-4">
-        {/* Session Info Card - Hero Style */}
-        <Card className="mb-6 overflow-hidden">
+      <div className="max-w-lg mx-auto py-6 px-4">
+        {/* Session Info Card */}
+        <Card className="mb-5 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">{session?.topic}</CardTitle>
-            <CardDescription className="flex items-center gap-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                {session?.domain}
-              </span>
-            </CardDescription>
+            <CardTitle className="text-lg leading-snug">
+              {session?.topic}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 pt-0">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Trainer: </span>
-                <span className="font-medium">{session?.assignedTrainer?.name || 'Not specified'}</span>
+          <CardContent className="pt-0">
+            <div className="space-y-1.5 text-sm">
+              <div className="flex">
+                <span className="text-muted-foreground w-20 flex-shrink-0">
+                  College
+                </span>
+                <span className="font-medium">{session?.collegeName}</span>
               </div>
-              <div>
-                <span className="text-muted-foreground">Batch: </span>
+              <div className="flex">
+                <span className="text-muted-foreground w-20 flex-shrink-0">
+                  Trainer
+                </span>
+                <span className="font-medium">
+                  {session?.assignedTrainer?.name || "Not specified"}
+                  {session?.domain && (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                      {session?.domain}
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="flex">
+                <span className="text-muted-foreground w-20 flex-shrink-0">
+                  Batch
+                </span>
                 <span className="font-medium">{session?.batch}</span>
               </div>
-              <div>
-                <span className="text-muted-foreground">Course: </span>
+              <div className="flex">
+                <span className="text-muted-foreground w-20 flex-shrink-0">
+                  Course
+                </span>
                 <span className="font-medium">{session?.course}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Time: </span>
-                <span className="font-medium">{session?.sessionTime}</span>
               </div>
             </div>
           </CardContent>
@@ -365,7 +410,8 @@ export const AnonymousFeedback = () => {
 
         {/* Required Fields Notice */}
         <p className="text-sm text-muted-foreground mb-6 flex items-center gap-1">
-          <span className="text-destructive">*</span> Indicates required question
+          <span className="text-destructive">*</span> Indicates required
+          question
         </p>
 
         {/* Feedback Form */}
@@ -385,17 +431,25 @@ export const AnonymousFeedback = () => {
                     <div className="flex items-start justify-between">
                       <Label className="text-base font-medium">
                         {index + 1}. {question.text || question.question}
-                        {question.required && <span className="text-destructive ml-1">*</span>}
+                        {question.required && (
+                          <span className="text-destructive ml-1">*</span>
+                        )}
                       </Label>
                     </div>
 
                     {/* Rating Type */}
-                    {(question.type === 'rating' || question.responseType === 'rating' || question.responseType === 'both') && (
+                    {(question.type === "rating" ||
+                      question.responseType === "rating" ||
+                      question.responseType === "both") && (
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Rate from 1 (Poor) to 5 (Excellent)</p>
+                        <p className="text-sm text-muted-foreground">
+                          Rate from 1 (Poor) to 5 (Excellent)
+                        </p>
                         <RadioGroup
-                          value={responses[index]?.value?.toString() || ''}
-                          onValueChange={(value) => handleRatingChange(index, value)}
+                          value={responses[index]?.value?.toString() || ""}
+                          onValueChange={(value) =>
+                            handleRatingChange(index, value)
+                          }
                           className="flex gap-2"
                         >
                           {[1, 2, 3, 4, 5].map((rating) => (
@@ -403,12 +457,15 @@ export const AnonymousFeedback = () => {
                               key={rating}
                               className="cursor-pointer transition-transform hover:scale-110 p-1"
                             >
-                              <RadioGroupItem value={rating.toString()} className="sr-only" />
+                              <RadioGroupItem
+                                value={rating.toString()}
+                                className="sr-only"
+                              />
                               <Star
                                 className={`h-8 w-8 transition-colors ${
                                   (responses[index]?.value || 0) >= rating
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-muted-foreground hover:text-yellow-200'
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-muted-foreground hover:text-yellow-200"
                                 }`}
                               />
                             </label>
@@ -418,11 +475,13 @@ export const AnonymousFeedback = () => {
                     )}
 
                     {/* MCQ Type */}
-                    {question.type === 'mcq' && question.options && (
+                    {question.type === "mcq" && question.options && (
                       <div className="space-y-2">
                         <RadioGroup
-                          value={responses[index]?.value || ''}
-                          onValueChange={(value) => handleMcqChange(index, value)}
+                          value={responses[index]?.value || ""}
+                          onValueChange={(value) =>
+                            handleMcqChange(index, value)
+                          }
                           className="space-y-2"
                         >
                           {question.options.map((option, optIndex) => (
@@ -430,8 +489,8 @@ export const AnonymousFeedback = () => {
                               key={optIndex}
                               className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                                 responses[index]?.value === option
-                                  ? 'border-primary bg-primary/5'
-                                  : 'border-border hover:border-primary/50'
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/50"
                               }`}
                             >
                               <RadioGroupItem value={option} />
@@ -443,30 +502,40 @@ export const AnonymousFeedback = () => {
                     )}
 
                     {/* Multi-Select Type */}
-                    {question.type === 'multiselect' && question.options && (
+                    {question.type === "multiselect" && question.options && (
                       <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">Select all that apply</p>
+                        <p className="text-xs text-muted-foreground">
+                          Select all that apply
+                        </p>
                         {question.options.map((option, optIndex) => {
-                          const selected = Array.isArray(responses[index]?.value) && responses[index].value.includes(option);
+                          const selected =
+                            Array.isArray(responses[index]?.value) &&
+                            responses[index].value.includes(option);
                           return (
                             <button
                               key={optIndex}
                               type="button"
-                              onClick={() => handleMultiselectChange(index, option)}
+                              onClick={() =>
+                                handleMultiselectChange(index, option)
+                              }
                               className={`w-full flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all text-left ${
                                 selected
-                                  ? 'border-primary bg-primary/5'
-                                  : 'border-border hover:border-primary/50'
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/50"
                               }`}
                             >
                               <div
                                 className={`h-4 w-4 rounded-sm border-2 flex items-center justify-center flex-shrink-0 ${
                                   selected
-                                    ? 'border-primary bg-primary text-white'
-                                    : 'border-muted-foreground'
+                                    ? "border-primary bg-primary text-white"
+                                    : "border-muted-foreground"
                                 }`}
                               >
-                                {selected && <span className="text-[10px] leading-none">✓</span>}
+                                {selected && (
+                                  <span className="text-[10px] leading-none">
+                                    ✓
+                                  </span>
+                                )}
                               </div>
                               <span>{option}</span>
                             </button>
@@ -476,37 +545,48 @@ export const AnonymousFeedback = () => {
                     )}
 
                     {/* Text Type */}
-                    {(question.type === 'text' || question.responseType === 'text' || question.responseType === 'both') && (
+                    {(question.type === "text" ||
+                      question.responseType === "text" ||
+                      question.responseType === "both") && (
                       <div className="space-y-2">
                         <Textarea
                           placeholder="Share your thoughts..."
-                          value={responses[index]?.value || ''}
-                          onChange={(e) => handleTextChange(index, e.target.value)}
+                          value={responses[index]?.value || ""}
+                          onChange={(e) =>
+                            handleTextChange(index, e.target.value)
+                          }
                           rows={3}
                         />
                       </div>
                     )}
 
                     {/* Future Session Type */}
-                    {question.type === 'futureSession' && (
+                    {question.type === "futureSession" && (
                       <div className="space-y-2">
                         <Textarea
                           placeholder="What topics or skills would you like covered in future sessions?"
-                          value={responses[index]?.value || ''}
-                          onChange={(e) => handleTextChange(index, e.target.value)}
+                          value={responses[index]?.value || ""}
+                          onChange={(e) =>
+                            handleTextChange(index, e.target.value)
+                          }
                           rows={3}
                         />
                       </div>
                     )}
 
                     {/* Topics Learned Type */}
-                    {question.type === 'topicslearned' && (
+                    {question.type === "topicslearned" && (
                       <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground mb-2">Please list the topics covered today, separated by commas (e.g. React Hooks, State, Effects)</p>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Please list the topics covered today, separated by
+                          commas (e.g. React Hooks, State, Effects)
+                        </p>
                         <Textarea
                           placeholder="e.g. Topic 1, Topic 2, Topic 3"
-                          value={responses[index]?.value || ''}
-                          onChange={(e) => handleTextChange(index, e.target.value)}
+                          value={responses[index]?.value || ""}
+                          onChange={(e) =>
+                            handleTextChange(index, e.target.value)
+                          }
                           rows={3}
                         />
                       </div>
@@ -531,7 +611,7 @@ export const AnonymousFeedback = () => {
                   Submitting...
                 </div>
               ) : (
-                'Submit Feedback'
+                "Submit Feedback"
               )}
             </Button>
           </div>
