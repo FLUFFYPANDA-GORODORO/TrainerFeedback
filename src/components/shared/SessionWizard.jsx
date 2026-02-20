@@ -62,7 +62,7 @@ const SessionWizard = ({
     sessionDuration: session?.sessionDuration || 60,
     questions: session?.questions || [],
     templateId: session?.templateId || '',
-    ttl: session?.ttl || '1',
+    ttl: session?.ttl || '720',
     projectCode: session?.projectCode || '' // [NEW] Verify storage
   });
 
@@ -528,7 +528,8 @@ const SessionWizard = ({
                 type="number"
                 value={formData.ttl}
                 onChange={e => setFormData({ ...formData, ttl: e.target.value })}
-                placeholder="1"
+                placeholder="720"
+                disabled
               />
             </div>
           </div>
