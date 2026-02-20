@@ -666,10 +666,10 @@ const CollegeAnalytics = ({ collegeId, collegeName, collegeLogo, onBack }) => {
             </div>
             <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
+                variant="default"
                 size="sm"
                 onClick={resetFilters}
-                className="gap-2"
+                className="gap-2 bg-primary hover:bg-primary/90 text-white"
               >
                 <RotateCcw className="h-4 w-4" />
                 Reset

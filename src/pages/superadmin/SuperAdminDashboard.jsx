@@ -492,7 +492,11 @@ const SuperAdminDashboardInner = () => {
             )}
 
             {/* Refresh Button */}
-            <Button variant="outline" onClick={refreshAll} className="gap-2">
+            <Button
+              variant="default"
+              onClick={refreshAll}
+              className="gap-2 bg-primary hover:bg-primary/90 text-white"
+            >
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>

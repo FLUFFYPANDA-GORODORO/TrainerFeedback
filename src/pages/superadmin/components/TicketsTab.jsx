@@ -45,7 +45,7 @@ import {
   ModalTitle,
   ModalDescription,
   ModalFooter,
-  ModalClose
+  ModalClose,
 } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -73,9 +73,8 @@ const TicketsTab = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Modal State
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -120,7 +119,7 @@ const TicketsTab = () => {
 
   const handleUpdateStatus = async () => {
     if (!selectedTicket) return;
-    
+
     // Validation: Admin notes are mandatory when changing status
     if (!resolutionNotes.trim()) {
       toast.error("Admin notes/comments are required to update status");
@@ -129,7 +128,11 @@ const TicketsTab = () => {
 
     setIsSubmitting(true);
     try {
-      await updateTicketStatus(selectedTicket.id, newStatus, resolutionNotes.trim());
+      await updateTicketStatus(
+        selectedTicket.id,
+        newStatus,
+        resolutionNotes.trim(),
+      );
       toast.success("Ticket status updated successfully");
       setIsStatusModalOpen(false);
       await loadTickets();
@@ -207,7 +210,6 @@ const TicketsTab = () => {
     <div className="space-y-6 animate-in fade-in-50 duration-500">
       {/* Stats Cards — Neutral, non-interactive */}
 
-
       {/* Filter Bar — Dashboard style */}
       <Card>
         <CardHeader className="pb-3">
@@ -217,10 +219,10 @@ const TicketsTab = () => {
               <CardTitle className="text-lg">Filters</CardTitle>
             </div>
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
               onClick={resetFilters}
-              className="gap-2"
+              className="gap-2 bg-primary hover:bg-primary/90 text-white"
             >
               <RotateCcw className="h-4 w-4" />
               Reset
@@ -408,124 +410,180 @@ const TicketsTab = () => {
       )}
 
       {/* Ticket Detail + Status Update Modal */}
-      <Modal open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen} className="sm:max-w-2xl p-3">
+      <Modal
+        open={isStatusModalOpen}
+        onOpenChange={setIsStatusModalOpen}
+        className="sm:max-w-2xl p-3"
+      >
         <ModalContent>
           <ModalClose onClose={() => setIsStatusModalOpen(false)} />
-          {selectedTicket && (() => {
-            const catConfig = CATEGORY_CONFIG[selectedTicket.category] || CATEGORY_CONFIG.other;
-            const CatIcon = catConfig.icon;
-            const ageDays = getTicketAgeDays(selectedTicket);
-            return (
-              <>
-                <ModalHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg border bg-muted/50 flex items-center justify-center flex-shrink-0">
-                      <CatIcon className="h-5 w-5 text-muted-foreground" />
+          {selectedTicket &&
+            (() => {
+              const catConfig =
+                CATEGORY_CONFIG[selectedTicket.category] ||
+                CATEGORY_CONFIG.other;
+              const CatIcon = catConfig.icon;
+              const ageDays = getTicketAgeDays(selectedTicket);
+              return (
+                <>
+                  <ModalHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg border bg-muted/50 flex items-center justify-center flex-shrink-0">
+                        <CatIcon className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0 pr-6">
+                        <ModalTitle className="truncate">
+                          {selectedTicket.subject}
+                        </ModalTitle>
+                        <ModalDescription>
+                          {selectedTicket.raisedBy?.name} •{" "}
+                          {selectedTicket.raisedBy?.role} •{" "}
+                          {formatDate(selectedTicket.createdAt)}
+                        </ModalDescription>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0 pr-6">
-                      <ModalTitle className="truncate">{selectedTicket.subject}</ModalTitle>
-                      <ModalDescription>
-                        {selectedTicket.raisedBy?.name} • {selectedTicket.raisedBy?.role} • {formatDate(selectedTicket.createdAt)}
-                      </ModalDescription>
-                    </div>
-                  </div>
-                </ModalHeader>
+                  </ModalHeader>
 
-                <div className="px-6 pb-6 space-y-5">
-                  {/* Description */}
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Description</p>
-                    <p className="text-sm text-foreground whitespace-pre-wrap bg-muted/20 rounded-lg border p-3">
-                      {selectedTicket.description || "No description provided."}
-                    </p>
-                  </div>
-
-                  {/* Info Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="px-6 pb-6 space-y-5">
+                    {/* Description */}
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground">Email</p>
-                      <p className="text-sm truncate">{selectedTicket.raisedBy?.email || "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Priority</p>
-                      <p className="text-sm capitalize font-medium">{selectedTicket.priority || "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Age</p>
-                      <p className="text-sm font-medium">{ageDays} day{ageDays !== 1 ? "s" : ""}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Current Status</p>
-                      <Badge variant="secondary" className="text-[10px] px-2 capitalize mt-0.5">
-                        {STATUS_OPTIONS.find(s => s.value === selectedTicket.status)?.label || selectedTicket.status}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Existing Admin Notes */}
-                  {selectedTicket.adminNotes && (
-                    <div className="bg-muted/30 p-3 rounded-lg border">
-                      <p className="text-xs font-semibold text-foreground mb-1">Previous Admin Comments:</p>
-                      <p className="text-sm text-muted-foreground italic">"{selectedTicket.adminNotes}"</p>
-                    </div>
-                  )}
-
-                  <hr className="border-border" />
-
-                  {/* Update Status Section */}
-                  <div className="space-y-4">
-                    <p className="text-sm font-semibold text-foreground">Update Status</p>
-
-                    <div className="space-y-2">
-                      <Label>New Status</Label>
-                      <Select value={newStatus} onValueChange={setNewStatus}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUS_OPTIONS.map(opt => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Admin Comments <span className="text-destructive">*</span></Label>
-                      <Textarea 
-                        placeholder="Explain the resolution or reason for status change..."
-                        value={resolutionNotes}
-                        onChange={(e) => setResolutionNotes(e.target.value)}
-                        rows={3}
-                        className="resize-none"
-                      />
-                      <p className="text-[11px] text-muted-foreground">
-                        These comments will be visible to the user who raised the ticket.
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                        Description
+                      </p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap bg-muted/20 rounded-lg border p-3">
+                        {selectedTicket.description ||
+                          "No description provided."}
                       </p>
                     </div>
-                  </div>
-                </div>
 
-                <ModalFooter className="px-6 pb-6 gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10 mr-auto"
-                    onClick={() => { handleDelete(selectedTicket.id); setIsStatusModalOpen(false); }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsStatusModalOpen(false)}>Cancel</Button>
-                  <Button onClick={handleUpdateStatus} disabled={isSubmitting}>
-                    {isSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
-                    Update Status
-                  </Button>
-                </ModalFooter>
-              </>
-            );
-          })()}
+                    {/* Info Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Email
+                        </p>
+                        <p className="text-sm truncate">
+                          {selectedTicket.raisedBy?.email || "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Priority
+                        </p>
+                        <p className="text-sm capitalize font-medium">
+                          {selectedTicket.priority || "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Age
+                        </p>
+                        <p className="text-sm font-medium">
+                          {ageDays} day{ageDays !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Current Status
+                        </p>
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] px-2 capitalize mt-0.5"
+                        >
+                          {STATUS_OPTIONS.find(
+                            (s) => s.value === selectedTicket.status,
+                          )?.label || selectedTicket.status}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Existing Admin Notes */}
+                    {selectedTicket.adminNotes && (
+                      <div className="bg-muted/30 p-3 rounded-lg border">
+                        <p className="text-xs font-semibold text-foreground mb-1">
+                          Previous Admin Comments:
+                        </p>
+                        <p className="text-sm text-muted-foreground italic">
+                          "{selectedTicket.adminNotes}"
+                        </p>
+                      </div>
+                    )}
+
+                    <hr className="border-border" />
+
+                    {/* Update Status Section */}
+                    <div className="space-y-4">
+                      <p className="text-sm font-semibold text-foreground">
+                        Update Status
+                      </p>
+
+                      <div className="space-y-2">
+                        <Label>New Status</Label>
+                        <Select value={newStatus} onValueChange={setNewStatus}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUS_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>
+                          Admin Comments{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Textarea
+                          placeholder="Explain the resolution or reason for status change..."
+                          value={resolutionNotes}
+                          onChange={(e) => setResolutionNotes(e.target.value)}
+                          rows={3}
+                          className="resize-none"
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          These comments will be visible to the user who raised
+                          the ticket.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ModalFooter className="px-6 pb-6 gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 mr-auto"
+                      onClick={() => {
+                        handleDelete(selectedTicket.id);
+                        setIsStatusModalOpen(false);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsStatusModalOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleUpdateStatus}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting && (
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Update Status
+                    </Button>
+                  </ModalFooter>
+                </>
+              );
+            })()}
         </ModalContent>
       </Modal>
     </div>

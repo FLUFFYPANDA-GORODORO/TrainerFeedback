@@ -422,9 +422,9 @@ const TrainerDashboard = () => {
           {/* Right: Action Buttons */}
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <Button
-              variant="outline"
+              variant="default"
               onClick={loadData}
-              className="gap-2"
+              className="gap-2 bg-primary hover:bg-primary/90 text-white"
               size="sm"
             >
               <RefreshCw

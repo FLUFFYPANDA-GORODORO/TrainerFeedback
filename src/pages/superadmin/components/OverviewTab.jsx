@@ -989,10 +989,10 @@ const OverviewTab = ({
               <CardTitle className="text-lg">Filters</CardTitle>
             </div>
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
               onClick={resetFilters}
-              className="gap-2 hover:bg-primary/5 text-primary"
+              className="gap-2 bg-primary hover:bg-primary/90 text-white"
             >
               <RotateCcw className="h-4 w-4" />
               Reset

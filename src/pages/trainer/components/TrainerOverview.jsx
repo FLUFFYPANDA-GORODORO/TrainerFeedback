@@ -485,7 +485,7 @@ const TrainerOverview = () => {
               <Filter className="h-5 w-5 text-primary" />
               <CardTitle className="text-lg">Filters</CardTitle>
             </div>
-            <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-2">
+            <Button variant="default" size="sm" onClick={resetFilters} className="gap-2 bg-primary hover:bg-primary/90 text-white">
               <RotateCcw className="h-4 w-4" />
               Reset
             </Button>
