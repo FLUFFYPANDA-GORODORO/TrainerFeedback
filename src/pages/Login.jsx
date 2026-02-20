@@ -76,7 +76,7 @@ export const Login = () => {
               {/* Header Text */}
               <div className="text-center space-y-4">
                 <h2 className="font-display font-bold text-3xl lg:text-4xl text-white leading-tight drop-shadow-md">
-                    Transforming Education <br/> Through Feedback
+                    Transforming Training <br/> Through Feedback
                 </h2>
               </div>
 

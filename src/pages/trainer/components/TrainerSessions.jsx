@@ -56,6 +56,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import SessionAnalytics from '@/pages/superadmin/components/SessionAnalytics';
+import { ShareSessionModal } from '@/components/shared/ShareSessionModal';
 
 const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = [] }) => {
   const { user } = useAuth();
@@ -79,6 +80,10 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [sessionToExport, setSessionToExport] = useState(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  
+  // Share Session Modal
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [sessionToShare, setSessionToShare] = useState(null);
 
   // Active filter count for badge
   const activeFilterCount = useMemo(() => {
@@ -181,10 +186,9 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
   }, [sessions, filters]);
 
   // Actions
-  const copyLink = (sessionId) => {
-    const link = `${window.location.origin}/feedback/anonymous/${sessionId}`;
-    navigator.clipboard.writeText(link);
-    toast.success('Feedback link copied to clipboard');
+  const openShareModal = (session) => {
+    setSessionToShare(session);
+    setShareDialogOpen(true);
   };
 
   const handleToggleStatus = async (session) => {
@@ -320,6 +324,11 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
         </div>
       </div>
 
+      <ShareSessionModal
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        session={sessionToShare}
+      />
 
       {/* Filters Bar - Mobile (Collapsible) */}
       <div className="block sm:hidden space-y-3">
@@ -525,7 +534,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
                 </div>
 
                 <div className="pt-3 border-t flex items-center justify-between gap-2">
-                   <Button variant="outline" size="sm" className="flex-1" onClick={() => copyLink(session.id)}>
+                   <Button variant="outline" size="sm" className="flex-1" onClick={() => openShareModal(session)}>
                       <Share2 className="h-3.5 w-3.5 mr-1" /> Share
                    </Button>
                    <DropdownMenu>
@@ -596,7 +605,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => copyLink(session.id)}>
+                        <DropdownMenuItem onClick={() => openShareModal(session)}>
                           <Share2 className="mr-2 h-4 w-4" /> Share Link
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />

@@ -67,6 +67,7 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import SessionAnalytics from "./SessionAnalytics";
 import SessionWizard from "@/components/shared/SessionWizard";
+import { ShareSessionModal } from "@/components/shared/ShareSessionModal";
 import { useSuperAdminData } from "@/contexts/SuperAdminDataContext";
 
 // Define domain options configuration
@@ -126,6 +127,10 @@ const SessionsTab = ({
   // Export Confirmation Dialog
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [sessionToExport, setSessionToExport] = useState(null);
+
+  // Share Session Modal
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [sessionToShare, setSessionToShare] = useState(null);
 
   // Inline Analytics View
   const [selectedSessionForAnalytics, setSelectedSessionForAnalytics] =
@@ -521,6 +526,12 @@ const SessionsTab = ({
         </div>
       </div>
 
+      <ShareSessionModal
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        session={sessionToShare}
+      />
+
       {/* Session Tabs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mb-6">
         <div className="flex p-1 bg-muted/30 rounded-xl border border-border/50 md:col-span-3">
@@ -779,9 +790,8 @@ const SessionsTab = ({
 
                         <DropdownMenuItem
                           onClick={() => {
-                            const shareUrl = `${window.location.origin}/feedback/anonymous/${session.id}`;
-                            navigator.clipboard.writeText(shareUrl);
-                            toast.success("Feedback link copied to clipboard!");
+                            setSessionToShare(session);
+                            setShareDialogOpen(true);
                           }}
                         >
                           <Share2 className="mr-2 h-4 w-4" /> Share Link
