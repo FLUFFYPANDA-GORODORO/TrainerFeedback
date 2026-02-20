@@ -1252,9 +1252,10 @@ const CollegeOverviewTab = () => {
                                 className={`pt-2 border-t flex justify-between items-center text-xs text-muted-foreground font-medium ${type === "high" ? "border-green-100" : "border-red-100"}`}
                               >
                                 <span
-                                  className="truncate max-w-[120px]"
+                                  className="truncate max-w-[160px]"
                                   title={comment.trainerName}
                                 >
+                                  Trainer :{" "}
                                   {comment.trainerName || "Unknown Trainer"}
                                 </span>
                                 <span
