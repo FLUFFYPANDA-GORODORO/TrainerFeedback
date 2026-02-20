@@ -499,13 +499,13 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex items-center justify-between ">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="hover:bg-primary/5"
+            className="hover:bg-primary/5 print:hidden"
           >
             <ArrowLeft className="h-6 w-6 text-primary" />
           </Button>
