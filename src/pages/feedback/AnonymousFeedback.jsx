@@ -304,13 +304,13 @@ export const AnonymousFeedback = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-background to-purple-50 dark:from-background dark:via-background dark:to-background">
       {/* Debug Seeder Button */}
-      <Button 
+      {/* <Button 
         className="fixed bottom-4 right-4 z-50 bg-red-600 hover:bg-red-700 shadow-lg text-white font-bold"
         onClick={handleSeedData}
         disabled={isSubmitting}
       >
         {isSubmitting ? 'Seeding...' : 'DEBUG: Seed 10 Responses'}
-      </Button>
+      </Button> */}
       {/* Google Forms-style Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-card/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -401,21 +401,16 @@ export const AnonymousFeedback = () => {
                           {[1, 2, 3, 4, 5].map((rating) => (
                             <label
                               key={rating}
-                              className={`flex flex-col items-center justify-center w-14 h-14 rounded-lg border-2 cursor-pointer transition-all ${
-                                responses[index]?.value === rating
-                                  ? 'border-primary bg-primary/10'
-                                  : 'border-border hover:border-primary/50'
-                              }`}
+                              className="cursor-pointer transition-transform hover:scale-110 p-1"
                             >
                               <RadioGroupItem value={rating.toString()} className="sr-only" />
                               <Star
-                                className={`h-5 w-5 ${
-                                  responses[index]?.value >= rating
+                                className={`h-8 w-8 transition-colors ${
+                                  (responses[index]?.value || 0) >= rating
                                     ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-muted-foreground'
+                                    : 'text-muted-foreground hover:text-yellow-200'
                                 }`}
                               />
-                              <span className="text-xs mt-1">{rating}</span>
                             </label>
                           ))}
                         </RadioGroup>

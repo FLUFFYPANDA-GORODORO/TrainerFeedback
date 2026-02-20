@@ -37,7 +37,7 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/newLogin" element={<NewLogin />} />
                 <Route path="/feedback/anonymous/:sessionId" element={<AnonymousFeedback />} />
-                <Route path="/seed-data" element={<SeedData />} />
+                {/* <Route path="/seed-data" element={<SeedData />} /> */}
 
                 {/* Super Admin Routes - has its own built-in layout */}
                 <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
