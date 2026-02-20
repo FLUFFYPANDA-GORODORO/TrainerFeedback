@@ -6,6 +6,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -19,6 +25,7 @@ import {
   Calendar,
   User,
   Building2,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,7 +34,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -430,7 +437,7 @@ const SessionAnalytics = ({ session, onBack }) => {
                   />
                   <XAxis dataKey="name" className="text-xs" />
                   <YAxis allowDecimals={false} className="text-xs" />
-                  <Tooltip
+                  <RechartsTooltip
                     cursor={false}
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
@@ -531,7 +538,7 @@ const SessionAnalytics = ({ session, onBack }) => {
                       fillOpacity={0.4}
                       strokeWidth={2}
                     />
-                    <Tooltip
+                    <RechartsTooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
@@ -585,7 +592,7 @@ const SessionAnalytics = ({ session, onBack }) => {
                       />
                     ))}
                   </Pie>
-                  <Tooltip
+                  <RechartsTooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
@@ -701,46 +708,58 @@ const SessionAnalytics = ({ session, onBack }) => {
                 <TabsTrigger value="future">Future Topics</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="learned" className="space-y-4 mt-4">
-                {(stats.topicsLearned || []).length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No data collected yet</p>
-                ) : (
-                  <div className="space-y-3">
-                    {stats.topicsLearned.map((topic, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                        <div className="flex flex-col flex-1 gap-1">
-                          <div className="flex justify-between text-sm pr-4">
-                            <span className="font-medium">{topic.name}</span>
-                            <span className="text-muted-foreground">{topic.count} mentions</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary" 
-                              style={{ width: `${Math.min(100, (topic.count / stats.totalResponses) * 100)}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <TabsContent value="learned" className="mt-0">
+                <div className="max-h-80 overflow-y-auto pr-1">
+                  {stats.topicsLearned?.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 p-2">
+                      <TooltipProvider>
+                        {stats.topicsLearned.map((topic, idx) => (
+                          <Tooltip key={idx}>
+                            <TooltipTrigger asChild>
+                              <div className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-100 text-sm font-semibold hover:bg-amber-600 hover:text-white hover:border-amber-600 transition-all cursor-default shadow-sm hover:shadow-md">
+                                <div className="flex items-center justify-center bg-white/80 group-hover:bg-amber-500 group-hover:text-white rounded px-1 min-w-[20px] h-5 text-[10px] border border-amber-200/50 transition-colors">
+                                  {topic.count}
+                                </div>
+                                {topic.name}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="font-semibold text-xs">
+                                {topic.count} Student Mentions
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ))}
+                      </TooltipProvider>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground text-sm italic">
+                      No topics recorded yet.
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
-              <TabsContent value="future" className="mt-4">
-                {(stats.futureTopics || []).length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No suggestions collected yet</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {stats.futureTopics.map((topic, i) => (
-                      <div 
-                        key={i} 
-                        className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
-                      >
-                        {topic.text}
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <TabsContent value="future" className="mt-0">
+                <div className="max-h-80 overflow-y-auto pr-1">
+                  {stats.futureTopics?.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 p-2">
+                      {stats.futureTopics.map((topic, idx) => (
+                        <div
+                          key={idx}
+                          className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-sm font-semibold hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all cursor-default shadow-sm hover:shadow-md"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 opacity-70 group-hover:animate-pulse" />
+                          {topic.text}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground text-sm italic">
+                      No future topics suggested yet.
+                    </div>
+                  )}
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

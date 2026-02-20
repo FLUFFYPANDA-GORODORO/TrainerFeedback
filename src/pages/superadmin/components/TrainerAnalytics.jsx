@@ -13,6 +13,7 @@ import {
   Loader2,
   BookOpen,
   Clock,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -759,6 +760,35 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
         </Card>
       </div>
 
+      {/* Performance Summary (Grid) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Performance Summary</CardTitle>
+          <CardDescription>Key metrics at a glance</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-5 gap-4">
+            {categoryRadarData.map((item) => (
+              <div
+                key={item.category}
+                className="p-3 bg-muted/50 rounded-lg text-center"
+              >
+                <p className="text-sm text-muted-foreground">{item.category}</p>
+                <p className="text-xl font-bold">{item.score.toFixed(2)}</p>
+                <div className="flex items-center justify-center gap-1 mt-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star
+                      key={i}
+                      className={`h-2 w-2 ${i <= Math.round(item.score) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Analytics Charts - Row 1 */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Category Breakdown */}
@@ -1031,7 +1061,7 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
           <CardHeader>
             <div className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
-              <CardTitle>Future Topics & Comments</CardTitle>
+              <CardTitle>Student Voices</CardTitle>
             </div>
             <CardDescription>Highlights from student feedback</CardDescription>
           </CardHeader>
@@ -1059,16 +1089,16 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                   </TabsTrigger>
                 </TabsList>
 
-                {["high", "low", "future"].map((type) => (
+                {["high", "low"].map((type) => (
                   <TabsContent key={type} value={type} className="mt-0">
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {aggregatedStats.qualitative[type]?.length > 0 ? (
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                      {aggregatedStats.qualitative?.[type]?.length > 0 ? (
                         aggregatedStats.qualitative[type]
                           .slice(0, 5)
                           .map((comment, idx) => (
                             <div
                               key={idx}
-                              className="flex flex-col p-3 rounded-lg bg-muted/30 border border-border/50"
+                              className={`flex flex-col p-3 rounded-lg border ${type === "high" ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}
                             >
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-0.5">
@@ -1083,46 +1113,48 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                                   {new Date(comment.date).toLocaleDateString()}
                                 </span>
                               </div>
-
-                              <p className="text-sm italic text-foreground/80 line-clamp-2 mb-2">
+                              <p className="text-sm italic text-foreground/80 mb-2">
                                 "{comment.text}"
                               </p>
-
-                              <div className="pt-2 border-t border-border/30 flex justify-between items-center text-xs text-muted-foreground">
-                                {/* Show Course name */}
-                                <span className="opacity-70 font-medium">
+                              <div
+                                className={`pt-2 border-t flex justify-between items-center text-xs text-muted-foreground font-medium ${type === "high" ? "border-green-100" : "border-red-100"}`}
+                              >
+                                <span
+                                  className={`opacity-70 px-1.5 py-0.5 bg-white/50 rounded-md border ${type === "high" ? "border-green-200/50" : "border-red-200/50"}`}
+                                >
                                   {comment.course}
                                 </span>
                               </div>
                             </div>
                           ))
                       ) : (
-                        <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-                          No comments available yet.
+                        <div className="text-center py-8 text-muted-foreground text-sm italic">
+                          No {type === "high" ? "praise" : "concerns"} yet.
                         </div>
                       )}
                     </div>
                   </TabsContent>
                 ))}
 
-                {/* Future Topics as Tags */}
+                {/* Future Topics Tab */}
                 <TabsContent value="future" className="mt-0">
-                  <div className="max-h-64 overflow-y-auto">
+                  <div className="max-h-80 overflow-y-auto pr-1">
                     {aggregatedStats.qualitative?.future?.length > 0 ? (
-                      <div className="flex flex-wrap gap-2 p-1">
+                      <div className="flex flex-wrap gap-2 p-2">
                         {aggregatedStats.qualitative.future.map(
                           (topic, idx) => (
                             <div
                               key={idx}
-                              className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800 text-sm font-medium transition-all hover:shadow-sm"
+                              className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-sm font-semibold hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all cursor-default shadow-sm hover:shadow-md"
                             >
+                              <Sparkles className="h-3.5 w-3.5 opacity-70 group-hover:animate-pulse" />
                               {topic.text}
                             </div>
                           ),
                         )}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+                      <div className="text-center py-8 text-muted-foreground text-sm italic">
                         No future topics suggested yet.
                       </div>
                     )}
@@ -1133,35 +1165,6 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Performance Summary (Grid) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Performance Summary</CardTitle>
-          <CardDescription>Key metrics at a glance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categoryRadarData.map((item) => (
-              <div
-                key={item.category}
-                className="p-3 bg-muted/50 rounded-lg text-center"
-              >
-                <p className="text-sm text-muted-foreground">{item.category}</p>
-                <p className="text-xl font-bold">{item.score.toFixed(2)}</p>
-                <div className="flex items-center justify-center gap-1 mt-1">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star
-                      key={i}
-                      className={`h-2 w-2 ${i <= Math.round(item.score) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
