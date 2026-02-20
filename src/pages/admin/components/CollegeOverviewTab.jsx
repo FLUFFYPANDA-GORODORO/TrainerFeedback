@@ -948,8 +948,8 @@ const CollegeOverviewTab = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart
                     cx="50%"
-                    cy="50%"
-                    outerRadius="70%"
+                    cy="53%"
+                    outerRadius="50%"
                     data={categoryRadarData}
                   >
                     <PolarGrid stroke="hsl(var(--border))" />
@@ -964,7 +964,7 @@ const CollegeOverviewTab = () => {
                             <g>
                               <text
                                 x={x}
-                                y={isBottom ? y + 15 : y - 22}
+                                y={isBottom ? y + 12 : y - 15}
                                 textAnchor={textAnchor}
                                 fill="hsl(var(--foreground))"
                                 fontSize={10}
@@ -974,7 +974,7 @@ const CollegeOverviewTab = () => {
                               </text>
                               <text
                                 x={x}
-                                y={isBottom ? y + 29 : y - 8}
+                                y={isBottom ? y + 26 : y - 1}
                                 textAnchor={textAnchor}
                                 fill="hsl(var(--primary))"
                                 fontSize={11}

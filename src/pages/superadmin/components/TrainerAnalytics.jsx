@@ -805,8 +805,8 @@ const TrainerAnalytics = ({ trainerId, trainerName, onBack }) => {
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart
                     cx="50%"
-                    cy="50%"
-                    outerRadius="65%"
+                    cy="53%"
+                    outerRadius="50%"
                     data={categoryRadarData}
                   >
                     <defs>

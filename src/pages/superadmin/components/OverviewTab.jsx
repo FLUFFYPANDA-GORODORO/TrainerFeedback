@@ -1412,8 +1412,8 @@ const OverviewTab = ({
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart
                     cx="50%"
-                    cy="50%"
-                    outerRadius="65%"
+                    cy="53%"
+                    outerRadius="50%"
                     data={categoryRadarData}
                   >
                     <defs>
@@ -1452,9 +1452,8 @@ const OverviewTab = ({
                           const isLeft = textAnchor === "end";
 
                           let dy = 0;
-                          if (isTop)
-                            dy = -40; // Move top labels significantly higher up to avoid 5.0 overlap
-                          else if (isBottom) dy = 30;
+                          if (isTop) dy = -22;
+                          else if (isBottom) dy = 25;
                           else dy = 0;
 
                           // Horizontal offset for side labels

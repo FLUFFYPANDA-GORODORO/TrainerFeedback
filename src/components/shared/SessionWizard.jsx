@@ -1,14 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Loader2, Plus, Search, Check, ChevronsUpDown } from 'lucide-react';
-import { getAcademicConfig } from '@/services/superadmin/academicService';
-import { getAllTemplates as getTemplates } from '@/services/superadmin/templateService';
-import { createSession, updateSession } from '@/services/superadmin/sessionService';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Plus,
+  Search,
+  Check,
+  ChevronsUpDown,
+} from "lucide-react";
+import { getAcademicConfig } from "@/services/superadmin/academicService";
+import { getAllTemplates as getTemplates } from "@/services/superadmin/templateService";
+import {
+  createSession,
+  updateSession,
+} from "@/services/superadmin/sessionService";
+import { toast } from "sonner";
 
 // Config
 const DOMAIN_OPTIONS = [
@@ -16,21 +37,21 @@ const DOMAIN_OPTIONS = [
   "Soft Skills",
   "Tools",
   "Aptitude",
-  "Other"
+  "Other",
 ];
 
-const SessionWizard = ({ 
-  session = null, 
-  colleges = [], 
-  trainers = [], // Pass filtered valid trainers for this context 
+const SessionWizard = ({
+  session = null,
+  colleges = [],
+  trainers = [], // Pass filtered valid trainers for this context
   projectCodes = [], // [NEW] Accept project codes
   defaultCollegeId = null,
   defaultDomain = null,
   defaultTrainerId = null,
   currentUserId,
   currentUserName,
-  onSuccess, 
-  onCancel 
+  onSuccess,
+  onCancel,
 }) => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,30 +61,36 @@ const SessionWizard = ({
   const [filteredTrainers, setFilteredTrainers] = useState([]);
 
   // [NEW] Project Code Selection
-  const [selectedProjectCode, setSelectedProjectCode] = useState(session?.projectCode || '');
+  const [selectedProjectCode, setSelectedProjectCode] = useState(
+    session?.projectCode || "",
+  );
 
   // [NEW] Trainer Search State
   const [trainerSearch, setTrainerSearch] = useState("");
   const [trainerPopoverOpen, setTrainerPopoverOpen] = useState(false);
 
   const [formData, setFormData] = useState({
-    collegeId: session?.collegeId || defaultCollegeId || '',
-    collegeName: session?.collegeName || '',
-    academicYear: session?.academicYear || '2025-26',
-    course: session?.course || '',
-    branch: session?.branch || '',
-    year: session?.year || '',
-    batch: session?.batch || '',
-    topic: session?.topic || '',
-    domain: session?.domain || defaultDomain || '',
-    assignedTrainer: session?.assignedTrainer || (defaultTrainerId && trainers.length > 0 ? { id: trainers[0].id, name: trainers[0].name } : null),
-    sessionDate: session?.sessionDate || '',
-    sessionTime: session?.sessionTime || 'Morning',
+    collegeId: session?.collegeId || defaultCollegeId || "",
+    collegeName: session?.collegeName || "",
+    academicYear: session?.academicYear || "2025-26",
+    course: session?.course || "",
+    branch: session?.branch || "",
+    year: session?.year || "",
+    batch: session?.batch || "",
+    topic: session?.topic || "",
+    domain: session?.domain || defaultDomain || "",
+    assignedTrainer:
+      session?.assignedTrainer ||
+      (defaultTrainerId && trainers.length > 0
+        ? { id: trainers[0].id, name: trainers[0].name }
+        : null),
+    sessionDate: session?.sessionDate || "",
+    sessionTime: session?.sessionTime || "Morning",
     sessionDuration: session?.sessionDuration || 60,
     questions: session?.questions || [],
-    templateId: session?.templateId || '',
-    ttl: session?.ttl || '720',
-    projectCode: session?.projectCode || '' // [NEW] Verify storage
+    templateId: session?.templateId || "",
+    ttl: session?.ttl || "720",
+    projectCode: session?.projectCode || "", // [NEW] Verify storage
   });
 
   // Load Templates on Mount
@@ -86,11 +113,11 @@ const SessionWizard = ({
         try {
           const config = await getAcademicConfig(formData.collegeId);
           setAcademicOptions(config || {});
-          
+
           // If college list is provided, find name
           if (colleges && colleges.length > 0) {
-             const c = colleges.find(c => c.id === formData.collegeId);
-             if (c) setFormData(prev => ({...prev, collegeName: c.name}));
+            const c = colleges.find((c) => c.id === formData.collegeId);
+            if (c) setFormData((prev) => ({ ...prev, collegeName: c.name }));
           }
         } catch (err) {
           console.error(err);
@@ -103,16 +130,16 @@ const SessionWizard = ({
   // Sync defaultCollegeId (for Trainer Mode context loading)
   useEffect(() => {
     if (defaultCollegeId && formData.collegeId !== defaultCollegeId) {
-      setFormData(prev => ({ ...prev, collegeId: defaultCollegeId }));
+      setFormData((prev) => ({ ...prev, collegeId: defaultCollegeId }));
     }
   }, [defaultCollegeId, formData.collegeId]);
 
   // Sync collegeName when colleges prop updates (important for async load in Trainer mode)
   useEffect(() => {
     if (colleges && colleges.length > 0 && formData.collegeId) {
-      const matchingCollege = colleges.find(c => c.id === formData.collegeId);
+      const matchingCollege = colleges.find((c) => c.id === formData.collegeId);
       if (matchingCollege && formData.collegeName !== matchingCollege.name) {
-        setFormData(prev => ({ ...prev, collegeName: matchingCollege.name }));
+        setFormData((prev) => ({ ...prev, collegeName: matchingCollege.name }));
       }
     }
   }, [colleges, formData.collegeId, formData.collegeName]);
@@ -122,67 +149,88 @@ const SessionWizard = ({
   useEffect(() => {
     if (step === 2) {
       let filtered = trainers;
-      
+
       if (trainerSearch.trim()) {
         const searchLower = trainerSearch.toLowerCase();
-        filtered = filtered.filter(t => 
-          t.name.toLowerCase().includes(searchLower) || 
-          t.specialisation?.toLowerCase().includes(searchLower)
+        filtered = filtered.filter(
+          (t) =>
+            t.name.toLowerCase().includes(searchLower) ||
+            t.specialisation?.toLowerCase().includes(searchLower),
         );
       } else if (formData.domain) {
-        filtered = filtered.filter(t =>
-          t.domain?.toLowerCase().includes(formData.domain.toLowerCase()) ||
-          t.specialisation?.toLowerCase().includes(formData.domain.toLowerCase())
+        filtered = filtered.filter(
+          (t) =>
+            t.domain?.toLowerCase().includes(formData.domain.toLowerCase()) ||
+            t.specialisation
+              ?.toLowerCase()
+              .includes(formData.domain.toLowerCase()),
         );
       }
       setFilteredTrainers(filtered);
     }
   }, [formData.domain, step, trainers, trainerSearch]);
 
-
   // Handlers
   const handleCollegeSelect = (collegeId) => {
     // If project code was selected but user changes college manually, clear project code
     if (selectedProjectCode && collegeId !== formData.collegeId) {
-        setSelectedProjectCode('');
-        setFormData(prev => ({ ...prev, projectCode: '' }));
+      setSelectedProjectCode("");
+      setFormData((prev) => ({ ...prev, projectCode: "" }));
     }
 
-    setFormData(prev => ({ 
-      ...prev, 
-      collegeId, 
-      course: '', branch: '', year: '', batch: '' // Reset dependents
+    setFormData((prev) => ({
+      ...prev,
+      collegeId,
+      course: "",
+      branch: "",
+      year: "",
+      batch: "", // Reset dependents
     }));
   };
 
   const handleProjectCodeSelect = (codeString) => {
-    const code = projectCodes.find(c => c.code === codeString);
+    const code = projectCodes.find((c) => c.code === codeString);
     if (!code) return;
 
     setSelectedProjectCode(codeString);
-    
+
     // Auto-fill fields from project code
     // If collegeId is present in code (matched), use it. Else keep current or clear.
-    
-    setFormData(prev => ({
-        ...prev,
-        projectCode: codeString,
-        collegeId: code.collegeId || prev.collegeId,
-        collegeName: code.collegeName || prev.collegeName,
-        course: code.course || prev.course,
-        year: code.year || prev.year,
-        academicYear: code.academicYear || prev.academicYear,
-        // Reset dependent fields that are NOT in project code
-        branch: '', 
-        batch: ''
+
+    setFormData((prev) => ({
+      ...prev,
+      projectCode: codeString,
+      collegeId: code.collegeId || prev.collegeId,
+      collegeName: code.collegeName || prev.collegeName,
+      course: code.course || prev.course,
+      year: code.year || prev.year,
+      academicYear: code.academicYear || prev.academicYear,
+      // Reset dependent fields that are NOT in project code
+      branch: "",
+      batch: "",
     }));
   };
 
   const isStepValid = () => {
     switch (step) {
-      case 1: return formData.collegeId && formData.academicYear && formData.course && formData.branch && formData.year && formData.batch;
-      case 2: return formData.topic && formData.assignedTrainer && formData.sessionDate && formData.sessionTime;
-      default: return false;
+      case 1:
+        return (
+          formData.collegeId &&
+          formData.academicYear &&
+          formData.course &&
+          formData.branch &&
+          formData.year &&
+          formData.batch
+        );
+      case 2:
+        return (
+          formData.topic &&
+          formData.assignedTrainer &&
+          formData.sessionDate &&
+          formData.sessionTime
+        );
+      default:
+        return false;
     }
   };
 
@@ -190,16 +238,19 @@ const SessionWizard = ({
     setIsSubmitting(true);
     try {
       let sessionQuestions = [...(formData.questions || [])];
-      
+
       // Template Logic
       if (formData.templateId) {
-        const selectedTemplate = templates.find(t => t.id === formData.templateId);
+        const selectedTemplate = templates.find(
+          (t) => t.id === formData.templateId,
+        );
         if (selectedTemplate && selectedTemplate.sections) {
-          const templateQuestions = selectedTemplate.sections.flatMap(section => 
-              (section.questions || []).map(q => ({
-                  ...q,
-                  id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${q.id || 'new'}`
-              }))
+          const templateQuestions = selectedTemplate.sections.flatMap(
+            (section) =>
+              (section.questions || []).map((q) => ({
+                ...q,
+                id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${q.id || "new"}`,
+              })),
           );
           sessionQuestions = [...sessionQuestions, ...templateQuestions];
         }
@@ -208,7 +259,7 @@ const SessionWizard = ({
       const payload = {
         ...formData,
         questions: sessionQuestions,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
 
       if (session?.id) {
@@ -232,16 +283,30 @@ const SessionWizard = ({
   // Render Step 1
   const renderStep1 = () => {
     // New Structure: Course -> Year -> Department -> Batch
-    const courses = academicOptions?.courses ? Object.keys(academicOptions.courses) : [];
-    const currentCourseData = formData.course ? academicOptions?.courses[formData.course] : null;
-    
+    const courses = academicOptions?.courses
+      ? Object.keys(academicOptions.courses)
+      : [];
+    const currentCourseData = formData.course
+      ? academicOptions?.courses[formData.course]
+      : null;
+
     // Years are now under Course
-    const years = currentCourseData?.years ? Object.keys(currentCourseData.years) : [];
-    const currentYearData = formData.year && currentCourseData?.years ? currentCourseData.years[formData.year] : null;
+    const years = currentCourseData?.years
+      ? Object.keys(currentCourseData.years)
+      : [];
+    const currentYearData =
+      formData.year && currentCourseData?.years
+        ? currentCourseData.years[formData.year]
+        : null;
 
     // Departments are now under Year
-    const departments = currentYearData?.departments ? Object.keys(currentYearData.departments) : [];
-    const currentDeptData = formData.branch && currentYearData?.departments ? currentYearData.departments[formData.branch] : null;
+    const departments = currentYearData?.departments
+      ? Object.keys(currentYearData.departments)
+      : [];
+    const currentDeptData =
+      formData.branch && currentYearData?.departments
+        ? currentYearData.departments[formData.branch]
+        : null;
 
     // Batches are under Department
     const batches = currentDeptData?.batches || [];
@@ -250,48 +315,61 @@ const SessionWizard = ({
       <div className="space-y-4 py-2">
         {/* [NEW] Project Code Selection */}
         <div className="space-y-2">
-            {/* Select Project Code */}
-            <Label>Project Code (Optional)</Label>
-            <Select
-                value={selectedProjectCode}
-                onValueChange={handleProjectCodeSelect}
-                disabled={!projectCodes.length}
-            >
-                <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Project Code to Auto-fill" />
-                </SelectTrigger>
-                <SelectContent>
-                    {projectCodes.filter(code => code.collegeId).map((code) => (
-                        <SelectItem key={code.id} value={code.code}>
-                            {code.code}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">Selecting a project code will auto-fill College, Course, Year and Academic Year.</p>
+          {/* Select Project Code */}
+          <Label>Project Code (Optional)</Label>
+          <Select
+            value={selectedProjectCode}
+            onValueChange={handleProjectCodeSelect}
+            disabled={!projectCodes.length}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Project Code to Auto-fill" />
+            </SelectTrigger>
+            <SelectContent>
+              {projectCodes
+                .filter((code) => code.collegeId)
+                .map((code) => (
+                  <SelectItem key={code.id} value={code.code}>
+                    {code.code}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Selecting a project code will auto-fill College, Course, Year and
+            Academic Year.
+          </p>
         </div>
 
         <div className="space-y-2 border-t pt-4">
           <Label>College *</Label>
-            {defaultCollegeId ? (
-               <Input 
-                 value={formData.collegeName || (colleges.find(c => c.id === defaultCollegeId)?.name) || 'Loading College...'} 
-                 disabled 
-                 className="bg-muted text-muted-foreground opacity-100"
-               />
-            ) : (
-              <Select
-                value={formData.collegeId}
-                onValueChange={handleCollegeSelect}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select College" />
-                </SelectTrigger>
-                <SelectContent>
-                  {colleges.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
+          {defaultCollegeId ? (
+            <Input
+              value={
+                formData.collegeName ||
+                colleges.find((c) => c.id === defaultCollegeId)?.name ||
+                "Loading College..."
+              }
+              disabled
+              className="bg-muted text-muted-foreground opacity-100"
+            />
+          ) : (
+            <Select
+              value={formData.collegeId}
+              onValueChange={handleCollegeSelect}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select College" />
+              </SelectTrigger>
+              <SelectContent>
+                {colleges.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         <div className="space-y-4 border-t pt-4">
@@ -299,7 +377,9 @@ const SessionWizard = ({
             <Label>Academic Year</Label>
             <Input
               value={formData.academicYear}
-              onChange={e => setFormData({ ...formData, academicYear: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, academicYear: e.target.value })
+              }
               placeholder="2025-26"
               disabled={!formData.collegeId || !!selectedProjectCode} // Disable if project code selected (it sets this)
             />
@@ -310,18 +390,30 @@ const SessionWizard = ({
               <Label>Course *</Label>
               <Select
                 value={formData.course}
-                onValueChange={v => setFormData({ 
-                    ...formData, 
-                    course: v, 
-                    year: '', // Reset Year
-                    branch: '', // Reset Branch 
-                    batch: '' // Reset Batch
-                })}
-                disabled={!formData.collegeId || !academicOptions || !!selectedProjectCode} // Disable if project code sets this
+                onValueChange={(v) =>
+                  setFormData({
+                    ...formData,
+                    course: v,
+                    year: "", // Reset Year
+                    branch: "", // Reset Branch
+                    batch: "", // Reset Batch
+                  })
+                }
+                disabled={
+                  !formData.collegeId ||
+                  !academicOptions ||
+                  !!selectedProjectCode
+                } // Disable if project code sets this
               >
-                <SelectTrigger><SelectValue placeholder="Select Course" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Course" />
+                </SelectTrigger>
                 <SelectContent>
-                  {courses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {courses.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -330,17 +422,25 @@ const SessionWizard = ({
               <Label>Year *</Label>
               <Select
                 value={formData.year}
-                onValueChange={v => setFormData({ 
-                    ...formData, 
-                    year: v, 
-                    branch: '', // Reset Branch
-                    batch: '' // Reset Batch
-                })}
+                onValueChange={(v) =>
+                  setFormData({
+                    ...formData,
+                    year: v,
+                    branch: "", // Reset Branch
+                    batch: "", // Reset Batch
+                  })
+                }
                 disabled={!formData.course || !!selectedProjectCode} // Disable if project code sets this
               >
-                <SelectTrigger><SelectValue placeholder="Select Year" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Year" />
+                </SelectTrigger>
                 <SelectContent>
-                  {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                  {years.map((y) => (
+                    <SelectItem key={y} value={y}>
+                      {y}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -351,16 +451,24 @@ const SessionWizard = ({
               <Label>Branch/Dept *</Label>
               <Select
                 value={formData.branch}
-                onValueChange={v => setFormData({ 
-                    ...formData, 
-                    branch: v, 
-                    batch: '' // Reset Batch
-                })}
+                onValueChange={(v) =>
+                  setFormData({
+                    ...formData,
+                    branch: v,
+                    batch: "", // Reset Batch
+                  })
+                }
                 disabled={!formData.year}
               >
-                <SelectTrigger><SelectValue placeholder="Select Branch" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Branch" />
+                </SelectTrigger>
                 <SelectContent>
-                  {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  {departments.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -369,12 +477,18 @@ const SessionWizard = ({
               <Label>Batch *</Label>
               <Select
                 value={formData.batch}
-                onValueChange={v => setFormData({ ...formData, batch: v })}
+                onValueChange={(v) => setFormData({ ...formData, batch: v })}
                 disabled={!formData.branch}
               >
-                <SelectTrigger><SelectValue placeholder="Select Batch" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Batch" />
+                </SelectTrigger>
                 <SelectContent>
-                  {batches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                  {batches.map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -395,12 +509,16 @@ const SessionWizard = ({
               <Label>Domain (Filter)</Label>
               <Select
                 value={formData.domain}
-                onValueChange={v => setFormData({ ...formData, domain: v })}
+                onValueChange={(v) => setFormData({ ...formData, domain: v })}
               >
-                <SelectTrigger><SelectValue placeholder="Select Domain" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Domain" />
+                </SelectTrigger>
                 <SelectContent>
-                  {DOMAIN_OPTIONS.map(d => (
-                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  {DOMAIN_OPTIONS.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {d}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -409,7 +527,9 @@ const SessionWizard = ({
               <Label>Topic *</Label>
               <Input
                 value={formData.topic}
-                onChange={e => setFormData({ ...formData, topic: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, topic: e.target.value })
+                }
                 placeholder="Topic Name"
               />
             </div>
@@ -417,7 +537,10 @@ const SessionWizard = ({
 
           <div className="space-y-2">
             <Label>Select Trainer *</Label>
-            <Popover open={trainerPopoverOpen} onOpenChange={setTrainerPopoverOpen}>
+            <Popover
+              open={trainerPopoverOpen}
+              onOpenChange={setTrainerPopoverOpen}
+            >
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -433,44 +556,48 @@ const SessionWizard = ({
               </PopoverTrigger>
               <PopoverContent className="w-[400px] p-0" align="start">
                 <div className="p-2 border-b">
-                   <div className="flex items-center px-2 py-1 border rounded-md bg-transparent">
-                     <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                     <input 
-                        className="flex h-6 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder="Search trainer..."
-                        value={trainerSearch}
-                        onChange={(e) => setTrainerSearch(e.target.value)}
-                     />
-                   </div>
+                  <div className="flex items-center px-2 py-1 border rounded-md bg-transparent">
+                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                    <input
+                      className="flex h-6 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="Search trainer..."
+                      value={trainerSearch}
+                      onChange={(e) => setTrainerSearch(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div className="max-h-[300px] overflow-y-auto p-1">
-                    {filteredTrainers.length === 0 ? (
-                      <p className="p-4 text-sm text-center text-muted-foreground">No trainer found.</p>
-                    ) : (
-                      <div className="space-y-1">
-                        {filteredTrainers.map((t) => (
-                          <div
-                            key={t.id}
-                            className={`flex items-center justify-between p-2 rounded-sm cursor-pointer hover:bg-accent hover:text-accent-foreground ${formData.assignedTrainer?.id === t.id ? 'bg-accent' : ''}`}
-                            onClick={() => {
-                              setFormData({
-                                ...formData,
-                                assignedTrainer: { id: t.id, name: t.name }
-                              });
-                              setTrainerPopoverOpen(false);
-                            }}
-                          >
-                            <div className="flex flex-col">
-                                <span className="font-medium">{t.name}</span>
-                                <span className="text-xs text-muted-foreground">{t.specialisation}</span>
-                            </div>
-                            {formData.assignedTrainer?.id === t.id && (
-                              <Check className="h-4 w-4" />
-                            )}
+                  {filteredTrainers.length === 0 ? (
+                    <p className="p-4 text-sm text-center text-muted-foreground">
+                      No trainer found.
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      {filteredTrainers.map((t) => (
+                        <div
+                          key={t.id}
+                          className={`flex items-center justify-between p-2 rounded-sm cursor-pointer hover:bg-accent hover:text-accent-foreground ${formData.assignedTrainer?.id === t.id ? "bg-accent" : ""}`}
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              assignedTrainer: { id: t.id, name: t.name },
+                            });
+                            setTrainerPopoverOpen(false);
+                          }}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{t.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {t.specialisation}
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          {formData.assignedTrainer?.id === t.id && (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
@@ -487,7 +614,9 @@ const SessionWizard = ({
               <Input
                 type="date"
                 value={formData.sessionDate}
-                onChange={e => setFormData({ ...formData, sessionDate: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, sessionDate: e.target.value })
+                }
                 onClick={(e) => e.target.showPicker && e.target.showPicker()}
                 className="cursor-pointer block"
               />
@@ -496,9 +625,13 @@ const SessionWizard = ({
               <Label>Session Time *</Label>
               <Select
                 value={formData.sessionTime}
-                onValueChange={v => setFormData({ ...formData, sessionTime: v })}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, sessionTime: v })
+                }
               >
-                <SelectTrigger><SelectValue placeholder="Select Time" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Time" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Morning">Morning</SelectItem>
                   <SelectItem value="Afternoon">Afternoon</SelectItem>
@@ -511,13 +644,19 @@ const SessionWizard = ({
             <div className="space-y-2">
               <Label>Duration (Hours)</Label>
               <Select
-                value={String((formData.sessionDuration / 60) || 1)}
-                onValueChange={v => setFormData({ ...formData, sessionDuration: Number(v) * 60 })}
+                value={String(formData.sessionDuration / 60 || 1)}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, sessionDuration: Number(v) * 60 })
+                }
               >
-                <SelectTrigger><SelectValue placeholder="Select Duration" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Duration" />
+                </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(h => (
-                    <SelectItem key={h} value={String(h)}>{h} Hour{h > 1 ? 's' : ''}</SelectItem>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((h) => (
+                    <SelectItem key={h} value={String(h)}>
+                      {h} Hour{h > 1 ? "s" : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -527,7 +666,9 @@ const SessionWizard = ({
               <Input
                 type="number"
                 value={formData.ttl}
-                onChange={e => setFormData({ ...formData, ttl: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, ttl: e.target.value })
+                }
                 placeholder="720"
                 disabled
               />
@@ -543,19 +684,22 @@ const SessionWizard = ({
             <Label>Select Template</Label>
             <Select
               value={formData.templateId}
-              onValueChange={v => setFormData({ ...formData, templateId: v })}
+              onValueChange={(v) => setFormData({ ...formData, templateId: v })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a feedback template" />
               </SelectTrigger>
               <SelectContent>
-                {templates.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                {templates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.title}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Selecting a template will automatically populate the feedback questions for this session.
+              Selecting a template will automatically populate the feedback
+              questions for this session.
             </p>
           </div>
         </div>
@@ -569,31 +713,35 @@ const SessionWizard = ({
 
       <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
         {step > 1 && (
-            <Button variant="outline" onClick={() => setStep(step - 1)}>
-             <ChevronLeft className="h-4 w-4 mr-2" /> Back
-            </Button>
+          <Button variant="outline" onClick={() => setStep(step - 1)}>
+            <ChevronLeft className="h-4 w-4 mr-2" /> Back
+          </Button>
         )}
-        
+
         {step < 2 ? (
-            <Button 
-                onClick={() => setStep(step + 1)} 
-                disabled={!isStepValid()}
-                className="gradient-hero text-primary-foreground"
-            >
-                Next <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
+          <Button
+            onClick={() => setStep(step + 1)}
+            disabled={!isStepValid()}
+            className="gradient-hero text-primary-foreground"
+          >
+            Next <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
         ) : (
-             <>
-                <Button variant="ghost" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
-                <Button 
-                    onClick={handleSubmit} 
-                    disabled={!isStepValid() || isSubmitting}
-                    className="gradient-hero text-primary-foreground"
-                >
-                    {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    {session ? 'Save Changes' : 'Create Session'}
-                </Button>
-             </>
+          <>
+            <Button variant="ghost" onClick={onCancel} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!isStepValid() || isSubmitting}
+              className="gradient-hero text-primary-foreground"
+            >
+              {isSubmitting && (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              )}
+              {session ? "Save Changes" : "Create Session"}
+            </Button>
+          </>
         )}
       </div>
     </div>
