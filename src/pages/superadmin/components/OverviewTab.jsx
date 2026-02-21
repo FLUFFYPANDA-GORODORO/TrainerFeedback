@@ -647,20 +647,54 @@ const OverviewTab = ({
       };
     }
 
-    // 3. Filtered View -> Use dynamic session-sum data
-    return (
-      analyticsData || {
-        totalSessions: 0,
-        totalResponses: 0,
-        totalRatingsCount: 0,
-        totalHours: 0,
-        avgRating: 0,
-        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-        categoryAverages: {},
-        qualitative: { high: [], low: [], future: [] },
-        topicsLearned: [],
-      }
-    );
+    // 3. Filtered View -> Use dynamic session-sum data + qualitative from cache
+    const baseStats = analyticsData || {
+      totalSessions: 0,
+      totalResponses: 0,
+      totalRatingsCount: 0,
+      totalHours: 0,
+      avgRating: 0,
+      ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      categoryAverages: {},
+      qualitative: { high: [], low: [], future: [] },
+      topicsLearned: [],
+    };
+
+    // Filter qualitative data from cache for non-cache-supported views (e.g. trainer filter)
+    const filterQualComments = (comments) => {
+      if (!comments) return [];
+      return comments.filter((c) => {
+        if (filters.course !== "all" && c.course !== filters.course)
+          return false;
+        if (filters.dateRange !== "all") {
+          const { startDate, endDate } = getDateRange(filters.dateRange);
+          if (startDate && endDate) {
+            const cDate = new Date(c.date);
+            if (cDate < startDate || cDate > endDate) return false;
+          }
+        }
+        if (filters.trainerId !== "all") {
+          const tName = trainers.find((t) => t.id === filters.trainerId)?.name;
+          if (tName && c.trainerName !== tName) return false;
+        }
+        return true;
+      });
+    };
+
+    const sortByDate = (a, b) => new Date(b.date || 0) - new Date(a.date || 0);
+
+    return {
+      ...baseStats,
+      qualitative: {
+        high: filterQualComments(qualitativeCache.high)
+          .sort(sortByDate)
+          .slice(0, 5),
+        low: filterQualComments(qualitativeCache.low)
+          .sort(sortByDate)
+          .slice(0, 5),
+        future: filterQualComments(qualitativeCache.future || []),
+      },
+    };
   }, [
     isDefaultView,
     isCacheSupportedView,
@@ -669,6 +703,7 @@ const OverviewTab = ({
     analyticsData,
     qualitativeCache,
     filters,
+    trainers,
   ]);
 
   // College performance data for bar chart

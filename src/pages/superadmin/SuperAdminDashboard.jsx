@@ -111,7 +111,7 @@ const SuperAdminDashboardInner = () => {
       });
 
       const link = document.createElement("a");
-      link.download = `FacultyInsight-Snapshot-${new Date().toLocaleDateString().replace(/\//g, "-")}.png`;
+      link.download = `TrainerFeedBack-${new Date().toLocaleDateString().replace(/\//g, "-")}.png`;
       link.href = dataUrl;
       link.click();
       toast.success("Snapshot saved", { id: toastId });
