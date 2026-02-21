@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateSession, closeSessionWithStats } from '@/services/superadmin/sessionService';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -191,25 +191,7 @@ const TrainerSessions = ({ sessions, loading, onEdit, onRefresh, projectCodes = 
     setShareDialogOpen(true);
   };
 
-  const handleToggleStatus = async (session) => {
-    try {
-      if (session.status === 'active') {
-        // Deactivating - compile stats and close
-        toast.loading('Compiling feedback statistics...');
-        await closeSessionWithStats(session.id);
-        toast.dismiss();
-        toast.success('Session closed and statistics compiled');
-      } else {
-        // Reactivating
-        await updateSession(session.id, { status: 'active' });
-        toast.success('Session activated');
-      }
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      toast.dismiss();
-      toast.error('Failed to update status');
-    }
-  };
+
 
   const handleExportResponses = (session) => {
     setSessionToExport(session);

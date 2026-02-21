@@ -41,7 +41,6 @@ export const AnonymousFeedback = () => {
 
   useEffect(() => {
     loadSession();
-    checkPreviousSubmission();
   }, [sessionId]);
 
   const loadSession = async () => {
@@ -72,6 +71,7 @@ export const AnonymousFeedback = () => {
       }
 
       setSession(sessionData);
+      checkPreviousSubmission(sessionData);
     } catch (err) {
       console.error("Error loading session:", err);
       setError("Failed to load feedback form");
@@ -80,8 +80,10 @@ export const AnonymousFeedback = () => {
     }
   };
 
-  const checkPreviousSubmission = () => {
-    const submittedKey = `feedback_submitted_${sessionId}`;
+  const checkPreviousSubmission = (currentSession) => {
+    if (!currentSession) return;
+    const version = currentSession.reactivationCount || 0;
+    const submittedKey = `feedback_submitted_${sessionId}_v${version}`;
     const submissionData = localStorage.getItem(submittedKey);
     if (submissionData) {
       setIsSubmitted(true);
@@ -161,8 +163,9 @@ export const AnonymousFeedback = () => {
       });
 
       // Mark as submitted in localStorage
+      const version = session.reactivationCount || 0;
       localStorage.setItem(
-        `feedback_submitted_${sessionId}`,
+        `feedback_submitted_${sessionId}_v${version}`,
         JSON.stringify({
           submittedAt: new Date().toISOString(),
           deviceId: getDeviceId(),

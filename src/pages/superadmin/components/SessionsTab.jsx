@@ -194,7 +194,6 @@ const SessionsTab = ({
 
   // Session Creation Logic
 
-  // Row Actions
   const handleToggleStatus = async (session) => {
     try {
       if (session.status === "active") {
@@ -204,13 +203,23 @@ const SessionsTab = ({
         toast.dismiss();
         toast.success("Session closed and statistics compiled");
       } else {
-        // Reactivating
-        await updateSession(session.id, { status: "active" });
-        toast.success("Session activated");
+        // Reactivating - clear previous responses to accept new ones
+        toast.loading("Clearing previous responses and reactivating...");
+        const { deleteResponsesForSession } = await import(
+          "@/services/superadmin/responseService"
+        );
+        await deleteResponsesForSession(session.id);
+        await updateSession(session.id, { 
+          status: "active",
+          reactivationCount: (session.reactivationCount || 0) + 1
+        });
+        toast.dismiss();
+        toast.success("Session activated for fresh responses");
       }
     } catch (error) {
       toast.dismiss();
       toast.error("Failed to update status");
+      console.error(error);
     }
   };
 

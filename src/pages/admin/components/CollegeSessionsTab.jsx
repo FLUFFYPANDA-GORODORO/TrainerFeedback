@@ -199,7 +199,10 @@ const CollegeSessionsTab = () => {
 
   // Actions
   const copyLink = (sessionId) => {
-    const link = `${window.location.origin}/feedback/anonymous/${sessionId}`;
+    // Find the session to get its reactivationCount
+    const session = sessions.find((s) => s.id === sessionId);
+    const versionQuery = session?.reactivationCount ? `?v=${session.reactivationCount}` : '';
+    const link = `${window.location.origin}/feedback/anonymous/${sessionId}${versionQuery}`;
     navigator.clipboard.writeText(link);
     toast.success("Feedback link copied to clipboard");
   };

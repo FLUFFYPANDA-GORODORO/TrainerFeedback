@@ -256,7 +256,12 @@ export const getSessionById = async (id) => {
 export const closeSessionWithStats = async (id) => {
   try {
     // Import compileSessionStats dynamically to avoid circular dependency
-    const { compileSessionStats } = await import('./responseService');
+
+    
+    // 1. Compile statistics first (outside transaction)
+    // IMPORTANT: compileSessionStats now ONLY compiles the *current* responses in the subcollection.
+    // Due to the reactivation clear logic, this represents the "delta" stats since the last activation.
+    const { compileSessionStats, mergeStats } = await import('./responseService');
     const { 
       updateCollegeCache, 
       updateTrainerCache, 
@@ -264,11 +269,11 @@ export const closeSessionWithStats = async (id) => {
       getTrainerCacheRefs 
     } = await import('./cacheService');
     const { runTransaction } = await import('firebase/firestore');
-    
-    // 1. Compile statistics first (outside transaction)
-    const compiledStats = await compileSessionStats(id);
+
+    const deltaStats = await compileSessionStats(id);
     
     let sessionDataForCache = null;
+    let finalMergedStats = deltaStats;
 
     // 2. Run Transaction
     await runTransaction(db, async (transaction) => {
@@ -288,6 +293,13 @@ export const closeSessionWithStats = async (id) => {
 
         const session = { id: sessionDoc.id, ...sessionData };
         sessionDataForCache = session;
+
+        // If the session was previously closed and reactivated, it will already have compiledStats.
+        // We need to merge the existing stats with the new delta stats for the session document,
+        // but we ONLY send the deltaStats to the ecosystem caches to prevent double-counting.
+        if (sessionData.compiledStats) {
+            finalMergedStats = mergeStats(sessionData.compiledStats, deltaStats);
+        }
         
         // ============ PRE-FETCH CACHE DOCS ============
         // We must perform ALL reads before ANY writes to satisfy Firestore Transaction rules.
@@ -316,23 +328,24 @@ export const closeSessionWithStats = async (id) => {
 
         // ============ EXECUTE UPDATES ============
         // Pass pre-fetched docs to update functions so they don't try to read again.
-
-        await updateCollegeCache(session, compiledStats, false, transaction, {
+        // pass deltaStats so we only increment by the new responses
+        await updateCollegeCache(session, deltaStats, false, transaction, {
            cacheDoc: collegeCacheDoc,
            trendDoc: collegeTrendDoc
         });
 
         if (session.assignedTrainer?.id) {
-            await updateTrainerCache(session, compiledStats, false, transaction, {
+            // pass deltaStats so we only increment by the new responses
+            await updateTrainerCache(session, deltaStats, false, transaction, {
                cacheDoc: trainerCacheDoc,
                trendDoc: trainerTrendDoc
             });
         }
 
-        // Update session with status and compiled stats (Write)
+        // Update session with status and MERGED compiled stats (Write)
         transaction.update(docRef, {
             status: 'inactive',
-            compiledStats,
+            compiledStats: finalMergedStats,
             closedAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
