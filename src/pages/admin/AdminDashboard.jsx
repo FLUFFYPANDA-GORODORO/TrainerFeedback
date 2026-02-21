@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import Joyride, { STATUS } from "react-joyride";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,9 @@ import {
   Database,
   HelpCircle,
   User,
+  ChevronDown,
+  Pencil,
+  PlayCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminDataProvider, useAdminData } from "@/contexts/AdminDataContext";
@@ -36,6 +40,210 @@ const AdminDashboardContent = () => {
   const navigate = useNavigate();
   const { college, loading, refreshAll } = useAdminData();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [runTour, setRunTour] = useState(false);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+
+  // Joyride tour steps
+  const tourSteps = [
+    {
+      target: "[data-tour='profile']",
+      content:
+        "Welcome! This is your profile card. Click it to go to the Profile page where you can update your display name, upload a profile photo, and change your password.",
+      placement: "right",
+      disableBeacon: true,
+    },
+    {
+      target: "[data-tour='nav-overview']",
+      content:
+        "This is the Dashboard tab — your home base. Let's explore what's inside.",
+      placement: "right",
+    },
+    // --- CollegeOverviewTab steps (shown right after Dashboard sidebar item) ---
+    {
+      target: "[data-tour='overview-filters']",
+      content:
+        "Use these filters to narrow down your data. Filter by Course, Year, Department, Batch, Trainer, or Date Range. Hit Reset to clear all filters, or Refresh to fetch the latest data.",
+      placement: "bottom",
+    },
+    {
+      target: "[data-tour='overview-stats']",
+      content:
+        "These are your key metrics at a glance — Total Responses received, Average Rating (out of 5), Total Sessions conducted, and Total Training Hours delivered. They update automatically based on your active filters.",
+      placement: "bottom",
+    },
+    {
+      target: "[data-tour='overview-charts']",
+      content:
+        "Visual analytics: Domain Performance shows average ratings per training domain. Category Breakdown is a radar chart of scores across categories like Communication, Knowledge, and Engagement. Rating Distribution displays how many responses fell into each star rating.",
+      placement: "top-start",
+    },
+    {
+      target: "[data-tour='overview-trends']",
+      content:
+        "Response Trend tracks daily response counts for the current month. Student Voices shows actual feedback comments categorized into Praise, Concerns, Lessons Learned, and Future Suggestions — giving you direct insight into student sentiment.",
+      placement: "bottom",
+    },
+    // --- Back to sidebar: Sessions ---
+    {
+      target: "[data-tour='nav-sessions']",
+      content: "This is the Feedback Sessions tab — let's see what's inside.",
+      placement: "right",
+    },
+    // --- CollegeSessionsTab steps ---
+    {
+      target: "[data-tour='sessions-filters']",
+      content:
+        "Filter sessions by Course, Year, Department, Batch, or Trainer. Hit Reset to clear all filters and the search bar.",
+      placement: "bottom",
+    },
+    {
+      target: "[data-tour='sessions-tabs']",
+      content:
+        "Toggle between All Sessions, Active Sessions (currently collecting responses), and Inactive Sessions (completed or closed). The count for each is shown in the tab.",
+      placement: "bottom",
+    },
+    {
+      target: "[data-tour='sessions-table']",
+      content:
+        "This table lists all feedback sessions with Topic, Course/Batch, Trainer, Schedule date, and Status. Click the analytics icon to view detailed response data for any session, or the share icon to copy the anonymous feedback link.",
+      placement: "top",
+    },
+    // --- Back to sidebar: Help ---
+    {
+      target: "[data-tour='nav-help']",
+      content: "This is the Help & Support tab — let's explore it.",
+      placement: "right",
+    },
+    // --- HelpTab steps ---
+    {
+      target: "[data-tour='help-tickets']",
+      content:
+        "Here you can view all your submitted tickets and their statuses (Open, In Progress, Resolved, Closed). Click 'Create Ticket' to raise a new bug report, complaint, feature request, or general inquiry. You'll also see admin responses right on each ticket.",
+      placement: "bottom",
+    },
+    // --- Final sidebar items ---
+    {
+      target: "[data-tour='tour-btn']",
+      content:
+        "You can replay this guided tour any time by clicking this button. It will walk you through all the features again.",
+      placement: "top",
+    },
+    {
+      target: "[data-tour='logout']",
+      content:
+        "When you're done, click Sign Out to securely log out of your account.",
+      placement: "top",
+    },
+  ];
+
+  const tourFinishedRef = React.useRef(false);
+
+  // Helper: stop the tour completely
+  const stopTour = () => {
+    tourFinishedRef.current = true;
+    setRunTour(false);
+    setTourStepIndex(0);
+    localStorage.setItem("adminTourCompleted", "true");
+  };
+
+  // Helper: check if target is a sidebar / always-visible element
+  const isSidebarTarget = (target) =>
+    target.includes("nav-") ||
+    target.includes("profile") ||
+    target.includes("tour-btn") ||
+    target.includes("logout");
+
+  const handleJoyrideCallback = (data) => {
+    const { status, action, index, type } = data;
+
+    // Handle finish / skip / close
+    if (
+      [STATUS.FINISHED, STATUS.SKIPPED].includes(status) ||
+      action === "close"
+    ) {
+      stopTour();
+      return;
+    }
+
+    if (type === "step:after") {
+      const nextIndex = index + (action === "prev" ? -1 : 1);
+
+      // Out of bounds → end
+      if (nextIndex < 0 || nextIndex >= tourSteps.length) {
+        stopTour();
+        return;
+      }
+
+      const nextTarget = tourSteps[nextIndex]?.target || "";
+
+      // Navigate to the correct route for the next step
+      if (
+        nextTarget.includes("overview-") ||
+        nextTarget.includes("nav-overview")
+      ) {
+        navigate("/admin/dashboard");
+      } else if (
+        nextTarget.includes("sessions-") ||
+        nextTarget.includes("nav-sessions")
+      ) {
+        navigate("/admin/sessions");
+      } else if (
+        nextTarget.includes("help-") ||
+        nextTarget.includes("nav-help")
+      ) {
+        navigate("/admin/help");
+      }
+
+      const mainContent = document.querySelector("main");
+
+      if (isSidebarTarget(nextTarget)) {
+        // Sidebar items are always visible — scroll main to top & advance
+        if (mainContent) mainContent.scrollTo({ top: 0 });
+        setTourStepIndex(nextIndex);
+      } else {
+        // Content steps: pause → wait for render → scroll to center → resume
+        tourFinishedRef.current = false;
+        setRunTour(false);
+        setTourStepIndex(nextIndex);
+
+        setTimeout(() => {
+          const targetEl = document.querySelector(tourSteps[nextIndex]?.target);
+          if (targetEl) {
+            const elHeight = targetEl.getBoundingClientRect().height;
+            const viewportHeight = window.innerHeight;
+            // Tall elements (>40% of viewport): scroll to start so tooltip fits below
+            // Normal elements: center them for best visibility
+            targetEl.scrollIntoView({
+              behavior: "smooth",
+              block: elHeight > viewportHeight * 0.4 ? "start" : "center",
+            });
+          }
+          // Resume tour after scroll animation settles
+          setTimeout(() => {
+            if (!tourFinishedRef.current) {
+              setRunTour(true);
+            }
+          }, 600);
+        }, 300);
+      }
+    }
+  };
+
+  // Auto-start tour for first-time users
+  useEffect(() => {
+    if (
+      !loading.initial &&
+      user &&
+      !localStorage.getItem("adminTourCompleted")
+    ) {
+      // Scroll to top before starting
+      const mainContent = document.querySelector("main");
+      if (mainContent) mainContent.scrollTo({ top: 0 });
+      window.scrollTo({ top: 0 });
+      const timer = setTimeout(() => setRunTour(true), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [loading.initial, user]);
 
   // Get current section from URL
   const currentSection = location.pathname.split("/").pop() || "dashboard";
@@ -115,7 +323,9 @@ const AdminDashboardContent = () => {
           <p className="text-muted-foreground mb-4">
             You don't have permission to access this page.
           </p>
-          <Button onClick={handleLogout} variant="outline">Sign Out</Button>
+          <Button onClick={handleLogout} variant="outline">
+            Sign Out
+          </Button>
         </div>
       </div>
     );
@@ -131,9 +341,12 @@ const AdminDashboardContent = () => {
             No College Assigned
           </h1>
           <p className="text-muted-foreground mb-4">
-            Your account does not have a college assigned. Please contact the Super Admin to link your account to a college.
+            Your account does not have a college assigned. Please contact the
+            Super Admin to link your account to a college.
           </p>
-          <Button onClick={handleLogout} variant="outline">Sign Out</Button>
+          <Button onClick={handleLogout} variant="outline">
+            Sign Out
+          </Button>
         </div>
       </div>
     );
@@ -141,9 +354,61 @@ const AdminDashboardContent = () => {
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
+      <Joyride
+        steps={tourSteps}
+        run={runTour}
+        stepIndex={tourStepIndex}
+        continuous
+        showProgress
+        showSkipButton
+        disableScrolling
+        disableScrollParentFix
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: "hsl(222.2, 47.4%, 11.2%)",
+            zIndex: 10000,
+            overlayColor: "rgba(0, 0, 0, 0.5)",
+          },
+          beacon: {
+            inner: "#ef4444",
+            outer: "#ef4444",
+          },
+          beaconInner: {
+            backgroundColor: "#ef4444",
+          },
+          beaconOuter: {
+            backgroundColor: "rgba(239, 68, 68, 0.2)",
+            borderColor: "#ef4444",
+          },
+          tooltip: {
+            borderRadius: 12,
+            padding: 20,
+          },
+          buttonNext: {
+            borderRadius: 8,
+            padding: "8px 16px",
+          },
+          buttonBack: {
+            borderRadius: 8,
+            marginRight: 8,
+            color: "#ef4444",
+          },
+          buttonSkip: {
+            borderRadius: 8,
+          },
+        }}
+        locale={{
+          back: "Back",
+          close: "Got it",
+          last: "Finish",
+          next: "Next",
+          skip: "Skip Tour",
+        }}
+      />
       {/* Full-Height Sidebar */}
       <aside
-        className={`bg-primary text-primary-foreground border-r border-primary/80 flex flex-col transition-all duration-300 ease-in-out h-screen ${
+        className={`bg-primary text-primary-foreground border-r border-primary/80 flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out h-screen ${
           isSidebarCollapsed ? "w-20" : "w-64"
         }`}
         onMouseEnter={handleMouseEnter}
@@ -174,43 +439,42 @@ const AdminDashboardContent = () => {
 
         {/* Admin Profile Section */}
         <div
-          className={`py-4 border-b border-primary-foreground/20 ${isSidebarCollapsed ? "px-2 flex flex-col items-center gap-2" : "px-4"}`}
+          data-tour="profile"
+          className={`py-6 border-b border-primary-foreground/10 ${isSidebarCollapsed ? "px-2" : "px-4"}`}
         >
           {!isSidebarCollapsed ? (
-            <div className="flex items-center justify-start">
-              <div
-                className="flex items-center gap-3 cursor-pointer hover:bg-primary-foreground/10 p-2 -ml-2 rounded-md transition-colors"
-                onClick={() => navigate("/admin/profile")}
-                title="Go to Profile"
-              >
-                <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0 overflow-hidden">
-                  {user.photoUrl ? (
-                    <img
-                      src={user.photoUrl}
-                      alt={user.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    user.name.charAt(0).toUpperCase()
-                  )}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <p className="text-sm font-semibold text-primary-foreground truncate">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-primary-foreground/70">
-                    {user.role === "superAdmin"
-                      ? "Super Admin"
-                      : "College Admin"}
-                  </p>
-                </div>
+            <div
+              className="bg-white rounded-xl p-2 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-all flex items-center gap-3 group relative overflow-hidden"
+              onClick={() => navigate("/admin/profile")}
+            >
+              <div className="h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center border-2 border-white shadow-sm flex-shrink-0 overflow-hidden relative">
+                {user.photoUrl ? (
+                  <img
+                    src={user.photoUrl}
+                    alt={user.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-pink-600 font-bold text-sm">
+                    {user.name?.charAt(0).toUpperCase() || "U"}
+                  </span>
+                )}
               </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <p className="text-sm font-bold text-slate-800 truncate leading-tight">
+                  {user.name}
+                </p>
+                <p className="text-[11px] font-medium text-slate-500 truncate uppercase tracking-wider">
+                  {college?.code || "College Admin"}
+                </p>
+              </div>
+              <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors mr-1" />
             </div>
           ) : (
             <div
-              className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform overflow-hidden"
+              className="h-12 w-12 rounded-xl bg-white flex items-center justify-center border border-slate-200 shadow-sm cursor-pointer hover:scale-105 transition-all overflow-hidden mx-auto relative"
               onClick={() => navigate("/admin/profile")}
-              title="Go to Profile"
+              title={user.name}
             >
               {user.photoUrl ? (
                 <img
@@ -219,7 +483,9 @@ const AdminDashboardContent = () => {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                user.name.charAt(0).toUpperCase()
+                <span className="text-pink-600 font-bold">
+                  {user.name?.charAt(0).toUpperCase() || "U"}
+                </span>
               )}
             </div>
           )}
@@ -227,53 +493,76 @@ const AdminDashboardContent = () => {
 
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 mt-2">
-          <NavItem
-            id="overview"
-            label="Dashboard"
-            icon={LayoutDashboard}
-            path="/admin/dashboard"
-          />
-          <NavItem
-            id="sessions"
-            label="Feedback Sessions"
-            icon={Calendar}
-            path="/admin/sessions"
-          />
-          <NavItem
-            id="help"
-            label="Help & Support"
-            icon={HelpCircle}
-            path="/admin/help"
-          />
+          <div data-tour="nav-overview">
+            <NavItem
+              id="overview"
+              label="Dashboard"
+              icon={LayoutDashboard}
+              path="/admin/dashboard"
+            />
+          </div>
+          <div data-tour="nav-sessions">
+            <NavItem
+              id="sessions"
+              label="Feedback Sessions"
+              icon={Calendar}
+              path="/admin/sessions"
+            />
+          </div>
+          <div data-tour="nav-help">
+            <NavItem
+              id="help"
+              label="Help & Support"
+              icon={HelpCircle}
+              path="/admin/help"
+            />
+          </div>
         </nav>
 
-        {/* Sign Out at Bottom */}
+        {/* Tour + Sign Out at Bottom */}
         <div
-          className={`p-3 border-t border-primary-foreground/20 ${isSidebarCollapsed ? "flex justify-center" : ""}`}
+          className={`p-3 border-t border-primary-foreground/20 flex flex-col gap-1 ${isSidebarCollapsed ? "items-center" : ""}`}
         >
-          <TooltipProvider delayDuration={0}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className={`text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground ${
-                    isSidebarCollapsed
-                      ? "h-10 w-10 p-0"
-                      : "w-full justify-start gap-3"
-                  }`}
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-4 w-4 flex-shrink-0" />
-                  {!isSidebarCollapsed && <span>Sign Out</span>}
-                </Button>
-              </TooltipTrigger>
-              {isSidebarCollapsed && (
-                <TooltipContent side="right" className="font-medium">
-                  Sign Out
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+          <Button
+            data-tour="tour-btn"
+            variant="ghost"
+            className={`text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground ${
+              isSidebarCollapsed
+                ? "h-10 w-10 p-0"
+                : "w-full justify-start gap-3"
+            }`}
+            onClick={() => {
+              // Full reset: stop everything, go to dashboard, scroll up, restart
+              tourFinishedRef.current = false;
+              setRunTour(false);
+              setTourStepIndex(0);
+              navigate("/admin/dashboard");
+              const mainContent = document.querySelector("main");
+              if (mainContent) mainContent.scrollTo({ top: 0 });
+              window.scrollTo({ top: 0 });
+              // Use two-phase delay: let navigation + scroll settle, then start
+              setTimeout(() => {
+                setTourStepIndex(0);
+                setTimeout(() => setRunTour(true), 100);
+              }, 500);
+            }}
+          >
+            <PlayCircle className="h-4 w-4 flex-shrink-0" />
+            {!isSidebarCollapsed && <span>Take a Tour</span>}
+          </Button>
+          <Button
+            data-tour="logout"
+            variant="ghost"
+            className={`text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground ${
+              isSidebarCollapsed
+                ? "h-10 w-10 p-0"
+                : "w-full justify-start gap-3"
+            }`}
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4 flex-shrink-0" />
+            {!isSidebarCollapsed && <span>Sign Out</span>}
+          </Button>
         </div>
       </aside>
 

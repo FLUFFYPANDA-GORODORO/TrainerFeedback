@@ -152,13 +152,6 @@ const OverviewTab = ({
         startDate = new Date(today);
         startDate.setDate(startDate.getDate() - 90);
         break;
-      case "thisMonth":
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        break;
-      case "lastMonth":
-        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        today.setDate(0); // Last day of previous month
-        break;
       default:
         return { startDate: null, endDate: null };
     }
@@ -1180,8 +1173,6 @@ const OverviewTab = ({
                   <SelectItem value="7days">Last 7 Days</SelectItem>
                   <SelectItem value="30days">Last 30 Days</SelectItem>
                   <SelectItem value="90days">Last 90 Days</SelectItem>
-                  <SelectItem value="thisMonth">This Month</SelectItem>
-                  <SelectItem value="lastMonth">Last Month</SelectItem>
                 </SelectContent>
               </Select>
             </div>

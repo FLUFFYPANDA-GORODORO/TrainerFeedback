@@ -29,6 +29,8 @@ import {
   User,
   Menu,
   X,
+  ChevronDown,
+  Pencil,
 } from "lucide-react";
 import {
   Tooltip,
@@ -283,54 +285,59 @@ const TrainerDashboard = () => {
 
         {/* Trainer Profile Section */}
         <div
-          className={`py-4 border-b border-primary-foreground/20 ${isSidebarCollapsed ? "px-2 flex flex-col items-center gap-2" : "px-4"}`}
+          className={`py-6 border-b border-primary-foreground/10 ${isSidebarCollapsed ? "px-2" : "px-4"}`}
         >
           {!isSidebarCollapsed ? (
-            <div className="flex items-center justify-start">
-              <div
-                className="flex items-center gap-3 cursor-pointer hover:bg-primary-foreground/10 p-2 -ml-2 rounded-md transition-colors"
-                onClick={() => {
-                  navigate("/trainer/profile");
-                  setIsMobileMenuOpen(false);
-                }}
-                title="Go to Profile"
-              >
-                <div className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md flex-shrink-0 overflow-hidden">
-                  {user?.photoUrl ? (
-                    <img
-                      src={user.photoUrl}
-                      alt={user.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    user?.name?.charAt(0).toUpperCase()
-                  )}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <p className="text-sm font-semibold text-primary-foreground truncate">
-                    {user?.name}
-                  </p>
-                  <p className="text-xs text-primary-foreground/70">Trainer</p>
-                </div>
-              </div>
-            </div>
-          ) : (
             <div
-              className="h-10 w-10 rounded-full bg-primary-foreground flex items-center justify-center text-primary font-semibold text-sm shadow-md cursor-pointer hover:scale-110 transition-transform overflow-hidden"
+              className="bg-white rounded-xl p-2 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-all flex items-center gap-3 group relative overflow-hidden"
               onClick={() => {
                 navigate("/trainer/profile");
                 setIsMobileMenuOpen(false);
               }}
               title="Go to Profile"
             >
+              <div className="h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center border-2 border-white shadow-sm flex-shrink-0 overflow-hidden relative">
+                {user?.photoUrl ? (
+                  <img
+                    src={user.photoUrl}
+                    alt={user.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-pink-600 font-bold text-sm">
+                    {user?.name?.charAt(0).toUpperCase() || "T"}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <p className="text-sm font-bold text-slate-800 truncate leading-tight">
+                  {user?.name}
+                </p>
+                <p className="text-[11px] font-medium text-slate-500 truncate">
+                  Trainer
+                </p>
+              </div>
+              <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors mr-1" />
+            </div>
+          ) : (
+            <div
+              className="h-12 w-12 rounded-xl bg-white flex items-center justify-center border border-slate-200 shadow-sm cursor-pointer hover:scale-105 transition-all overflow-hidden mx-auto relative"
+              onClick={() => {
+                navigate("/trainer/profile");
+                setIsMobileMenuOpen(false);
+              }}
+              title={user?.name}
+            >
               {user?.photoUrl ? (
                 <img
                   src={user.photoUrl}
-                  alt={user.name}
+                  alt={user?.name}
                   className="h-full w-full object-cover"
                 />
               ) : (
-                user?.name?.charAt(0).toUpperCase()
+                <span className="text-pink-600 font-bold">
+                  {user?.name?.charAt(0).toUpperCase() || "T"}
+                </span>
               )}
             </div>
           )}

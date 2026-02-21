@@ -133,13 +133,6 @@ const CollegeOverviewTab = () => {
         startDate = new Date(today);
         startDate.setDate(startDate.getDate() - 90);
         break;
-      case "thisMonth":
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        break;
-      case "lastMonth":
-        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        today.setDate(0); // Last day of previous month
-        break;
       default:
         return { startDate: null, endDate: null };
     }
@@ -612,7 +605,7 @@ const CollegeOverviewTab = () => {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <Card>
+      <Card data-tour="overview-filters">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -785,8 +778,6 @@ const CollegeOverviewTab = () => {
                   <SelectItem value="7days">Last 7 Days</SelectItem>
                   <SelectItem value="30days">Last 30 Days</SelectItem>
                   <SelectItem value="90days">Last 90 Days</SelectItem>
-                  <SelectItem value="thisMonth">This Month</SelectItem>
-                  <SelectItem value="lastMonth">Last Month</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -795,7 +786,10 @@ const CollegeOverviewTab = () => {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div
+        data-tour="overview-stats"
+        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+      >
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
@@ -872,7 +866,7 @@ const CollegeOverviewTab = () => {
       </div>
 
       {/* Chart Row - 3 Charts: Domain Performance, Category Breakdown, Rating Distribution */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div data-tour="overview-charts" className="grid gap-6 lg:grid-cols-3">
         {/* Domain Performance Vertical Bar Chart */}
         <Card>
           <CardHeader>
@@ -1098,7 +1092,7 @@ const CollegeOverviewTab = () => {
       </div>
 
       {/* Response Trend & Student Voices - Side by Side */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div data-tour="overview-trends" className="grid gap-6 lg:grid-cols-2">
         {/* Response Trend Line Chart - LEFT */}
         <Card>
           <CardHeader>
