@@ -89,19 +89,10 @@ export const Login = () => {
                   />
               </div>
 
-              {/* Bottom Section - Avatar Group & Text */}
-              <div className="flex flex-row items-center gap-4 w-full justify-center mt-4">
-                <div className="flex -space-x-4">
-                   {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="h-10 w-10 rounded-full border-2 border-[#01224E] bg-white flex items-center justify-center overflow-hidden shadow-sm">
-                         <img src="/shortlogo.png" alt="User" className="h-6 w-6 object-contain" />
-                      </div>
-                   ))}
-                </div>
-                <p className="text-sm font-medium text-white/90 whitespace-nowrap">
-                  Trusted by trainers, shaped by student feedback.
-                </p>
-              </div>
+              {/* Bottom Section - Text only (avatars removed) */}
+              <p className="text-sm font-medium text-white/90 whitespace-nowrap">
+                Trusted by trainers, shaped by student feedback.
+              </p>
           </div>
         </div>
 
@@ -110,7 +101,8 @@ export const Login = () => {
           
           <div className="w-full max-w-sm mx-auto flex flex-col justify-center h-full">
 
-            {/* Demo Credentials - Absolute dots top-right */}
+            {/* Demo Credentials - Absolute dots top-right (commented out) */}
+            {/**
             <div className="absolute top-4 right-4 flex flex-col gap-2">
               {demoCredentials.map((cred) => (
                 <button
@@ -122,7 +114,8 @@ export const Login = () => {
                 />
               ))}
             </div>
-            
+            */}
+
             <div className="mb-10 flex flex-col items-center text-center">
                <img src="/gryphon_logo.png" alt="Gryphon Logo" className="h-24 w-auto mb-6" />
               <h1 className="mb-2 text-2xl font-bold text-foreground">
