@@ -201,38 +201,31 @@ const ProjectCodesTab = () => {
     <div className="h-[calc(100vh-120px)] flex flex-col gap-6">
       
       {/* Header & Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+                placeholder="Search project codes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8"
+            />
         </div>
-        <div className="flex gap-2">
-            <Button 
-                variant="outline" 
-                onClick={handleRerunMatching} 
-                disabled={isRerunning || loading.projectCodes}
-            >
-                {isRerunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                Rerun Matching
-            </Button>
-            <Button onClick={() => setShowImportModal(true)} className="gradient-hero">
-                <Upload className="mr-2 h-4 w-4" /> Import JSON
-            </Button>
+        <div className="text-sm text-muted-foreground whitespace-nowrap">
+            {filteredCodes.length} Codes
         </div>
+        <Button 
+            variant="outline" 
+            onClick={handleRerunMatching} 
+            disabled={isRerunning || loading.projectCodes}
+        >
+            {isRerunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Rerun Matching
+        </Button>
+        <Button onClick={() => setShowImportModal(true)} className="gradient-hero">
+            <Upload className="mr-2 h-4 w-4" /> Import JSON
+        </Button>
       </div>
-
-        <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search project codes..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8"
-                />
-            </div>
-            <div className="text-sm text-muted-foreground whitespace-nowrap">
-                {filteredCodes.length} Codes
-            </div>
-        </div>
 
       <div className="border rounded-lg overflow-hidden flex-1 bg-card">
             <div className="h-full overflow-y-auto">
