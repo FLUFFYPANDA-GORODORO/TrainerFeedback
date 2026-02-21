@@ -47,6 +47,7 @@ import ProjectCodesTab from "./components/ProjectCodesTab";
 import TicketsTab from "./components/TicketsTab";
 import SessionResponses from "../admin/SessionResponses";
 import ProfilePage from "@/components/shared/ProfilePage";
+import Loader from "@/components/ui/Loader";
 
 // Inner dashboard component that consumes context
 const SuperAdminDashboardInner = () => {
@@ -204,11 +205,7 @@ const SuperAdminDashboardInner = () => {
   }
 
   if (isInitialLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+    return <Loader />;
   }
 
   // NavItem component for consistent navigation

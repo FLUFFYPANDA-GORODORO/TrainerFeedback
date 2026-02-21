@@ -27,6 +27,7 @@ import {
 } from "@/services/superadmin/trainerService";
 import { useSuperAdminData } from "@/contexts/SuperAdminDataContext";
 import TrainerAnalytics from "./TrainerAnalytics";
+import Loader from "@/components/ui/Loader";
 
 // Add these ShadCN UI imports if you haven't imported them in this file yet
 import {
@@ -102,18 +103,18 @@ const TrainersTab = () => {
   // Handlers
   const openCreateDialog = async () => {
     try {
-        const lastId = await getTrainerIdCounter();
-        const nextId = formatTrainerId(lastId + 1);
-        setCurrentTrainer({
-          ...defaultTrainerState,
-          trainer_id: nextId,
-          password: nextId,
-        });
-        setIsEditing(false);
-        setEditingId(null);
-        setTrainerDialogOpen(true);
+      const lastId = await getTrainerIdCounter();
+      const nextId = formatTrainerId(lastId + 1);
+      setCurrentTrainer({
+        ...defaultTrainerState,
+        trainer_id: nextId,
+        password: nextId,
+      });
+      setIsEditing(false);
+      setEditingId(null);
+      setTrainerDialogOpen(true);
     } catch (error) {
-        toast.error("Failed to fetch ID counter");
+      toast.error("Failed to fetch ID counter");
     }
   };
 
@@ -186,11 +187,11 @@ const TrainersTab = () => {
         await addTrainer(trainerData);
         // If we created a GA-TXXX ID, update the centralized counter
         if (TRAINER_ID_REGEX.test(trainerData.trainer_id)) {
-            const num = parseInt(trainerData.trainer_id.replace("GA-T", ""), 10);
-            const currentCounter = await getTrainerIdCounter();
-            if (num > currentCounter) {
-                await updateTrainerIdCounter(num);
-            }
+          const num = parseInt(trainerData.trainer_id.replace("GA-T", ""), 10);
+          const currentCounter = await getTrainerIdCounter();
+          if (num > currentCounter) {
+            await updateTrainerIdCounter(num);
+          }
         }
         toast.success("Trainer created successfully");
         refreshTrainers(); // Reload to get fresh list
@@ -238,9 +239,11 @@ const TrainersTab = () => {
         const results = await addTrainersBatch(json);
 
         let message = `Import Result: ${results.success.length} added`;
-        if (results.skipped.length > 0) message += `, ${results.skipped.length} skipped (duplicates)`;
-        if (results.errors.length > 0) message += `, ${results.errors.length} failed`;
-        
+        if (results.skipped.length > 0)
+          message += `, ${results.skipped.length} skipped (duplicates)`;
+        if (results.errors.length > 0)
+          message += `, ${results.errors.length} failed`;
+
         if (results.errors.length > 0) {
           toast.error(message);
           console.warn("Batch errors:", results.errors);
@@ -386,7 +389,12 @@ const TrainersTab = () => {
                             ...currentTrainer,
                             trainer_id: val,
                             // If create mode, also update password if they were matched
-                            password: !isEditing && currentTrainer.password === currentTrainer.trainer_id ? val : currentTrainer.password
+                            password:
+                              !isEditing &&
+                              currentTrainer.password ===
+                                currentTrainer.trainer_id
+                                ? val
+                                : currentTrainer.password,
                           });
                         }}
                         disabled={isEditing}
@@ -624,7 +632,7 @@ const TrainersTab = () => {
         {/* Loading State */}
         {loading && trainers.length === 0 && (
           <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
-            <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+            <Loader fullScreen={false} />
             <p className="text-muted-foreground animate-pulse">
               Syncing trainer database...
             </p>

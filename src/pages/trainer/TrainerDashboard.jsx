@@ -42,6 +42,7 @@ import TrainerOverview from "./components/TrainerOverview";
 import TrainerSessions from "./components/TrainerSessions";
 import HelpTab from "@/components/shared/HelpTab";
 import ProfilePage from "@/components/shared/ProfilePage";
+import Loader from "@/components/ui/Loader";
 
 const TrainerDashboard = () => {
   const { user, logout } = useAuth();
@@ -194,11 +195,7 @@ const TrainerDashboard = () => {
   }
 
   if (isLoading && !sessions.length && !colleges.length) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+    return <Loader />;
   }
 
   const NavItem = ({ id, label, icon: Icon, path }) => {

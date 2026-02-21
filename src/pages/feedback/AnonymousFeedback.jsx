@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Star, CheckCircle, AlertCircle, XCircle, Loader2 } from "lucide-react";
+import Loader from "@/components/ui/Loader";
 
 // Generate a unique device ID for localStorage tracking
 const getDeviceId = () => {
@@ -179,11 +180,7 @@ export const AnonymousFeedback = () => {
 
   // Loading State
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <Loader />;
   }
 
   // Session Closed State

@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import Loader from "@/components/ui/Loader";
 import {
   createSystemUser,
   updateSystemUser,
@@ -400,7 +401,7 @@ const AdminsTab = ({ colleges, onRefresh, isDialogOpen, setDialogOpen }) => {
 
         {loading && (
           <div className="col-span-full flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader fullScreen={false} />
           </div>
         )}
 

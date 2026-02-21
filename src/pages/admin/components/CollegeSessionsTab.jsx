@@ -453,6 +453,7 @@ const CollegeSessionsTab = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Project Code</TableHead>
               <TableHead>Topic / Domain</TableHead>
               <TableHead>Course / Batch</TableHead>
               <TableHead>Trainer</TableHead>
@@ -465,7 +466,7 @@ const CollegeSessionsTab = () => {
             {filteredSessions.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No sessions found matching filters.
@@ -477,6 +478,9 @@ const CollegeSessionsTab = () => {
                   key={session.id}
                   className="hover:bg-muted/50 transition-colors"
                 >
+                  <TableCell className="text-sm font-medium">
+                    {session.projectCode || "-"}
+                  </TableCell>
                   <TableCell>
                     <div className="font-medium text-foreground">
                       {session.topic}

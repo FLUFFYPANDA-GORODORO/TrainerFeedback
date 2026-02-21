@@ -215,6 +215,7 @@ const SessionWizard = ({
     switch (step) {
       case 1:
         return (
+          formData.projectCode &&
           formData.collegeId &&
           formData.academicYear &&
           formData.course &&
@@ -313,17 +314,16 @@ const SessionWizard = ({
 
     return (
       <div className="space-y-4 py-2">
-        {/* [NEW] Project Code Selection */}
+        {/* Project Code Selection (Required) */}
         <div className="space-y-2">
-          {/* Select Project Code */}
-          <Label>Project Code (Optional)</Label>
+          <Label>Project Code *</Label>
           <Select
             value={selectedProjectCode}
             onValueChange={handleProjectCodeSelect}
             disabled={!projectCodes.length}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select Project Code to Auto-fill" />
+              <SelectValue placeholder="Select Project Code" />
             </SelectTrigger>
             <SelectContent>
               {projectCodes
@@ -336,40 +336,24 @@ const SessionWizard = ({
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Selecting a project code will auto-fill College, Course, Year and
-            Academic Year.
+            Project code is required. It will auto-fill College, Course, Year
+            and Academic Year.
           </p>
         </div>
 
         <div className="space-y-2 border-t pt-4">
           <Label>College *</Label>
-          {defaultCollegeId ? (
-            <Input
-              value={
-                formData.collegeName ||
-                colleges.find((c) => c.id === defaultCollegeId)?.name ||
-                "Loading College..."
-              }
-              disabled
-              className="bg-muted text-muted-foreground opacity-100"
-            />
-          ) : (
-            <Select
-              value={formData.collegeId}
-              onValueChange={handleCollegeSelect}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select College" />
-              </SelectTrigger>
-              <SelectContent>
-                {colleges.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <Input
+            value={
+              formData.collegeName ||
+              colleges.find((c) => c.id === formData.collegeId)?.name ||
+              (selectedProjectCode
+                ? "Loading College..."
+                : "Select a project code first")
+            }
+            disabled
+            className="bg-muted text-muted-foreground opacity-100"
+          />
         </div>
 
         <div className="space-y-4 border-t pt-4">
@@ -381,7 +365,7 @@ const SessionWizard = ({
                 setFormData({ ...formData, academicYear: e.target.value })
               }
               placeholder="2025-26"
-              disabled={!formData.collegeId || !!selectedProjectCode} // Disable if project code selected (it sets this)
+              disabled={true} // Always disabled - set via project code
             />
           </div>
 
@@ -399,11 +383,7 @@ const SessionWizard = ({
                     batch: "", // Reset Batch
                   })
                 }
-                disabled={
-                  !formData.collegeId ||
-                  !academicOptions ||
-                  !!selectedProjectCode
-                } // Disable if project code sets this
+                disabled={true} // Always disabled - set via project code
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Course" />
@@ -430,7 +410,7 @@ const SessionWizard = ({
                     batch: "", // Reset Batch
                   })
                 }
-                disabled={!formData.course || !!selectedProjectCode} // Disable if project code sets this
+                disabled={true} // Always disabled - set via project code
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Year" />

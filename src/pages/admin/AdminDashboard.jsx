@@ -32,6 +32,7 @@ import TrainerFeedbackTab from "./components/TrainerFeedbackTab";
 import CollegeSessionsTab from "./components/CollegeSessionsTab";
 import HelpTab from "@/components/shared/HelpTab";
 import ProfilePage from "@/components/shared/ProfilePage";
+import Loader from "@/components/ui/Loader";
 
 // Inner component to consume context
 const AdminDashboardContent = () => {
@@ -304,11 +305,7 @@ const AdminDashboardContent = () => {
 
   // Loading state
   if (loading.initial) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+    return <Loader />;
   }
 
   // Check access

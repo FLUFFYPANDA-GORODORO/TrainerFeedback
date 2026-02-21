@@ -712,6 +712,7 @@ const SessionsTab = ({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Project Code</TableHead>
               <TableHead>Topic / Domain</TableHead>
               <TableHead>College / Batch</TableHead>
               <TableHead>Trainer</TableHead>
@@ -723,14 +724,14 @@ const SessionsTab = ({
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : filteredSessions.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No sessions found matching filters.
@@ -739,6 +740,9 @@ const SessionsTab = ({
             ) : (
               filteredSessions.map((session) => (
                 <TableRow key={session.id}>
+                  <TableCell className="text-sm font-medium">
+                    {session.projectCode || "-"}
+                  </TableCell>
                   <TableCell>
                     <div className="font-medium">{session.topic}</div>
                     <div className="text-xs text-muted-foreground">
