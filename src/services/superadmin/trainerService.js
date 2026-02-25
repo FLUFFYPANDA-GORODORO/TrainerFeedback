@@ -5,7 +5,6 @@ import {
   updateDoc,
   doc,
   setDoc,
-  deleteDoc,
   getDocs,
   query,
   where,
@@ -69,10 +68,11 @@ export const addTrainer = async (
       );
     }
 
-    // Check for duplicate trainer_id
+    // Check for duplicate trainer_id (only among non-deleted trainers)
     const q = query(
       collection(db, COLLECTION_NAME),
       where("trainer_id", "==", trainer_id),
+      where("isDeleted", "==", false),
     );
     const querySnapshot = await getDocs(q);
 
@@ -99,6 +99,7 @@ export const addTrainer = async (
       specialisation,
       topics,
       email,
+      isDeleted: false,
       createdAt: serverTimestamp(),
     });
 
@@ -143,13 +144,17 @@ export const updateTrainer = async (id, updates) => {
   }
 };
 
-// Delete a trainer
+// Soft delete a trainer (sets isDeleted flag instead of removing the document)
 export const deleteTrainer = async (id) => {
   try {
-    await deleteDoc(doc(db, COLLECTION_NAME, id));
+    const docRef = doc(db, COLLECTION_NAME, id);
+    await updateDoc(docRef, {
+      isDeleted: true,
+      deletedAt: serverTimestamp(),
+    });
     return true;
   } catch (error) {
-    console.error("Error deleting trainer:", error);
+    console.error("Error soft-deleting trainer:", error);
     throw error;
   }
 };
@@ -157,11 +162,16 @@ export const deleteTrainer = async (id) => {
 // Get all trainers (with pagination)
 export const getAllTrainers = async (limitCount = 10, lastDoc = null) => {
   try {
-    let q = query(collection(db, COLLECTION_NAME), limit(limitCount));
+    let q = query(
+      collection(db, COLLECTION_NAME),
+      where("isDeleted", "==", false),
+      limit(limitCount),
+    );
 
     if (lastDoc) {
       q = query(
         collection(db, COLLECTION_NAME),
+        where("isDeleted", "==", false),
         startAfter(lastDoc),
         limit(limitCount),
       );
@@ -184,14 +194,17 @@ export const getAllTrainers = async (limitCount = 10, lastDoc = null) => {
   }
 };
 
-// Get trainer by ID (Firestore Document ID)
+// Get trainer by ID (returns null for soft-deleted trainers)
 export const getTrainerById = async (id) => {
   try {
     const docRef = doc(db, COLLECTION_NAME, id);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
+      const data = docSnap.data();
+      // Exclude soft-deleted trainers
+      if (data.isDeleted === true) return null;
+      return { id: docSnap.id, ...data };
     } else {
       return null;
     }
@@ -209,9 +222,12 @@ export const addTrainersBatch = async (trainers) => {
     skipped: [],
   };
 
-  // 1. Fetch existing trainer IDs from DB for duplicate check
+  // 1. Fetch existing trainer IDs from DB for duplicate check (exclude soft-deleted)
   const existingIds = new Set();
-  const q = query(collection(db, COLLECTION_NAME));
+  const q = query(
+    collection(db, COLLECTION_NAME),
+    where("isDeleted", "==", false),
+  );
   const snapshot = await getDocs(q);
   snapshot.forEach((doc) => {
     const data = doc.data();
